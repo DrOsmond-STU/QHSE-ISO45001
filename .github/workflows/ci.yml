@@ -1,0 +1,84 @@
+name: CI
+
+# DEPLOYMENT.md §4 — lint -> unit test -> build affected -> integration test ->
+# contract test -> build image -> deploy staging -> approval gate -> deploy
+# production. Job build-image di deploy.yml (terpisah, cuma jalan dari tag rilis).
+#
+# CATATAN: environment dev lokal proyek ini TIDAK punya Docker (lihat
+# project_qhse_dev_environment memory) — file ini BELUM PERNAH benar-benar
+# dijalankan oleh GitHub Actions (belum ada remote repo). GitHub-hosted
+# runner PUNYA Docker (service container postgres di bawah), jadi integration
+# test di CI seharusnya bisa lebih dekat ke pola Testcontainers TDD §19
+# dibanding workaround lokal — tapi tetap wajib diverifikasi begitu remote
+# tersedia & workflow ini benar-benar trigger sekali.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: qhse_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qhse_ci?schema=public
+      APP_DATABASE_URL: postgresql://qhse_app:qhse_ci_local@localhost:5432/qhse_ci?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies (affected + full — belum ada affected-only filter di CI ini)
+        run: pnpm install --frozen-lockfile
+
+      # DEPLOYMENT.md §4 tahap 1: lint (cepat, blocking)
+      - name: Lint
+        run: pnpm lint
+
+      # DEPLOYMENT.md §4 tahap 2: build affected packages (Turborepo)
+      - name: Build
+        run: pnpm build
+
+      # Provisioning role runtime qhse_app — setara apps/api/scripts/dev-db-setup.sh
+      # tapi untuk service container CI (bukan role/password produksi, TIDAK
+      # dipakai di luar job CI ini).
+      - name: Provision qhse_app role (CI Postgres service)
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE qhse_app LOGIN PASSWORD 'qhse_ci_local';
+          SQL
+
+      - name: Apply Prisma migrations
+        run: pnpm --filter @qhse/api exec prisma migrate deploy
+
+      # DEPLOYMENT.md §4 tahap 3: integration test (blocking) — termasuk suite
+      # generic RLS TESTING.md §4 (task 0.3), suite paling kritis di produk ini.
+      - name: Integration test (termasuk generic RLS suite)
+        run: pnpm --filter @qhse/api test:integration
+
+      # TODO (belum diimplementasikan): contract test (OpenAPI, TDD §7.1) —
+      # menyusul begitu endpoint publik pertama modul domain tersedia (Phase 1),
+      # belum relevan selama cuma ada endpoint platform/smoke-test.

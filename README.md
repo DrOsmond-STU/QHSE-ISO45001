@@ -27,6 +27,7 @@ Dibangun bertahap mengikuti `../TASK_INSTRUCTION.md` Phase 0 (Bootstrap & Shared
 - [x] 0.1 Monorepo (pnpm + Turborepo) — `turbo build` sukses 6/6 package.
 - [x] 0.2 Database, ORM & tenant context — PostgreSQL 16 lokal (portable, TANPA Docker/admin — lihat `apps/api/scripts/dev-db-setup.sh`), Prisma 5.22, `TenantContextMiddleware` (AsyncLocalStorage) + `PrismaService.withRls()` (SET LOCAL per transaksi) terverifikasi end-to-end lewat endpoint `GET /platform/tenancy-smoke-test`.
 - [x] 0.3 RLS policy template & generic test harness — `prisma/rls-policy.template.sql` + `test/rls/generic-tenant-isolation.integration-spec.ts` (Jest), introspeksi `information_schema` otomatis menemukan tabel domain baru. 4/4 test lulus (`pnpm test:integration`).
+- [x] 0.4 Pipeline CI/CD — `.github/workflows/ci.yml` (lint→build→migrate→integration test, pakai Postgres service container) dan `deploy.yml` (build image→staging→approval gate→production). **Belum pernah benar-benar trigger** (belum ada remote GitHub) — YAML sudah divalidasi sintaksnya lokal; `deploy.yml` masih berisi placeholder untuk registry/cluster/GitHub Environment yang belum dikonfigurasi.
 
 **Environment ini tidak punya Docker maupun hak admin Windows** — Postgres jalan sebagai proses user biasa dari binary portable (`.local-pgsql/` satu level di atas repo ini, di luar git). Redis (dibutuhkan mulai task 0.6+ untuk sesi/cache/BullMQ) belum disiapkan — akan ditandai jelas begitu jadi blocker.
 
