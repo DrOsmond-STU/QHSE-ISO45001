@@ -1,0 +1,23 @@
+// Prisma schema — TDD §5.2, §6.1. DATABASE_URL dipakai untuk migrate (role admin,
+// pemilik tabel). Runtime app connect via APP_DATABASE_URL (role qhse_app, TANPA
+// BYPASSRLS) — lihat src/platform/tenancy/prisma.service.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tabel smoke-test murni untuk membuktikan mekanisme RLS + tenant context
+// (task 0.2/0.3) berjalan nyata. Diganti tabel domain sungguhan (Modul 01
+// `tenants`, dst.) begitu Phase 1 TASK_INSTRUCTION.md dimulai.
+model RlsSmokeTest {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  label    String
+
+  @@map("_rls_smoke_test")
+}
