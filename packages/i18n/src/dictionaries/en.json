@@ -1,0 +1,5 @@
+{
+  "common.health.ok": "System is running normally",
+  "auth.login.title": "Sign in to your account",
+  "auth.mfa.title": "Two-Step Verification"
+}
