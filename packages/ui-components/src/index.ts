@@ -1,3 +1,7 @@
-// Placeholder — komponen design system (badge status, tabel dense, stepper,
-// kartu KPI) dan design token DESIGN.md §3 diisi di TASK_INSTRUCTION.md task 0.5.
-export const PLACEHOLDER = true;
+export * from "./icons";
+export * from "./components/StatusBadge";
+export * from "./components/DataTable";
+export * from "./components/FormField";
+export * from "./components/KpiCard";
+export * from "./components/WorkflowStepper";
+export * from "./components/Button";

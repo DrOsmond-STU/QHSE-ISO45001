@@ -1,0 +1,102 @@
+/**
+ * Design tokens — DESIGN.md §3 (warna), §4 (tipografi), §5 (spacing/radius).
+ * SEMUA komponen di package ini WAJIB baca warna/ukuran dari sini (var(--token)),
+ * TIDAK ADA hex/px hardcode di file komponen — itu syarat acceptance task 0.5.
+ *
+ * Light = default; dark lewat prefers-color-scheme DAN data-theme override
+ * (DESIGN §3.6 — toggle eksplisit menang atas preferensi OS di kedua arah).
+ */
+
+:root {
+  /* --- §3.1 Warna Netral --- */
+  --qhse-surface-1: #fcfcfb;
+  --qhse-page-plane: #f9f9f7;
+  --qhse-text-primary: #0b0b0b;
+  --qhse-text-secondary: #52514e;
+  --qhse-text-muted: #898781;
+  --qhse-gridline: #e1e0d9;
+  --qhse-border: #c3c2b7;
+  --qhse-border-hairline: rgba(11, 11, 11, 0.1);
+  --qhse-text-on-accent: #ffffff;
+
+  /* --- §3.3 Warna Status/Severity (FIXED — tidak boleh ditematisasi tenant) --- */
+  --qhse-status-good: #0ca30c;
+  --qhse-status-warning: #fab219;
+  --qhse-status-serious: #ec835a;
+  --qhse-status-critical: #d03b3b;
+
+  /* --- §3.5 Warna Diverging (tren KPI membaik/memburuk) --- */
+  --qhse-trend-improving: #2a78d6;
+  --qhse-trend-worsening: #e34948;
+  --qhse-trend-neutral: #898781;
+
+  /* --- §4 Tipografi --- */
+  --qhse-font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --qhse-text-display-size: 28px;
+  --qhse-text-display-lh: 1.2;
+  --qhse-text-h1-size: 22px;
+  --qhse-text-h1-lh: 1.3;
+  --qhse-text-h2-size: 18px;
+  --qhse-text-h2-lh: 1.35;
+  --qhse-text-body-size: 14px;
+  --qhse-text-body-lh: 1.5;
+  --qhse-text-body-sm-size: 13px;
+  --qhse-text-body-sm-lh: 1.45;
+  --qhse-text-micro-size: 11px;
+  --qhse-text-micro-lh: 1.4;
+
+  /* --- §5 Spacing (kelipatan 4px) & Radius --- */
+  --qhse-space-1: 4px;
+  --qhse-space-2: 8px;
+  --qhse-space-3: 12px;
+  --qhse-space-4: 16px;
+  --qhse-space-5: 24px;
+  --qhse-space-6: 32px;
+  --qhse-space-7: 48px;
+  --qhse-space-8: 64px;
+  --qhse-radius-sm: 4px;
+  --qhse-radius-md: 8px;
+  --qhse-radius-full: 9999px;
+
+  /* --- §7.3 Row density tabel data --- */
+  --qhse-row-height-comfortable: 40px;
+  --qhse-row-height-compact: 32px;
+
+  /* --- §11 Aksesibilitas --- */
+  --qhse-tap-target-min: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --qhse-surface-1: #1a1a19;
+    --qhse-page-plane: #0d0d0d;
+    --qhse-text-primary: #ffffff;
+    --qhse-text-secondary: #c3c2b7;
+    --qhse-text-muted: #898781;
+    --qhse-gridline: #2c2c2a;
+    --qhse-border: #383835;
+    --qhse-border-hairline: rgba(255, 255, 255, 0.1);
+  }
+}
+
+:root[data-theme="dark"] {
+  --qhse-surface-1: #1a1a19;
+  --qhse-page-plane: #0d0d0d;
+  --qhse-text-primary: #ffffff;
+  --qhse-text-secondary: #c3c2b7;
+  --qhse-text-muted: #898781;
+  --qhse-gridline: #2c2c2a;
+  --qhse-border: #383835;
+  --qhse-border-hairline: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="light"] {
+  --qhse-surface-1: #fcfcfb;
+  --qhse-page-plane: #f9f9f7;
+  --qhse-text-primary: #0b0b0b;
+  --qhse-text-secondary: #52514e;
+  --qhse-text-muted: #898781;
+  --qhse-gridline: #e1e0d9;
+  --qhse-border: #c3c2b7;
+  --qhse-border-hairline: rgba(11, 11, 11, 0.1);
+}

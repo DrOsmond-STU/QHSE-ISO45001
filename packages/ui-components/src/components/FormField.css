@@ -1,0 +1,30 @@
+.qhse-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-1);
+  margin-bottom: var(--qhse-space-4);
+  font-family: var(--qhse-font-ui);
+}
+
+.qhse-form-field__label {
+  font-size: var(--qhse-text-body-size);
+  font-weight: 600;
+  color: var(--qhse-text-primary);
+}
+
+/* Ditandai warna text-primary (bukan merah polos) — DESIGN §7.2. */
+.qhse-form-field__required {
+  color: var(--qhse-text-primary);
+  font-weight: 700;
+}
+
+.qhse-form-field__hint {
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-muted);
+}
+
+.qhse-form-field__error {
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-status-critical);
+  font-weight: 600;
+}

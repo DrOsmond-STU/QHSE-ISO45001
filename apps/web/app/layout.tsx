@@ -1,4 +1,5 @@
 import "./globals.css";
+import "@qhse/ui-components/styles.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

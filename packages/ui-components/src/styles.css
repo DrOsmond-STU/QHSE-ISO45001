@@ -1,0 +1,14 @@
+/**
+ * Stylesheet gabungan @qhse/ui-components — import SEKALI di root aplikasi
+ * (mis. apps/web/app/layout.tsx), bukan per-komponen. Komponen TSX di package
+ * ini sengaja TIDAK side-effect import CSS masing-masing supaya `tsc` build
+ * package ini tetap murni TS/JS tanpa loader tambahan — CSS-nya diambil
+ * konsumen lewat entrypoint ini (dikonfigurasi di package.json `exports`).
+ */
+@import "./tokens.css";
+@import "./components/StatusBadge.css";
+@import "./components/DataTable.css";
+@import "./components/FormField.css";
+@import "./components/KpiCard.css";
+@import "./components/WorkflowStepper.css";
+@import "./components/Button.css";

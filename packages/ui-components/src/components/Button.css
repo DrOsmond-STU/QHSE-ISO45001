@@ -1,0 +1,40 @@
+.qhse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--qhse-space-1);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-2) var(--qhse-space-3);
+  border: 1px solid var(--qhse-border);
+  background: var(--qhse-surface-1);
+  color: var(--qhse-text-primary);
+  cursor: pointer;
+}
+
+.qhse-btn--accent {
+  background: var(--qhse-trend-improving);
+  border-color: var(--qhse-trend-improving);
+  color: var(--qhse-text-on-accent);
+}
+
+.qhse-btn--destructive {
+  background: var(--qhse-status-critical);
+  border-color: var(--qhse-status-critical);
+  color: var(--qhse-text-on-accent);
+}
+
+.qhse-btn--icon-only {
+  padding: var(--qhse-space-2);
+}
+
+/* DESIGN §11/§12 — tap target >=44x44px cuma di lebar mobile, desktop boleh
+   lebih padat (prinsip §2.2 "dense, not cramped" tetap berlaku di desktop). */
+@media (max-width: 640px) {
+  .qhse-btn {
+    min-height: var(--qhse-tap-target-min);
+    min-width: var(--qhse-tap-target-min);
+  }
+}

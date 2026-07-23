@@ -4,6 +4,10 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./styles.css": "./src/styles.css"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json"
   },

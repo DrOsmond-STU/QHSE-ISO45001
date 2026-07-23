@@ -1,0 +1,32 @@
+.qhse-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qhse-space-1);
+  padding: var(--qhse-space-1) var(--qhse-space-2);
+  border-radius: var(--qhse-radius-full);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: var(--qhse-text-micro-lh);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.qhse-status-badge--good {
+  color: var(--qhse-status-good);
+  background: color-mix(in srgb, var(--qhse-status-good) 14%, transparent);
+}
+
+.qhse-status-badge--warning {
+  color: var(--qhse-status-warning);
+  background: color-mix(in srgb, var(--qhse-status-warning) 16%, transparent);
+}
+
+.qhse-status-badge--serious {
+  color: var(--qhse-status-serious);
+  background: color-mix(in srgb, var(--qhse-status-serious) 16%, transparent);
+}
+
+.qhse-status-badge--critical {
+  color: var(--qhse-status-critical);
+  background: color-mix(in srgb, var(--qhse-status-critical) 14%, transparent);
+}
