@@ -6,7 +6,15 @@
     "declaration": true,
     "jsx": "react-jsx",
     "module": "ESNext",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    // Task 1.7 — base config cuma "ES2022" (cocok utk package Node/backend
+    // generik), TAPI package ini genuinely React UI library target browser
+    // (Toggle.tsx butuh HTMLInputElement dari lib DOM langsung, bukan cuma
+    // lewat generic type parameter React.*HTMLAttributes<T> spt komponen
+    // lain sejauh ini) — override lokal di sini, BUKAN tsconfig.base.json
+    // bersama (blast radius: HANYA package ini, tidak memengaruhi apps/api
+    // yang genuinely tidak boleh py DOM lib).
+    "lib": ["ES2022", "dom", "dom.iterable"]
   },
   "include": ["src"]
 }

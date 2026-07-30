@@ -1,5 +1,41 @@
 {
   "common.health.ok": "System is running normally",
   "auth.login.title": "Sign in to your account",
-  "auth.mfa.title": "Two-Step Verification"
+  "auth.mfa.title": "Two-Step Verification",
+
+  "notifications.inbox.title": "Notifications",
+  "notifications.inbox.unreadCount": "{{count}} unread",
+  "notifications.inbox.markAllRead": "Mark all as read",
+  "notifications.inbox.markAllRead.success": "All notifications marked as read.",
+  "notifications.inbox.markRead": "Mark as read",
+  "notifications.inbox.viewPreferences": "Manage Preferences",
+  "notifications.inbox.empty.title": "No notifications yet",
+  "notifications.inbox.empty.description": "New notifications will appear here.",
+  "notifications.inbox.loading": "Loading notifications...",
+  "notifications.inbox.error": "Failed to load notifications. Try reloading the page.",
+  "notifications.inbox.unauthenticated": "Please sign in to view your notifications.",
+  "notifications.inbox.pagination.prev": "Previous",
+  "notifications.inbox.pagination.next": "Next",
+  "notifications.inbox.pagination.summary": "Page {{page}} of {{totalPages}}",
+
+  "notifications.priority.LOW": "Low",
+  "notifications.priority.MEDIUM": "Medium",
+  "notifications.priority.HIGH": "High",
+  "notifications.priority.CRITICAL": "Critical",
+
+  "notifications.preferences.title": "Notification Preferences",
+  "notifications.preferences.subtitle": "Choose which channels you receive notifications on, per category.",
+  "notifications.preferences.backToInbox": "Back to Notifications",
+  "notifications.preferences.loading": "Loading preferences...",
+  "notifications.preferences.error": "Failed to load preferences. Try reloading the page.",
+  "notifications.preferences.unauthenticated": "Please sign in to manage your notification preferences.",
+  "notifications.preferences.saveError": "Failed to save preference. Please try again.",
+  "notifications.preferences.column.category": "Category",
+  "notifications.preferences.inAppAlwaysOn": "Always on",
+  "notifications.preferences.inAppHint": "In-app notifications are always on to preserve the audit trail.",
+
+  "notifications.channel.IN_APP": "In-App",
+  "notifications.channel.EMAIL": "Email",
+  "notifications.channel.WHATSAPP": "WhatsApp",
+  "notifications.channel.TELEGRAM": "Telegram"
 }

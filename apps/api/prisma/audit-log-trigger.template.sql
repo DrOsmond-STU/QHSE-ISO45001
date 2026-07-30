@@ -1,0 +1,55 @@
+-- Audit log trigger template (Master PRD §11.6, TDD §6.1, TASK_INSTRUCTION.md
+-- task 0.13) — pasangan dari rls-policy.template.sql (task 0.3).
+--
+-- BUKAN migration Prisma sungguhan (taruh sebagai referensi copy-paste,
+-- persis alasan rls-policy.template.sql) — setiap migration yang menambah
+-- tabel domain baru YANG perubahannya wajib tercatat di audit trail
+-- (Master PRD §11.6 poin 6: "operasi create/update/delete/approve/export/
+-- login pada seluruh modul" — pada praktiknya berarti hampir semua tabel
+-- transaksional, KECUALI tabel append-only log lain seperti
+-- medical_record_access_logs Modul 13 yang punya mekanisme sendiri)
+-- menyertakan baris CREATE TRIGGER di bawah, ganti <table_name> dan
+-- <pk_column_name> (nama kolom PK FISIK tabel itu, mis. "work_permit_id" —
+-- lihat @map di schema.prisma, BUKAN selalu literal "id").
+--
+-- Fungsi audit_log_capture() itu sendiri SUDAH ada (dibuat sekali di
+-- prisma/migrations/20260724092001_init_audit_log_tables) — migration tabel
+-- baru TIDAK perlu (dan TIDAK BOLEH) mendefinisikan ulang fungsinya, cukup
+-- attach trigger yang memanggilnya.
+--
+-- Kenapa trigger (bukan Prisma Client Extension `$extends`) — dibuktikan
+-- empiris task 0.13 (TDD §26): extension query hook Prisma tidak dikasih
+-- akses ke transactional client yang sedang berjalan, jadi insert audit
+-- lewat extension COMMIT independen dari transaksi pemicunya (audit log
+-- bisa mencatat perubahan yang sebenarnya di-ROLLBACK). Trigger native
+-- Postgres dijamin atomic dengan statement yang memicunya.
+CREATE TRIGGER audit_log_trigger
+AFTER INSERT OR UPDATE OR DELETE ON "<table_name>"
+FOR EACH ROW EXECUTE FUNCTION audit_log_capture('<pk_column_name>');
+
+-- Contoh nyata (tabel uji task 0.13, tenant_id NOT NULL, PK fisik "id"):
+-- prisma/migrations/20260724092001_init_audit_log_tables/migration.sql
+--   CREATE TRIGGER audit_log_trigger
+--   AFTER INSERT OR UPDATE OR DELETE ON "_audit_log_smoke_test"
+--   FOR EACH ROW EXECUTE FUNCTION audit_log_capture('id');
+--
+-- Catatan:
+-- • Trigger menulis SATU baris system_audit_logs per baris yang berubah
+--   (AFTER ... FOR EACH ROW) — untuk UPDATE/DELETE massal (mis. bulk
+--   reassignment), ini berarti N baris audit untuk N baris berubah, SESUAI
+--   semantik before/after per-row yang diminta Master PRD §11.6 (bukan satu
+--   ringkasan per-statement).
+-- • Trigger TIDAK bergantung pada RLS tabel sumbernya (SECURITY DEFINER,
+--   jalan dgn privilege owner fungsi) — pasang di tabel APAPUN yang sudah
+--   mengikuti pola tenant_id (task 0.3) tanpa syarat tambahan.
+-- • entity_type yang tercatat = TG_TABLE_NAME (nama tabel fisik apa
+--   adanya, mis. "work_permits") — bukan nama modul PRD.
+-- • Kolom before_value/after_value menyimpan SELURUH baris (to_jsonb(OLD)/
+--   to_jsonb(NEW)) — kalau tabel punya kolom sangat besar (mis. JSONB
+--   custom_fields lebar) pertimbangkan dampak ukuran system_audit_logs
+--   sebelum attach (belum ada mekanisme redaksi/whitelist kolom, gap TDD §26).
+-- • Aksi semantik yang BUKAN mutasi baris sederhana (login, export laporan,
+--   "approve" sebagai konsep bisnis walau secara teknis juga UPDATE kolom
+--   status yang SUDAH tertangkap otomatis) — pakai
+--   `AuditLogService.record()` (audit-log/audit-log.service.ts) di service
+--   layer, BUKAN trigger.

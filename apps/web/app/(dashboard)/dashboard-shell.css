@@ -1,0 +1,72 @@
+/* Task 1.7 — shell PLACEHOLDER minimal utk route group (dashboard). BUKAN
+   implementasi task 0.14 "App shell & state primitives" (topbar dgn
+   tenant/company/branch/site scope picker, sidebar nav berkelompok
+   difilter permission, drawer mobile) — 0.14 BELUM dikerjakan sama
+   sekali di codebase ini dan BUKAN dependency task 1.7 (lihat
+   TASK_INSTRUCTION.md 1.7 "Depends on: 0.11, 1.3", tidak menyebut 0.14).
+   File/kelas CSS ini SENGAJA diberi namespace terpisah dari konvensi
+   "qhse-*" @qhse/ui-components (bukan komponen design-system yang
+   dipakai lintas app) — begitu task 0.14 dikerjakan, seluruh isi file
+   ini + layout.tsx yang mengimpornya digantikan, bukan diperluas. */
+.qhse-shell-placeholder {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--qhse-page-plane);
+}
+
+.qhse-shell-placeholder__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qhse-space-4);
+  padding: var(--qhse-space-3) var(--qhse-space-5);
+  background: var(--qhse-surface-1);
+  border-bottom: 1px solid var(--qhse-border);
+  min-height: var(--qhse-tap-target-min);
+}
+
+.qhse-shell-placeholder__brand {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-h2-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  text-decoration: none;
+}
+
+.qhse-shell-placeholder__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-4);
+}
+
+.qhse-shell-placeholder__nav a {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  color: var(--qhse-text-secondary);
+  text-decoration: none;
+}
+
+.qhse-shell-placeholder__nav a:hover,
+.qhse-shell-placeholder__nav a:focus-visible {
+  color: var(--qhse-text-primary);
+  text-decoration: underline;
+}
+
+.qhse-shell-placeholder__main {
+  flex: 1;
+  padding: var(--qhse-space-5);
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .qhse-shell-placeholder__header {
+    flex-wrap: wrap;
+  }
+  .qhse-shell-placeholder__main {
+    padding: var(--qhse-space-4);
+  }
+}

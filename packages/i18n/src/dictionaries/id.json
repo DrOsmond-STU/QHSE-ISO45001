@@ -1,5 +1,41 @@
 {
   "common.health.ok": "Sistem berjalan normal",
   "auth.login.title": "Masuk ke akun Anda",
-  "auth.mfa.title": "Verifikasi Dua Langkah"
+  "auth.mfa.title": "Verifikasi Dua Langkah",
+
+  "notifications.inbox.title": "Notifikasi",
+  "notifications.inbox.unreadCount": "{{count}} belum dibaca",
+  "notifications.inbox.markAllRead": "Tandai semua dibaca",
+  "notifications.inbox.markAllRead.success": "Semua notifikasi ditandai sudah dibaca.",
+  "notifications.inbox.markRead": "Tandai dibaca",
+  "notifications.inbox.viewPreferences": "Atur Preferensi",
+  "notifications.inbox.empty.title": "Belum ada notifikasi",
+  "notifications.inbox.empty.description": "Notifikasi baru akan muncul di sini.",
+  "notifications.inbox.loading": "Memuat notifikasi...",
+  "notifications.inbox.error": "Gagal memuat notifikasi. Coba muat ulang halaman.",
+  "notifications.inbox.unauthenticated": "Silakan masuk untuk melihat notifikasi Anda.",
+  "notifications.inbox.pagination.prev": "Sebelumnya",
+  "notifications.inbox.pagination.next": "Berikutnya",
+  "notifications.inbox.pagination.summary": "Halaman {{page}} dari {{totalPages}}",
+
+  "notifications.priority.LOW": "Rendah",
+  "notifications.priority.MEDIUM": "Sedang",
+  "notifications.priority.HIGH": "Tinggi",
+  "notifications.priority.CRITICAL": "Kritis",
+
+  "notifications.preferences.title": "Preferensi Notifikasi",
+  "notifications.preferences.subtitle": "Atur kanal notifikasi yang Anda terima per kategori.",
+  "notifications.preferences.backToInbox": "Kembali ke Notifikasi",
+  "notifications.preferences.loading": "Memuat preferensi...",
+  "notifications.preferences.error": "Gagal memuat preferensi. Coba muat ulang halaman.",
+  "notifications.preferences.unauthenticated": "Silakan masuk untuk mengatur preferensi notifikasi Anda.",
+  "notifications.preferences.saveError": "Gagal menyimpan preferensi. Coba lagi.",
+  "notifications.preferences.column.category": "Kategori",
+  "notifications.preferences.inAppAlwaysOn": "Selalu aktif",
+  "notifications.preferences.inAppHint": "Notifikasi in-app selalu aktif untuk menjaga jejak audit.",
+
+  "notifications.channel.IN_APP": "Aplikasi",
+  "notifications.channel.EMAIL": "Email",
+  "notifications.channel.WHATSAPP": "WhatsApp",
+  "notifications.channel.TELEGRAM": "Telegram"
 }

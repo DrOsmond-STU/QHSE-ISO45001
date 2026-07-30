@@ -40,6 +40,29 @@ async function getAllDomainTablesFromSchema(): Promise<string[]> {
   return rows.map((r) => r.table_name);
 }
 
+/**
+ * Task 0.8 — subset dari getAllDomainTablesFromSchema() yang tenant_id-nya
+ * NOT NULL. Tabel dengan tenant_id NULLABLE (mis. `roles`/`role_permissions`
+ * — baris system role lintas tenant, Modul 02 §8.1/BR-05) SENGAJA
+ * dikecualikan dari assertion "0 baris tanpa context" — baris system MEMANG
+ * harus terlihat tanpa tenant context (lihat kebijakan RLS asimetris di
+ * migrations/20260723215236_enable_rls_rbac_tables). Assertion "RLS
+ * aktif" tetap pakai getAllDomainTablesFromSchema() (berlaku universal utk
+ * SEMUA tabel bertenant_id, nullable maupun tidak) — helper ini HANYA
+ * mempersempit, bukan melemahkan, jaminan yang sudah ada.
+ */
+async function getStrictTenantScopedTables(): Promise<string[]> {
+  const rows = await adminPrisma.$queryRaw<Array<{ table_name: string }>>`
+    SELECT DISTINCT table_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND column_name = 'tenant_id'
+      AND is_nullable = 'NO'
+    ORDER BY table_name
+  `;
+  return rows.map((r) => r.table_name);
+}
+
 async function queryRlsStatus(table: string) {
   const rows = await adminPrisma.$queryRaw<
     Array<{ relrowsecurity: boolean; relforcerowsecurity: boolean }>
@@ -106,8 +129,8 @@ describe("RLS — Isolasi Tenant (Generik, Semua Tabel Domain)", () => {
     }
   });
 
-  it("setiap tabel domain: query TANPA app.current_tenant_id menghasilkan 0 baris (fail closed)", async () => {
-    for (const table of await getAllDomainTablesFromSchema()) {
+  it("setiap tabel domain dengan tenant_id NOT NULL: query TANPA app.current_tenant_id menghasilkan 0 baris (fail closed)", async () => {
+    for (const table of await getStrictTenantScopedTables()) {
       const rows = await queryWithoutTenantContext(table);
       expect(rows).toHaveLength(0);
     }

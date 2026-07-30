@@ -1,0 +1,17 @@
+-- BR-09 (PRD Modul 02 §6) — employee_id unik per tenant kalau diisi.
+--
+-- Migration TERPISAH (bukan digabung ke migration expand_users_roles_add_sso_mappings
+-- sebelumnya) karena `prisma migrate dev` di environment non-interaktif ini
+-- MENOLAK jalan sama sekali begitu ada warning "unique constraint baru
+-- terhadap tabel yang sudah ada isinya, berpotensi gagal kalau ada
+-- duplikat" — tidak ada cara confirm interaktif di sini (dibuktikan
+-- eksplisit: exit code 1 walau di-pipe `echo y`). Ditulis manual sebagai
+-- migration terpisah supaya tidak perlu confirmation itu sama sekali.
+--
+-- AMAN diterapkan: kolom employee_id BARU ditambahkan migration sebelumnya
+-- (expand_users_roles_add_sso_mappings) pada tabel `users` yang SUDAH ADA
+-- isinya — seluruh baris existing otomatis employee_id=NULL, dan Postgres
+-- TIDAK men-dedup NULL pada unique constraint biasa (setiap NULL dianggap
+-- berbeda dari NULL lainnya) — jadi ribuan baris users lama dengan
+-- employee_id=NULL tidak akan saling bentrok.
+ALTER TABLE "users" ADD CONSTRAINT "users_tenant_id_employee_id_key" UNIQUE ("tenant_id", "employee_id");
