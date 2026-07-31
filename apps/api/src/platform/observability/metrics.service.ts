@@ -7,6 +7,7 @@ import { ATTACHMENT_SCAN_QUEUE } from "../attachment/attachment.constants";
 import { NOTIFICATION_DEAD_LETTER_QUEUE, NOTIFICATION_QUEUE } from "../notification/notification.constants";
 import { WORKFLOW_SLA_SCAN_QUEUE } from "../workflow-engine/workflow-engine.constants";
 import { AUDIT_LOG_PARTITION_MAINTENANCE_QUEUE } from "../audit-log/audit-log.constants";
+import { isRedisEnabled } from "../scheduling/redis-enabled.helper";
 
 // TDD §15 — "Metrics: Prometheus — metrik standar (request rate/latency/error
 // per endpoint, queue depth per BullMQ queue, DB connection pool usage) +
@@ -52,8 +53,16 @@ export class MetricsService implements OnModuleDestroy {
 
     // Koneksi ioredis SENDIRI, maxRetriesPerRequest:null (pola sama
     // WorkflowSlaQueueService 0.9) — Queue di sini HANYA dipakai baca
-    // getJobCounts(), tidak pernah .add()/proses job.
-    this.queueConnection = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", { maxRetriesPerRequest: null });
+    // getJobCounts(), tidak pernah .add()/proses job. lazyConnect:true
+    // (shared-hosting adaptation) — bullmq_queue_depth gauge di-skip total
+    // saat REDIS_ENABLED=false (lihat collect() di bawah), jadi connection
+    // ini TIDAK PERNAH benar-benar dipakai pada mode itu; tanpa lazyConnect
+    // instance ini tetap akan mencoba connect saat construct meski gauge-nya
+    // tidak pernah collect.
+    this.queueConnection = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
+      maxRetriesPerRequest: null,
+      lazyConnect: true,
+    });
     this.queues = new Map(
       [
         WORKFLOW_SLA_SCAN_QUEUE,
@@ -83,6 +92,10 @@ export class MetricsService implements OnModuleDestroy {
       labelNames: ["queue", "state"],
       registers: [this.registry],
       async collect() {
+        // REDIS_ENABLED=false (shared hosting) — tidak ada BullMQ sama
+        // sekali di mode ini (lihat redis-enabled.helper.ts), gauge ini
+        // genuinely tidak berlaku, di-skip total (bukan 0 palsu).
+        if (!isRedisEnabled()) return;
         for (const [name, queue] of queues) {
           const counts = await queue.getJobCounts("waiting", "active", "delayed", "failed");
           for (const [state, count] of Object.entries(counts)) {

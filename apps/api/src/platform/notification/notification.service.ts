@@ -143,8 +143,21 @@ export class NotificationService {
         const renderedBody = renderTemplate(template.bodyTemplate, event.variables);
         const renderedSubject = template.subjectTemplate ? renderTemplate(template.subjectTemplate, event.variables) : undefined;
 
+        const recipientAddress = channelCode === "EMAIL" ? recipient.email : "";
         const log = await tx.notificationLog.create({
-          data: { tenantId, notificationId: notification.id, channelCode, status: "QUEUED" },
+          data: {
+            tenantId,
+            notificationId: notification.id,
+            channelCode,
+            status: "QUEUED",
+            // Selalu disimpan (bukan cuma saat REDIS_ENABLED=false) — lihat
+            // banner comment NotificationLog schema.prisma: dipakai
+            // NotificationPollService (mode cron) DAN jadi audit trail
+            // tambahan yang tidak bergantung intip Redis (mode BullMQ).
+            recipientAddress,
+            subject: renderedSubject,
+            body: renderedBody,
+          },
         });
 
         jobs.push({

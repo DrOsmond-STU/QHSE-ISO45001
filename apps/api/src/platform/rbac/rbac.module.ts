@@ -2,9 +2,11 @@ import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { TenancyModule } from "../tenancy/tenancy.module";
 import { RedisProvider } from "../auth/redis.provider";
+import { isRedisEnabled } from "../scheduling/redis-enabled.helper";
+import { InMemoryPermissionCache } from "./in-memory-permission.cache";
 import { PermissionGuard } from "./permission.guard";
 import { PermissionService } from "./permission.service";
-import { PERMISSION_CACHE } from "./permission-cache.interface";
+import { PERMISSION_CACHE, PermissionCache } from "./permission-cache.interface";
 import { PERMISSION_REPOSITORY } from "./permission-repository.interface";
 import { PrismaPermissionRepository } from "./prisma-permission.repository";
 import { PrismaScopeHierarchyResolver } from "./prisma-scope-hierarchy.resolver";
@@ -23,13 +25,21 @@ import { SCOPE_HIERARCHY_RESOLVER } from "./scope-hierarchy-resolver.interface";
     // RbacModule ringan karena bakal di-import setiap modul domain nanti.
     RedisProvider,
     RedisPermissionCache,
+    // Shared-hosting adaptation (REDIS_ENABLED=false) — lihat banner
+    // comment in-memory-permission.cache.ts.
+    InMemoryPermissionCache,
     PrismaPermissionRepository,
     // Task 1.1 — containment hierarki organisasi (Master PRD §8.3), query
     // langsung ke companies/branches/sites/departments (lihat komentar
     // banner prisma-scope-hierarchy.resolver.ts kenapa TIDAK lewat import
     // OrganizationModule).
     PrismaScopeHierarchyResolver,
-    { provide: PERMISSION_CACHE, useExisting: RedisPermissionCache },
+    {
+      provide: PERMISSION_CACHE,
+      useFactory: (redisCache: RedisPermissionCache, memCache: InMemoryPermissionCache): PermissionCache =>
+        isRedisEnabled() ? redisCache : memCache,
+      inject: [RedisPermissionCache, InMemoryPermissionCache],
+    },
     { provide: PERMISSION_REPOSITORY, useExisting: PrismaPermissionRepository },
     { provide: SCOPE_HIERARCHY_RESOLVER, useExisting: PrismaScopeHierarchyResolver },
     RbacCacheInvalidationListener,

@@ -547,6 +547,53 @@ enum DeviceType {
   API
 }
 
+// Shared-hosting adaptation (REDIS_ENABLED=false) — pengganti SessionStore
+// Redis (RedisSessionStore, key `session:{user_id}:{session_id}`). SENGAJA
+// tabel TERPISAH dari UserSession di bawah, BUKAN reuse — UserSession dibuat
+// SETELAH RefreshTokenService.issue() (lihat auth.service.ts login(): issue()
+// dipanggil dulu, baru tx.userSession.create()), dan sessionTokenHash-nya
+// eksplisit "hashForAudit" (snapshot sekali di awal, TIDAK diupdate tiap
+// rotate() spt SessionStore) — beda tujuan: UserSession = audit/tampilan
+// "sesi aktif user" utk admin, tabel ini = state keamanan LIVE (hash SECRET
+// TERKINI) yang genuinely dipakai reuse-detection tiap rotate(). RLS
+// diaktifkan (konsisten tabel lain) TAPI diakses lewat client admin (bypass
+// RLS) di DbSessionStore — get(userId, sessionId) dipanggil SEBELUM tenant
+// diketahui (tenantId baru terbaca DARI baris ini), pola sama alasan
+// authorization-code.service.ts tidak scoped tenant di level query.
+model SessionCacheEntry {
+  userId            String   @map("user_id") @db.Uuid
+  sessionId         String   @map("session_id") @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  currentSecretHash String   @map("current_secret_hash") @db.VarChar(64)
+  expiresAt         DateTime @map("expires_at") @db.Timestamptz
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@id([userId, sessionId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("session_cache_entries")
+}
+
+// Shared-hosting adaptation (REDIS_ENABLED=false) — pengganti authcode:{code}
+// Redis (AuthorizationCodeService, TTL 60s). Code sendiri (32 byte random,
+// base64url) sudah jadi PK — tidak ada tenant/userId di WHERE clause saat
+// lookup (pola sama alasan SessionCacheEntry di atas: konsumsi lewat
+// possession kode acak, bukan scoping tenant), RLS TIDAK diaktifkan di
+// tabel ini (beda dari SessionCacheEntry) krn diakses murni via admin
+// client + tidak ada baris "milik tenant lain yang perlu disembunyikan" —
+// satu baris HANYA readable kalau tahu persis code-nya (256-bit entropy).
+model AuthorizationCodeEntry {
+  code             String   @id @db.VarChar(64)
+  userId           String   @map("user_id") @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  codeChallenge    String   @map("code_challenge") @db.VarChar(255)
+  expiresAt        DateTime @map("expires_at") @db.Timestamptz
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("authorization_code_entries")
+}
+
 model UserSession {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @map("session_id") @db.Uuid
   tenantId String @map("tenant_id") @db.Uuid
@@ -1374,6 +1421,21 @@ model NotificationLog {
   attemptCount      Int                     @default(0) @map("attempt_count")
   sentAt            DateTime?               @map("sent_at") @db.Timestamptz
   createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz
+  // Shared-hosting adaptation (REDIS_ENABLED=false, task deployment-adaptation)
+  // — dulu SUBJECT/BODY hasil render Handlebars cuma hidup di payload BullMQ
+  // (NotificationDeliveryJobPayload), tidak pernah persisten. NotificationPollService
+  // (pengganti notification-queue BullMQ consumer) butuh baca ulang baris ini
+  // langsung dari DB tanpa job payload — jadi disimpan DI SINI SEKARANG oleh
+  // NotificationService.enqueue(), SELALU (bukan cuma saat Redis mati) supaya
+  // baris ini juga jadi audit trail lengkap tanpa perlu intip Redis.
+  recipientAddress String?   @map("recipient_address") @db.VarChar(320)
+  subject          String?   @map("subject") @db.VarChar(250)
+  body             String?   @map("body") @db.Text
+  // Pengganti exponential backoff BullMQ (NOTIFICATION_BACKOFF_BASE_DELAY_MS)
+  // utk mode poll — NotificationPollService TIDAK retry baris yang barusan
+  // gagal di tick yang sama/berikutnya, tunggu sampai kolom ini terlampaui.
+  // NULL = siap diproses tick manapun (baris baru/belum pernah dicoba).
+  nextAttemptAt    DateTime? @map("next_attempt_at") @db.Timestamptz
 
   notification Notification @relation(fields: [notificationId], references: [id])
 
@@ -8423,7 +8485,7 @@ model OccupationalDiseaseCase {
   departmentId String?     @map("department_id") @db.Uuid
   department   Department? @relation(fields: [departmentId], references: [id])
 
-  caseNumber String @unique @map("case_number") @db.VarChar(50)
+  caseNumber String @map("case_number") @db.VarChar(50)
 
   employeeUserId String @map("employee_user_id") @db.Uuid
   employeeUser   User   @relation("OccupationalDiseaseCaseEmployee", fields: [employeeUserId], references: [id])
@@ -8472,6 +8534,7 @@ model OccupationalDiseaseCase {
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt     DateTime? @map("deleted_at") @db.Timestamptz
 
+  @@unique([tenantId, caseNumber])
   @@index([tenantId, employeeUserId])
   @@index([tenantId, siteId, caseStatus])
   @@map("occupational_disease_cases")
@@ -8485,7 +8548,7 @@ model ClinicVisitLog {
   siteId String @map("site_id") @db.Uuid
   site   Site   @relation(fields: [siteId], references: [id])
 
-  visitNumber String? @unique @map("visit_number") @db.VarChar(50)
+  visitNumber String? @map("visit_number") @db.VarChar(50)
 
   employeeUserId String? @map("employee_user_id") @db.Uuid
   employeeUser   User?   @relation("ClinicVisitLogEmployee", fields: [employeeUserId], references: [id])
@@ -8525,6 +8588,7 @@ model ClinicVisitLog {
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt     DateTime? @map("deleted_at") @db.Timestamptz
 
+  @@unique([tenantId, visitNumber])
   @@index([tenantId, siteId, visitDatetime])
   @@index([tenantId, employeeUserId])
   @@map("clinic_visit_logs")

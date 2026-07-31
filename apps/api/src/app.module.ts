@@ -23,6 +23,7 @@ import { WorkPermitModule } from "./modules/domains/work-permit/work-permit.modu
 import { AttachmentModule } from "./platform/attachment/attachment.module";
 import { AuditLogModule } from "./platform/audit-log/audit-log.module";
 import { AuthModule } from "./platform/auth/auth.module";
+import { CronRunnerModule } from "./platform/cron-runner/cron-runner.module";
 import { EntitlementModule } from "./platform/entitlement/entitlement.module";
 import { HealthModule } from "./platform/health/health.module";
 import { NotificationModule } from "./platform/notification/notification.module";
@@ -348,6 +349,16 @@ import { WorkflowEngineModule } from "./platform/workflow-engine/workflow-engine
 // work-permit.module.ts) — ContractorModule TETAP dicantumkan di sini juga
 // (deklarasi eksplisit AppModule, pola sama modul lain meski technically
 // sudah ter-import transitif lewat WorkPermitModule).
+//
+// CronRunnerModule — adaptasi shared-hosting cPanel (REDIS_ENABLED=false,
+// lihat platform/scheduling/redis-enabled.helper.ts). Mengimpor ulang
+// ke-20 *WorkerModule yang sudah ada (BUKAN duplikasi wiring — provider
+// sama, Nest dedupe otomatis) supaya ke-31 scan service yang tadinya CUMA
+// dikonsumsi apps/worker proses terpisah lewat BullMQ, sekarang JUGA bisa
+// dipicu langsung via HTTP dari proses apps/api yang sama (lihat
+// cron-runner.controller.ts POST /internal/cron/run-scans, dipanggil
+// cPanel Cron Job). Deployment VPS/Docker/K8s existing TIDAK terpengaruh —
+// endpoint ini idle kalau tidak pernah dipanggil.
 @Module({
   imports: [
     EventEmitterModule.forRoot({ maxListeners: 50 }),
@@ -355,6 +366,7 @@ import { WorkflowEngineModule } from "./platform/workflow-engine/workflow-engine
     TenancyModule,
     ObservabilityModule,
     AuthModule,
+    CronRunnerModule,
     EntitlementModule,
     RbacModule,
     WorkflowEngineModule,

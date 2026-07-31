@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy } from "@nestjs/common";
 import { Queue } from "bullmq";
 import Redis from "ioredis";
+import { isRedisEnabled } from "../scheduling/redis-enabled.helper";
 import { NotificationDeliveryJobPayload } from "./notification-delivery-job.types";
 import {
   NOTIFICATION_BACKOFF_BASE_DELAY_MS,
@@ -16,12 +17,21 @@ import {
 // dipicu event), bukan repeatable cron — jadi tidak ada
 // onApplicationBootstrap, cuma method enqueue dipanggil NotificationService
 // per event.
+// REDIS_ENABLED=false (shared hosting) — enqueueDelivery() jadi no-op,
+// NotificationPollService (cron-runner) yang memproses baris QUEUED
+// langsung dari DB (subject/body sudah dipersist NotificationService.enqueue(),
+// lihat banner comment NotificationLog schema.prisma).
 @Injectable()
 export class NotificationQueueService implements OnModuleDestroy {
-  private readonly connection: Redis;
-  private readonly queue: Queue<NotificationDeliveryJobPayload>;
+  private readonly connection: Redis | null;
+  private readonly queue: Queue<NotificationDeliveryJobPayload> | null;
 
   constructor() {
+    if (!isRedisEnabled()) {
+      this.connection = null;
+      this.queue = null;
+      return;
+    }
     this.connection = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", { maxRetriesPerRequest: null });
     this.queue = new Queue(NOTIFICATION_QUEUE, { connection: this.connection });
   }
@@ -36,6 +46,7 @@ export class NotificationQueueService implements OnModuleDestroy {
    * di tiga tempat sekaligus.
    */
   async enqueueDelivery(payload: NotificationDeliveryJobPayload): Promise<void> {
+    if (!this.queue) return;
     await this.queue.add(NOTIFICATION_DELIVERY_JOB_NAME, payload, {
       attempts: NOTIFICATION_MAX_ATTEMPTS,
       backoff: { type: "exponential", delay: NOTIFICATION_BACKOFF_BASE_DELAY_MS },
@@ -45,6 +56,7 @@ export class NotificationQueueService implements OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
+    if (!this.queue || !this.connection) return;
     await this.queue.close();
     await this.connection.quit();
   }

@@ -5,6 +5,7 @@ import { TenancyModule } from "../../../platform/tenancy/tenancy.module";
 import { UserRoleWorkerModule } from "../user-role/user-role-worker.module";
 import { UsageCounterScanService } from "./provisioning/usage-counter-scan.service";
 import { UsageCounterService } from "./provisioning/usage-counter.service";
+import { DataImportPollService } from "./data-import/data-import-poll.service";
 import { DataImportProcessingService } from "./data-import/data-import-processing.service";
 import { DATA_IMPORT_ROW_MAPPERS } from "./data-import/row-mappers/data-import-row-mapper.interface";
 import { DataImportRowMapperRegistry } from "./data-import/row-mappers/data-import-row-mapper-registry.service";
@@ -32,7 +33,10 @@ import { EmployeeRowMapper } from "./data-import/row-mappers/employee-row-mapper
     },
     DataImportRowMapperRegistry,
     DataImportProcessingService,
+    // Shared-hosting adaptation (REDIS_ENABLED=false) — pengganti
+    // data-import.worker.ts, dipicu CronRunnerController.
+    DataImportPollService,
   ],
-  exports: [UsageCounterScanService, DataImportProcessingService],
+  exports: [UsageCounterScanService, DataImportProcessingService, DataImportPollService],
 })
 export class SystemAdministrationWorkerModule {}
