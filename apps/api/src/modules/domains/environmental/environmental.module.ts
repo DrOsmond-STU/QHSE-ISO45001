@@ -4,6 +4,7 @@ import { NumberingModule } from "../../../platform/numbering/numbering.module";
 import { ObservabilityModule } from "../../../platform/observability/observability.module";
 import { TenancyModule } from "../../../platform/tenancy/tenancy.module";
 import { WorkflowEngineModule } from "../../../platform/workflow-engine/workflow-engine.module";
+import { EnvironmentalAspectImpactController } from "./environmental-aspect-impact.controller";
 import { EnvironmentalAspectImpactService } from "./environmental-aspect-impact.service";
 import { EnvironmentalAspectReviewWorkflowCompletionListener } from "./environmental-aspect-review-workflow-completion.listener";
 import { EnvironmentalMonitoringRecordService } from "./environmental-monitoring-record.service";
@@ -42,6 +43,7 @@ import { WasteStorageDurationScanService } from "./waste-storage-duration-scan.s
 // meng-inject provider dari modul yang tidak pernah di-boot test harness.
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule],
+  controllers: [EnvironmentalAspectImpactController],
   providers: [
     EnvironmentalWorkflowBootstrapService,
     EnvironmentalAspectImpactService,

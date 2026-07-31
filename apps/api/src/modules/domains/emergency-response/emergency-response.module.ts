@@ -11,6 +11,7 @@ import { EmergencyEquipmentReadinessChecklistService } from "./emergency-equipme
 import { EmergencyMusterPointService } from "./emergency-muster-point.service";
 import { EmergencyPlanReviewOverdueScanQueueService } from "./emergency-plan-review-overdue-scan-queue.service";
 import { EmergencyPlanReviewOverdueScanService } from "./emergency-plan-review-overdue-scan.service";
+import { EmergencyResponsePlanController } from "./emergency-response-plan.controller";
 import { EmergencyResponsePlanService } from "./emergency-response-plan.service";
 import { EmergencyResponseTeamService } from "./emergency-response-team.service";
 import { EmergencyResponseWorkflowBootstrapService } from "./emergency-response-workflow-bootstrap.service";
@@ -28,6 +29,7 @@ import { MusterPointCheckinService } from "./muster-point-checkin.service";
 // EmergencyResponseWorkerModule) — TIDAK didaftarkan DI SINI.
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule],
+  controllers: [EmergencyResponsePlanController],
   providers: [
     EmergencyResponseWorkflowBootstrapService,
     EmergencyResponsePlanService,

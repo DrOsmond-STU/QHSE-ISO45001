@@ -12,6 +12,7 @@ import { InspectionRecordGenerationScanQueueService } from "./inspection-record-
 import { InspectionRecordGenerationScanService } from "./inspection-record-generation-scan.service";
 import { InspectionRecordOverdueScanQueueService } from "./inspection-record-overdue-scan-queue.service";
 import { InspectionRecordOverdueScanService } from "./inspection-record-overdue-scan.service";
+import { InspectionRecordController } from "./inspection-record.controller";
 import { InspectionRecordService } from "./inspection-record.service";
 import { InspectionScheduleService } from "./inspection-schedule.service";
 import { InspectionScoreService } from "./inspection-score.service";
@@ -29,6 +30,7 @@ import { InspectionTypeService } from "./inspection-type.service";
 // InspectionWorkerModule) — TIDAK didaftarkan DI SINI.
 @Module({
   imports: [TenancyModule, ObservabilityModule, NumberingModule, NotificationModule],
+  controllers: [InspectionRecordController],
   providers: [
     InspectionTypeService,
     InspectionChecklistTemplateService,

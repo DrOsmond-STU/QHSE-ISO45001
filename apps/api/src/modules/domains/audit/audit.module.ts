@@ -16,6 +16,7 @@ import { AuditReportWorkflowCompletionListener } from "./audit-report-workflow-c
 import { AuditTeamMemberService } from "./audit-team-member.service";
 import { AuditTypeService } from "./audit-type.service";
 import { AuditWorkflowBootstrapService } from "./audit-workflow-bootstrap.service";
+import { AuditController } from "./audit.controller";
 import { AuditService } from "./audit.service";
 import { AuditorCompetencyExpiryScanQueueService } from "./auditor-competency-expiry-scan-queue.service";
 import { AuditorCompetencyExpiryScanService } from "./auditor-competency-expiry-scan.service";
@@ -31,6 +32,7 @@ import { AuditorCompetencyRecordService } from "./auditor-competency-record.serv
 // apps/worker/src/*.worker.ts + AuditWorkerModule) — TIDAK didaftarkan DI SINI.
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule],
+  controllers: [AuditController],
   providers: [
     AuditWorkflowBootstrapService,
     AuditTypeService,

@@ -15,6 +15,7 @@ import { ContractorPrequalificationService } from "./contractor-prequalification
 import { ContractorProjectAssignmentService } from "./contractor-project-assignment.service";
 import { ContractorWorkerService } from "./contractor-worker.service";
 import { ContractorWorkflowBootstrapService } from "./contractor-workflow-bootstrap.service";
+import { ContractorController } from "./contractor.controller";
 import { ContractorService } from "./contractor.service";
 
 // Task 6.3 (Modul 17 Contractor Management), modul DOMAIN KEDUA PULUH SATU.
@@ -26,6 +27,7 @@ import { ContractorService } from "./contractor.service";
 // assertSourceValidIfKnownContract — bukan impor IncidentModule).
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule, AuditLogModule],
+  controllers: [ContractorController],
   providers: [
     ContractorWorkflowBootstrapService,
     ContractorService,

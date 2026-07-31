@@ -1,0 +1,333 @@
+{
+  "info": {
+    "name": "QHSE Platform — Demo Walkthrough",
+    "description": "Login flow (OAuth2 PKCE) + curated read-only tour across all 15 domain modules populated with demo data. Run folders top-to-bottom: '00 - Auth' first (it auto-fills {{accessToken}} for every later request), then any module folder in any order. See docs/demo/DEMO_GUIDE.md for the full walkthrough script, all 23 demo logins, and per-module business-rule highlights.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001", "type": "string" },
+    { "key": "tenantId", "value": "4732cbf1-9270-432d-870a-4b6aa35461ae", "type": "string" },
+    { "key": "loginEmail", "value": "budi.santoso+393749@petro-ns.demo", "type": "string" },
+    { "key": "loginPassword", "value": "Demo!QHSE2026", "type": "string" },
+    { "key": "codeVerifier", "value": "PaxGU7rg8QWIM4NzUAjIoOIJNtQ4dzGvR_NghQiyqgo", "type": "string" },
+    { "key": "codeChallenge", "value": "nIHAKTx4T-dTnx2vsDq3h2s1NiJQrNeKWRtvMcfAeEc", "type": "string" },
+    { "key": "authCode", "value": "", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "documentId", "value": "", "type": "string" },
+    { "key": "regulatoryRegisterId", "value": "", "type": "string" },
+    { "key": "hiraAssessmentId", "value": "", "type": "string" },
+    { "key": "workPermitId", "value": "", "type": "string" },
+    { "key": "incidentReportId", "value": "", "type": "string" },
+    { "key": "inspectionRecordId", "value": "", "type": "string" },
+    { "key": "emergencyResponsePlanId", "value": "", "type": "string" },
+    { "key": "auditId", "value": "", "type": "string" },
+    { "key": "capaRegisterId", "value": "", "type": "string" },
+    { "key": "ncrRecordId", "value": "", "type": "string" },
+    { "key": "environmentalAspectImpactId", "value": "", "type": "string" },
+    { "key": "restrictedDutyAssignmentId", "value": "", "type": "string" },
+    { "key": "assetId", "value": "", "type": "string" },
+    { "key": "calibrationItemId", "value": "", "type": "string" },
+    { "key": "contractorId", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "00 - Auth",
+      "description": "OAuth2 Authorization Code + PKCE, same flow the real web app uses. codeVerifier/codeChallenge above are a FIXED precomputed pair (fine for a demo login, not a security-critical flow) — run both requests in order once per session; {{accessToken}} then auto-fills for every other request in this collection via the collection-level Bearer auth.",
+      "item": [
+        {
+          "name": "1. Login (get authorization code)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\",\n  \"codeChallenge\": \"{{codeChallenge}}\",\n  \"codeChallengeMethod\": \"S256\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Step 1 of 2. Body email/password default to Tenant Admin (budi.santoso). Change the loginEmail/loginPassword collection variables to try a different demo role — see DEMO_GUIDE.md for the full roster of 23 logins (all share password Demo!QHSE2026)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test(\"200 OK with authorization code\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(json.data.code).to.be.a(\"string\");",
+                  "});",
+                  "pm.collectionVariables.set(\"authCode\", json.data.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Token Exchange (get access token)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grantType\": \"authorization_code\",\n  \"code\": \"{{authCode}}\",\n  \"codeVerifier\": \"{{codeVerifier}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/token", "host": ["{{baseUrl}}"], "path": ["auth", "token"] },
+            "description": "Step 2 of 2. Consumes the one-time authCode from Step 1. Access token expires in 900s (15 min) — just re-run both Auth requests if later requests start returning 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test(\"200 OK with access token\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(json.data.accessToken).to.be.a(\"string\");",
+                  "});",
+                  "pm.collectionVariables.set(\"accessToken\", json.data.accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - DMS (Documents)",
+      "description": "Modul 03. 5 documents seeded (draft, published+distribution+acknowledgement, in-review, published-2-versions, rejected).",
+      "item": [
+        {
+          "name": "List documents",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/documents?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["documents"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"documentId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get document detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/documents/{{documentId}}", "host": ["{{baseUrl}}"], "path": ["documents", "{{documentId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "02 - Regulatory Compliance",
+      "description": "Modul 04. 3 registers, 2 obligations, 3 evaluations, 4 licenses (incl. a renewal chain).",
+      "item": [
+        {
+          "name": "List regulatory registers",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/regulatory-registers?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["regulatory-registers"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"regulatoryRegisterId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get regulatory register detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/regulatory-registers/{{regulatoryRegisterId}}", "host": ["{{baseUrl}}"], "path": ["regulatory-registers", "{{regulatoryRegisterId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "03 - Risk Management (HIRA)",
+      "description": "Modul 05. 2 HIRA assessments (routine + EXTREME 3-stage conditional workflow), plus hazard/matrix/JSA/HIRADC/risk-register data visible via other tables (not exposed as separate demo endpoints — read-only scope is minimal).",
+      "item": [
+        {
+          "name": "List HIRA assessments",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/hira-assessments?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["hira-assessments"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"hiraAssessmentId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get HIRA assessment detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/hira-assessments/{{hiraAssessmentId}}", "host": ["{{baseUrl}}"], "path": ["hira-assessments", "{{hiraAssessmentId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "04 - Work Permit",
+      "description": "Modul 06. 6 permits (draft, active-simple, active-hotwork+extension+closure, active-confined+LOTO, rejected, pending-approval).",
+      "item": [
+        {
+          "name": "List work permits",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/work-permits?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["work-permits"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"workPermitId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get work permit detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/work-permits/{{workPermitId}}", "host": ["{{baseUrl}}"], "path": ["work-permits", "{{workPermitId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "05 - Incident Management",
+      "description": "Modul 07. 6 reports (FATALITY full-cycle+CAPA+witness+regulator, NEAR_MISS, LTI investigation RETURNED, PROCESS_SAFETY_EVENT, FIRST_AID, MEDICAL_TREATMENT).",
+      "item": [
+        {
+          "name": "List incident reports",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/incident-reports?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["incident-reports"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"incidentReportId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get incident report detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/incident-reports/{{incidentReportId}}", "host": ["{{baseUrl}}"], "path": ["incident-reports", "{{incidentReportId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "06 - Inspection Management",
+      "description": "Modul 08. 5 inspection types worth of records (APAR completed+fail+photo, housekeeping in-progress+finding+score, patrol auto-generated OVERDUE, scaffolding v1->v2, electrical HIGH-severity SLA breach).",
+      "item": [
+        {
+          "name": "List inspection records",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/inspection-records?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["inspection-records"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"inspectionRecordId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get inspection record detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/inspection-records/{{inspectionRecordId}}", "host": ["{{baseUrl}}"], "path": ["inspection-records", "{{inspectionRecordId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "07 - Emergency Response",
+      "description": "Modul 14. 4 plans (LEVEL_1 approved+active with ERT team+2 drills+a REAL_EMERGENCY activation+checkins+equipment, LEVEL_3 approved+review overdue, rejected->draft, draft).",
+      "item": [
+        {
+          "name": "List emergency response plans",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/emergency-response-plans?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["emergency-response-plans"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"emergencyResponsePlanId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get emergency response plan detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/emergency-response-plans/{{emergencyResponsePlanId}}", "host": ["{{baseUrl}}"], "path": ["emergency-response-plans", "{{emergencyResponsePlanId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "08 - Audit Management",
+      "description": "Modul 09. 3 programs + 2 audits (Cepu CLOSED full cycle with 2 findings + auto-CAPA + 2-stage report, Balikpapan IN_PROGRESS with a BR-01 auditor-independence warning).",
+      "item": [
+        {
+          "name": "List audits",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/audits?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["audits"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"auditId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get audit detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/audits/{{auditId}}", "host": ["{{baseUrl}}"], "path": ["audits", "{{auditId}}"] } }
+        },
+        {
+          "name": "List findings for this audit",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/audits/{{auditId}}/findings", "host": ["{{baseUrl}}"], "path": ["audits", "{{auditId}}", "findings"] } },
+          "description": "Sub-route, not a standalone resource — findings for the audit selected by the List request above."
+        }
+      ]
+    },
+    {
+      "name": "09 - CAPA Management",
+      "description": "Modul 10. CAPA from Incident + Audit finding both driven to EFFECTIVE_CLOSED, a Management-Review CAPA cycled NOT_EFFECTIVE->REOPENED->EFFECTIVE_CLOSED (BR-04), and an OTHER-source CAPA left DRAFT with an overdue root-cause SLA.",
+      "item": [
+        {
+          "name": "List CAPA registers",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/capa-registers?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["capa-registers"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"capaRegisterId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get CAPA register detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/capa-registers/{{capaRegisterId}}", "host": ["{{baseUrl}}"], "path": ["capa-registers", "{{capaRegisterId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "10 - Quality Management",
+      "description": "Modul 11. 3 NCRs (MAJOR closed, CRITICAL dispositioned, one auto-created from a failed inspection) plus complaints/supplier records/objectives visible via other data.",
+      "item": [
+        {
+          "name": "List NCR records",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/ncr-records?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["ncr-records"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"ncrRecordId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get NCR record detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/ncr-records/{{ncrRecordId}}", "host": ["{{baseUrl}}"], "path": ["ncr-records", "{{ncrRecordId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "11 - Environmental Management",
+      "description": "Modul 12. 2 aspect/impacts (SIGNIFICANT active, NOT_SIGNIFICANT draft) plus monitoring/waste-manifest/PROPER-assessment/permit data visible via other tables.",
+      "item": [
+        {
+          "name": "List environmental aspect impacts",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/environmental-aspect-impacts?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["environmental-aspect-impacts"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"environmentalAspectImpactId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get environmental aspect impact detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/environmental-aspect-impacts/{{environmentalAspectImpactId}}", "host": ["{{baseUrl}}"], "path": ["environmental-aspect-impacts", "{{environmentalAspectImpactId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "12 - Occupational Health (Restricted Duty)",
+      "description": "Modul 13. INTENTIONALLY the one folder where the default Tenant Admin login gets 403 — occupational_health.restricted_duty.view is granted only to Department Head / Supervisor by design (Tenant Admin gets administration rights over this module, not clinical-adjacent read access, to keep the PHI dual-gate meaningful). Change loginEmail to hendra.kusuma@petro-ns.demo (Supervisor) in the Auth folder and re-run both Auth requests to see this succeed. All other PHI (medical records, MCU, PAK cases) is intentionally NOT exposed by any endpoint in this demo API at all.",
+      "item": [
+        {
+          "name": "List restricted duty assignments",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/restricted-duty-assignments?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["restricted-duty-assignments"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "if (pm.response.code === 200 && json.data && json.data.length) pm.collectionVariables.set(\"restrictedDutyAssignmentId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get restricted duty assignment detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/restricted-duty-assignments/{{restrictedDutyAssignmentId}}", "host": ["{{baseUrl}}"], "path": ["restricted-duty-assignments", "{{restrictedDutyAssignmentId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "13 - Asset & Equipment Management",
+      "description": "Modul 15. 14 assets across scenarios: safety-critical clean+maintenance, safety-critical OUT_OF_SERVICE, running-hours interval, disposal (direct + via workflow), transfer, retire, due-soon/overdue.",
+      "item": [
+        {
+          "name": "List assets",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/assets?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["assets"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"assetId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get asset detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/assets/{{assetId}}", "host": ["{{baseUrl}}"], "path": ["assets", "{{assetId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "14 - Calibration Management",
+      "description": "Modul 16. 5 instruments across scenarios: FAIL->out-of-tolerance->CAPA->CLOSED, PASS->REVIEWED+auto-scheduled next, provider accreditation expired->override->ISSUED, plus due-soon/overdue.",
+      "item": [
+        {
+          "name": "List calibration items",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/calibration-items?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["calibration-items"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"calibrationItemId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get calibration item detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/calibration-items/{{calibrationItemId}}", "host": ["{{baseUrl}}"], "path": ["calibration-items", "{{calibrationItemId}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "15 - Contractor Management",
+      "description": "Modul 17. 4 contractors: PT A full cycle (prequalified->assignment ACTIVE with BR-04 IUJP/CSMS+2 workers+GOOD evaluation), PT B fast-tracked with 2x consecutive UNACCEPTABLE evaluations (BR-07), PT C BLACKLISTED (BR-06), PT D REGISTERED with an EXPIRED compliance document — in the full system this would block PT D from being named on any new Work Permit (BR-02), but that write path isn't exposed by this read-only demo API. See DEMO_GUIDE.md for how to verify BR-02 via the automated test suite instead.",
+      "item": [
+        {
+          "name": "List contractors",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/contractors?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["contractors"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.test(\"200 OK\", () => pm.response.to.have.status(200));", "if (json.data && json.data.length) pm.collectionVariables.set(\"contractorId\", json.data[0].id);"] } }]
+        },
+        {
+          "name": "Get contractor detail",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/contractors/{{contractorId}}", "host": ["{{baseUrl}}"], "path": ["contractors", "{{contractorId}}"] } }
+        }
+      ]
+    }
+  ]
+}

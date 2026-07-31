@@ -24,6 +24,7 @@ import { OccupationalHealthAuthorizedUserService } from "./occupational-health-a
 import { OccupationalHealthReassessmentScanQueueService } from "./occupational-health-reassessment-scan-queue.service";
 import { OccupationalHealthReassessmentScanService } from "./occupational-health-reassessment-scan.service";
 import { OccupationalHealthWorkflowBootstrapService } from "./occupational-health-workflow-bootstrap.service";
+import { RestrictedDutyAssignmentController } from "./restricted-duty-assignment.controller";
 import { RestrictedDutyAssignmentService } from "./restricted-duty-assignment.service";
 
 // Task 5.3 (Modul 13 Occupational Health) — modul DOMAIN KEDELAPAN BELAS,
@@ -50,6 +51,7 @@ import { RestrictedDutyAssignmentService } from "./restricted-duty-assignment.se
 // boot worker module terpisah jadi butuh instance dari modul ini juga.
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule, RbacModule, FieldEncryptionModule],
+  controllers: [RestrictedDutyAssignmentController],
   providers: [
     OccupationalHealthWorkflowBootstrapService,
     OccupationalHealthAccessControlService,

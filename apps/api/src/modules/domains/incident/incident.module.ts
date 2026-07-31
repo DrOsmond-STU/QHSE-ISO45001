@@ -15,6 +15,7 @@ import { IncidentStatisticsRecalcScanService } from "./incident-statistics-recal
 import { IncidentWitnessStatementService } from "./incident-witness-statement.service";
 import { IncidentWorkflowBootstrapService } from "./incident-workflow-bootstrap.service";
 import { IncidentWorkflowCompletionListener } from "./incident-workflow-completion.listener";
+import { IncidentReportController } from "./incident-report.controller";
 import { IncidentReportService } from "./incident-report.service";
 
 // Task 3.5 (Modul 07 Incident Management) — modul DOMAIN KESEMBILAN, hanya
@@ -26,6 +27,7 @@ import { IncidentReportService } from "./incident-report.service";
 // lain codebase ini.
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule],
+  controllers: [IncidentReportController],
   providers: [
     IncidentWorkflowBootstrapService,
     IncidentReportService,

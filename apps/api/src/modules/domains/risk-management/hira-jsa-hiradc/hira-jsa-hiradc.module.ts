@@ -4,6 +4,7 @@ import { NumberingModule } from "../../../../platform/numbering/numbering.module
 import { ObservabilityModule } from "../../../../platform/observability/observability.module";
 import { TenancyModule } from "../../../../platform/tenancy/tenancy.module";
 import { WorkflowEngineModule } from "../../../../platform/workflow-engine/workflow-engine.module";
+import { HiraAssessmentController } from "./hira-assessment.controller";
 import { HiraAssessmentService } from "./hira-assessment.service";
 import { HiraReviewDueScanQueueService } from "./hira-review-due-scan-queue.service";
 import { HiraReviewDueScanService } from "./hira-review-due-scan.service";
@@ -36,6 +37,7 @@ import { RiskWorkflowBootstrapService } from "./risk-workflow-bootstrap.service"
 // yang eksplisit mengecek ini SEBELUM test pertama jalan).
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule],
+  controllers: [HiraAssessmentController],
   providers: [
     RiskWorkflowBootstrapService,
     HiraAssessmentService,

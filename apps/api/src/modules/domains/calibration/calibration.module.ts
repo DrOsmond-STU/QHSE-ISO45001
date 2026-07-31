@@ -10,6 +10,7 @@ import { CalibrationCertificateService } from "./calibration-certificate.service
 import { CalibrationDueScanQueueService } from "./calibration-due-scan-queue.service";
 import { CalibrationDueScanService } from "./calibration-due-scan.service";
 import { CalibrationItemAssetSiteSyncListener } from "./calibration-item-asset-site-sync.listener";
+import { CalibrationItemController } from "./calibration-item.controller";
 import { CalibrationItemService } from "./calibration-item.service";
 import { CalibrationProviderService } from "./calibration-provider.service";
 import { CalibrationScheduleService } from "./calibration-schedule.service";
@@ -33,6 +34,7 @@ import { OutOfToleranceRecordService } from "./out-of-tolerance-record.service";
 // provider itu ada di modul API juga).
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule, AuditLogModule],
+  controllers: [CalibrationItemController],
   providers: [
     CalibrationItemService,
     CalibrationProviderService,

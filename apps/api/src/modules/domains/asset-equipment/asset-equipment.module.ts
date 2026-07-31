@@ -7,6 +7,7 @@ import { WorkflowEngineModule } from "../../../platform/workflow-engine/workflow
 import { AssetCategoryService } from "./asset-category.service";
 import { AssetDisposalWorkflowCompletionListener } from "./asset-disposal-workflow-completion.listener";
 import { AssetTransferService } from "./asset-transfer.service";
+import { AssetController } from "./asset.controller";
 import { AssetService } from "./asset.service";
 import { MaintenanceDueScanQueueService } from "./maintenance-due-scan-queue.service";
 import { MaintenanceDueScanService } from "./maintenance-due-scan.service";
@@ -31,6 +32,7 @@ import { MaintenanceScheduleService } from "./maintenance-schedule.service";
 // app.get(ScanService) test butuh provider itu ada di modul API juga).
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule],
+  controllers: [AssetController],
   providers: [
     AssetCategoryService,
     AssetService,

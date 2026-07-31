@@ -55,7 +55,7 @@ export class ContractorWorkflowBootstrapService {
       const existing = await tx.numberingConfig.findFirst({ where: { tenantId, moduleCode, scopeId } });
       if (existing) return existing;
       return tx.numberingConfig.create({
-        data: { tenantId, moduleCode, pattern, prefix: moduleCode, resetPeriod: "YEARLY", scopeLevel, scopeId },
+        data: { tenantId, moduleCode, pattern, prefix: moduleCode.slice(0, 20), resetPeriod: "YEARLY", scopeLevel, scopeId },
       });
     });
   }

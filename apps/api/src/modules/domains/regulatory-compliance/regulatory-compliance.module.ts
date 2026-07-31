@@ -14,6 +14,7 @@ import { LicensePermitService } from "./license-permit.service";
 import { ObligationDueScanQueueService } from "./obligation-due-scan-queue.service";
 import { ObligationDueScanService } from "./obligation-due-scan.service";
 import { RegulatoryComplianceBootstrapService } from "./regulatory-compliance-bootstrap.service";
+import { RegulatoryRegisterController } from "./regulatory-register.controller";
 import { RegulatoryRegisterService } from "./regulatory-register.service";
 
 // Task 2.2 (Modul 04) — modul DOMAIN KEENAM. BELUM ada controller HTTP
@@ -34,6 +35,7 @@ import { RegulatoryRegisterService } from "./regulatory-register.service";
 // 1.5), orkestrasi lintas-modul genuinely butuh keduanya.
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule, OrganizationModule],
+  controllers: [RegulatoryRegisterController],
   providers: [
     RegulatoryComplianceBootstrapService,
     RegulatoryRegisterService,

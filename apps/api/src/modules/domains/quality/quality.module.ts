@@ -6,6 +6,7 @@ import { TenancyModule } from "../../../platform/tenancy/tenancy.module";
 import { WorkflowEngineModule } from "../../../platform/workflow-engine/workflow-engine.module";
 import { CustomerComplaintService } from "./customer-complaint.service";
 import { CustomerComplaintWorkflowCompletionListener } from "./customer-complaint-workflow-completion.listener";
+import { NcrRecordController } from "./ncr-record.controller";
 import { NcrRecordService } from "./ncr-record.service";
 import { NcrWorkflowCompletionListener } from "./ncr-workflow-completion.listener";
 import { QualityComplaintResponseSlaScanQueueService } from "./quality-complaint-response-sla-scan-queue.service";
@@ -38,6 +39,7 @@ import { SupplierQualityRecordService } from "./supplier-quality-record.service"
 // DI SINI.
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule],
+  controllers: [NcrRecordController],
   providers: [
     QualityWorkflowBootstrapService,
     NcrRecordService,

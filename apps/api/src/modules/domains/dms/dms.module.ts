@@ -5,6 +5,7 @@ import { ObservabilityModule } from "../../../platform/observability/observabili
 import { TenancyModule } from "../../../platform/tenancy/tenancy.module";
 import { WorkflowEngineModule } from "../../../platform/workflow-engine/workflow-engine.module";
 import { DmsBootstrapService } from "./dms-bootstrap.service";
+import { DocumentController } from "./document.controller";
 import { DocumentCategoryService } from "./document-category.service";
 import { DocumentDistributionService } from "./document-distribution.service";
 import { DocumentReviewScanQueueService } from "./document-review-scan-queue.service";
@@ -31,6 +32,7 @@ import { ReadAcknowledgementService } from "./read-acknowledgement.service";
 // BR-01 document_number) — task 2.1 KONSUMEN PRODUKSI PERTAMA generateNext().
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule],
+  controllers: [DocumentController],
   providers: [
     DmsBootstrapService,
     DocumentCategoryService,

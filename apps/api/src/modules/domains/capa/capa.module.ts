@@ -16,6 +16,7 @@ import { CapaEffectivenessVerificationDueScanQueueService } from "./capa-effecti
 import { CapaEffectivenessVerificationDueScanService } from "./capa-effectiveness-verification-due-scan.service";
 import { CapaEffectivenessVerificationService } from "./capa-effectiveness-verification.service";
 import { CapaEffectivenessVerificationWorkflowCompletionListener } from "./capa-effectiveness-verification-workflow-completion.listener";
+import { CapaRegisterController } from "./capa-register.controller";
 import { CapaRegisterService } from "./capa-register.service";
 import { CapaRootCauseAnalysisService } from "./capa-root-cause-analysis.service";
 import { CapaRootCauseSlaScanQueueService } from "./capa-root-cause-sla-scan-queue.service";
@@ -41,6 +42,7 @@ import { CapaWorkflowBootstrapService } from "./capa-workflow-bootstrap.service"
 // CapaWorkerModule) — TIDAK didaftarkan DI SINI.
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule, AuditModule, IncidentModule, EnvironmentalModule],
+  controllers: [CapaRegisterController],
   providers: [
     CapaWorkflowBootstrapService,
     CapaRegisterService,

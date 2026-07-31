@@ -18,6 +18,7 @@ import { WorkPermitExtensionService } from "./work-permit-extension.service";
 import { WorkPermitTypeService } from "./work-permit-type.service";
 import { WorkPermitWorkflowBootstrapService } from "./work-permit-workflow-bootstrap.service";
 import { WorkPermitWorkflowCompletionListener } from "./work-permit-workflow-completion.listener";
+import { WorkPermitController } from "./work-permit.controller";
 import { WorkPermitService } from "./work-permit.service";
 
 // Task 3.3 (tipe & alur inti) — modul DOMAIN KEDELAPAN, awal cakupan
@@ -36,6 +37,7 @@ import { WorkPermitService } from "./work-permit.service";
 // "hubungkan referensi yang di-stub sebelumnya", bukan didiamkan).
 @Module({
   imports: [TenancyModule, ObservabilityModule, WorkflowEngineModule, NumberingModule, NotificationModule, ContractorModule],
+  controllers: [WorkPermitController],
   providers: [
     WorkPermitWorkflowBootstrapService,
     WorkPermitApprovalCacheService,
