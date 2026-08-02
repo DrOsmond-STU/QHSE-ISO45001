@@ -30,6 +30,15 @@ async function main() {
   const mfaService = new MfaService();
   const tenantId = randomUUID();
 
+  await prisma.tenant.create({
+    data: {
+      id: tenantId,
+      tenantCode: `DEV-${randomUUID().slice(0, 20)}`,
+      legalName: "PT Fixture Dev",
+      displayName: "Fixture Dev",
+    },
+  });
+
   await prisma.passwordPolicy.create({ data: { tenantId } });
 
   const passwordHash = await argon2.hash(FIXTURE_PASSWORD, { type: argon2.argon2id });
