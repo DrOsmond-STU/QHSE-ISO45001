@@ -26,31 +26,51 @@
 #  yang paling rapuh kalau dipindah antar sistem operasi) tidak perlu masuk
 #  repositori sama sekali.
 #
-#  APA yang TIDAK ikut: `index.d.ts` 90 MB itu sendiri. Ia hanya dibutuhkan
-#  oleh TypeScript saat kompilasi, dan server tidak pernah mengompilasi apa
-#  pun untuk API. Meninggalkannya menghemat 90 MB di repositori.
+#  KENAPA prisma/ IKUT DIKOMPILASI, bukan cuma src/:
+#  supaya skrip seed data demo bisa dijalankan di server dengan `node` biasa.
+#  Kalau ia tetap TypeScript, server wajib memakai ts-node — memuat kompiler
+#  TypeScript sekaligus mentranspile seluruh pohon impor di memori, padahal
+#  seed itu mengimpor AppModule (21 modul NestJS). Itu langkah paling rawan
+#  dibunuh dari seluruh pemasangan. Lihat apps/api/tsconfig.deploy.json.
+#
+#  APA yang TIDAK ikut: berkas .d.ts dan .js.map. Keduanya hanya berguna saat
+#  kompilasi dan penelusuran galat di mesin pengembang; server tidak pernah
+#  mengompilasi apa pun. Mematikannya memangkas artefak dari 8,5 MB jadi
+#  sekitar 4 MB — termasuk index.d.ts Prisma yang 90 MB itu.
 # ============================================================================
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+API="$ROOT/apps/api"
 OUT="$ROOT/deploy/api"
 
 echo "==> memastikan Prisma Client + engine Linux tersedia"
-( cd "$ROOT/apps/api" && pnpm exec prisma generate >/dev/null )
+( cd "$API" && pnpm exec prisma generate >/dev/null )
 
-echo "==> membangun API (tsc)"
-( cd "$ROOT/apps/api" && pnpm exec tsc -p tsconfig.json )
+echo "==> membangun API + skrip prisma (tsc, tsconfig.deploy.json)"
+rm -rf "$API/dist-deploy"
+( cd "$API" && pnpm exec tsc -p tsconfig.deploy.json )
 
 echo "==> membersihkan $OUT"
 rm -rf "$OUT"
-mkdir -p "$OUT/dist" "$OUT/prisma-client"
+mkdir -p "$OUT/prisma-client"
 
-echo "==> menyalin hasil kompilasi"
-cp -r "$ROOT/apps/api/dist/." "$OUT/dist/"
+# Struktur src/ + prisma/ SENGAJA dipertahankan utuh. Seed hasil kompilasi
+# memuat require("../src/app.module"); memindah src/ menjadi dist/ akan
+# mematahkannya. Jangan "rapikan" tanpa memperbaiki jalur itu juga.
+echo "==> menyalin hasil kompilasi (struktur dipertahankan apa adanya)"
+cp -r "$API/dist-deploy" "$OUT/build"
+
+if [ ! -f "$OUT/build/src/main.js" ]; then
+  echo "GAGAL: build/src/main.js tidak terbentuk."; exit 1
+fi
+if [ ! -f "$OUT/build/prisma/seed-demo-data.js" ]; then
+  echo "GAGAL: build/prisma/seed-demo-data.js tidak terbentuk."; exit 1
+fi
 
 echo "==> menyalin Prisma Client (runtime saja)"
 CLIENT_SRC=$(ls -d "$ROOT"/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client | head -1)
-for f in index.js default.js edge.js index-browser.js package.json schema.prisma wasm.js; do
+for f in index.js default.js edge.js index-browser.js package.json wasm.js; do
   [ -f "$CLIENT_SRC/$f" ] && cp "$CLIENT_SRC/$f" "$OUT/prisma-client/"
 done
 
@@ -67,10 +87,12 @@ fi
 cp "$ENGINE" "$OUT/prisma-client/"
 
 # Prisma Client membaca nama engine dari berkas ini saat runtime.
-cp "$ROOT/apps/api/prisma/schema.prisma" "$OUT/prisma-client/schema.prisma"
+cp "$API/prisma/schema.prisma" "$OUT/prisma-client/schema.prisma"
 
 echo
 echo "==> selesai."
-du -sh "$OUT/dist" "$OUT/prisma-client" 2>/dev/null || true
+du -sh "$OUT/build" "$OUT/prisma-client" 2>/dev/null || true
+echo "    js di build/src   : $(find "$OUT/build/src" -name '*.js' | wc -l)"
+echo "    js di build/prisma: $(find "$OUT/build/prisma" -name '*.js' | wc -l)"
 echo
 echo "Jangan lupa: git add deploy/api && git commit"

@@ -1,0 +1,35 @@
+// ============================================================================
+//  tsconfig khusus perakitan artefak deploy (scripts/build-deploy-api.sh).
+//
+//  Bedanya dengan tsconfig.json hanya SATU hal yang penting: `prisma` ikut
+//  dikompilasi, bukan cuma `src`. Alasannya konkret — skrip seed data demo
+//  (prisma/seed-demo-data.ts) harus bisa dijalankan di server dengan `node`
+//  biasa. Kalau ia tetap berupa TypeScript, server wajib memakai ts-node,
+//  yang berarti memuat kompiler TypeScript DAN mentranspile seluruh pohon
+//  impor di memori — padahal skrip itu mengimpor AppModule, jadi seluruh 21
+//  modul NestJS ikut terbawa. Di akun dengan batas memori 1 GB, itu langkah
+//  paling rawan dibunuh SIGKILL dari semua langkah pemasangan.
+//
+//  Konsekuensi yang disengaja: karena `rootDir` kini mencakup src DAN prisma,
+//  keluarannya bertingkat — dist-deploy/src/... dan dist-deploy/prisma/...
+//  Struktur itu SENGAJA dipertahankan apa adanya sampai ke server, supaya
+//  impor relatif di dalam seed (`../src/app.module`) tetap resolve tanpa
+//  perlu ditambal. Jangan "merapikan" dengan memindah src/ jadi dist/ —
+//  itu justru mematahkan seed-nya.
+//
+//  `declaration` dimatikan: berkas .d.ts hanya dibutuhkan saat kompilasi,
+//  dan server tidak pernah mengompilasi apa pun. Mematikannya juga
+//  memangkas ukuran artefak yang harus masuk repositori.
+// ============================================================================
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist-deploy",
+    "rootDir": ".",
+    "module": "commonjs",
+    "target": "ES2022",
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["src", "prisma"]
+}

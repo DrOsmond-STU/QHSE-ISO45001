@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-deploy/
 .next/
 
 # Artefak deploy shared hosting SENGAJA di-commit — bukan kelalaian.
@@ -11,8 +12,11 @@ dist/
 # Cara memperbaruinya: scripts/build-deploy-api.sh — WAJIB dijalankan ulang
 # setiap kali apps/api atau schema.prisma berubah, kalau tidak server akan
 # menjalankan kode lama tanpa pesan error apa pun.
-!/deploy/api/dist/
-!/deploy/api/dist/**
+#
+# `build` di sini memuat src/ DAN prisma/ hasil kompilasi. Strukturnya
+# dipertahankan utuh karena seed memuat require("../src/app.module").
+!/deploy/api/build/
+!/deploy/api/build/**
 .turbo/
 coverage/
 *.log

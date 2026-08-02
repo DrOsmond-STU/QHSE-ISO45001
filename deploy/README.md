@@ -30,6 +30,7 @@ Bukan pilihan gaya. Diukur langsung di server tujuan
 | Hasil menjalankan `prisma generate` di server | **SIGKILL** setelah 16 detik |
 | `ulimit` cpu-time / memori saat itu | `unlimited` (jadi bukan rlimit) |
 | Memori bebas di host | 36 GB dari 48 GB (jadi bukan host-nya) |
+| Memori terpakai akun saat idle | ~229 MB (sisanya untuk kita) |
 
 Sinyal pembunuhnya **9 (SIGKILL)**, bukan **24 (SIGXCPU)** — satu-satunya yang
 tersisa sebagai penyebab adalah batas LVE akun. `tsc` untuk API kena sebab yang
@@ -43,10 +44,30 @@ mem-parsing berkas 90 MB itu.
 
 | Isi | Alasan |
 |---|---|
-| `api/dist/` | Hasil `tsc` apps/api — server tidak bisa mengompilasinya sendiri |
+| `api/build/src/` | Hasil `tsc` apps/api — server tidak bisa mengompilasinya sendiri |
+| `api/build/prisma/` | Skrip seed hasil kompilasi — supaya server memakai `node`, bukan ts-node |
 | `api/prisma-client/` | Prisma Client **runtime saja** + engine `rhel-openssl-3.0.x` |
 | ~~`index.d.ts` (90 MB)~~ | **Sengaja tidak disertakan** — hanya dibutuhkan TypeScript saat kompilasi, dan server tidak pernah mengompilasi API |
+| ~~`.d.ts` + `.js.map`~~ | **Sengaja dimatikan** — hanya berguna di mesin pengembang; memangkas artefak dari 8,5 MB jadi 4,4 MB |
 | ~~`apps/web/.next`~~ | **Sengaja tidak disertakan** — lihat di bawah |
+
+### Jangan "merapikan" struktur `build/`
+
+`build/` memuat `src/` dan `prisma/` persis seperti keluaran `tsc`. Itu
+disengaja: seed hasil kompilasi memuat `require("../src/app.module")`, jadi
+memindah `src/` menjadi `dist/` akan mematahkannya. Titik masuknya:
+
+| Untuk | Jalur |
+|---|---|
+| API | `build/src/main.js` |
+| Seed data demo | `build/prisma/seed-demo-data.js` |
+
+### Kenapa seed ikut dikompilasi
+
+Skrip seed mengimpor `AppModule`, jadi menjalankannya lewat `ts-node` berarti
+memuat kompiler TypeScript **sekaligus** mentranspile seluruh 21 modul NestJS
+di memori — langkah paling rawan dibunuh dari seluruh pemasangan. Dikirim
+dalam bentuk terkompilasi, server cukup menjalankan `node`.
 
 ### Kenapa web TIDAK ikut dikirim jadi
 
