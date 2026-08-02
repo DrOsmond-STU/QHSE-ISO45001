@@ -249,3 +249,111 @@ Ini SATU cron job yang menjalankan seluruh 31 pengingat otomatis + pengiriman no
   DELETE FROM authorization_code_entries WHERE expires_at < now();
   ```
 - **Satu proses Node.js** (bukan banyak instance load-balanced) — cukup untuk skala 1 organisasi, tapi bukan desain untuk trafik SaaS multi-tenant besar (itu kasus DEPLOYMENT.md).
+
+---
+
+## §12. Lampiran — Pemasangan Nyata di cPanel Tanpa Passenger
+
+Panduan §4–§9 di atas mengasumsikan cPanel menyediakan **Setup Node.js App**
+(Passenger). Sebagian hosting tidak menyediakannya. Lampiran ini adalah catatan
+pemasangan yang benar-benar dijalankan pada satu hosting semacam itu
+(DomaiNesia, paket dengan CloudLinux + Runtime Manager `mise`), supaya
+pemasangan berikutnya di hosting sejenis tidak perlu menemukan ulang polanya.
+
+**Cara memastikan hosting Anda termasuk yang mana**: cek daftar fitur akun.
+`passengerapps: 0` berarti Setup Node.js App TIDAK ada — pakai lampiran ini.
+`nodejs_runtime: 1` / `mise_runtime: 1` berarti Node tetap tersedia, hanya
+tanpa manajer aplikasi.
+
+### §12.1 Mekanismenya: cron sebagai penjaga proses
+
+Tanpa Passenger, tidak ada yang menyalakan ulang proses Node yang mati. Polanya:
+satu skrip `~/namaapp-runner.sh` dipanggil cron tiap beberapa menit; skrip itu
+memasang aplikasi bila diminta, lalu menyalakan proses **hanya bila belum
+hidup** (dicek lewat PID file). Aman dipanggil berulang.
+
+Skrip berkomunikasi dengan Anda lewat **berkas penanda** yang dibuat dari File
+Manager cPanel — cara memberi perintah ke server tanpa terminal:
+
+| Penanda | Efek |
+|---|---|
+| `~/qhse-probe.request` | Catat fakta lingkungan (versi Node, pnpm, disk) — tanpa efek samping |
+| `~/qhse-install.request` | Unduh sumber, `pnpm install`, migrasi, build |
+| `~/qhse-seed.request` | Isi basis data dengan data demo |
+| `~/qhse-restart.request` | Matikan proses; cron menyalakannya lagi |
+
+Hasil setiap langkah ditulis ke `~/qhse-install.log`, `~/qhse-api.log`,
+`~/qhse-web.log`.
+
+### §12.2 Satu subdomain untuk dua proses
+
+Aplikasi ini dua proses. Bila hanya ada satu subdomain, `.htaccess` di document
+root memisahkannya berdasarkan path:
+
+```apache
+RewriteRule ^api/(.*)$ http://127.0.0.1:3401/$1 [P,QSA,L]   # API, awalan dipotong
+RewriteRule .*         http://127.0.0.1:3400%{REQUEST_URI} [P,QSA,L]  # frontend
+```
+
+`$1` pada baris pertama **memotong** awalan `/api`, karena NestJS memasang
+rutenya di akar. Konsekuensi yang wajib diikuti: `REFRESH_COOKIE_PATH` harus
+diisi `/api/auth/token` (path yang dilihat **peramban**), bukan `/auth/token`.
+Kalau tidak, cookie refresh token tersimpan di path yang tidak pernah diminta
+peramban dan refresh mati diam-diam tanpa pesan error.
+
+Keuntungan besar dari topologi ini: frontend dan API satu origin, jadi tidak
+ada CORS sama sekali.
+
+Set juga `TRUST_PROXY=1` — tanpa itu setiap sesi tercatat beralamat `127.0.0.1`
+di jejak audit, karena Apache-lah yang terlihat sebagai klien.
+
+### §12.3 Konfigurasi lewat environment, bukan `.env`
+
+`apps/api` membaca `process.env` **langsung** — tidak memakai `dotenv` maupun
+`ConfigModule`. Berkas `.env` tidak akan terbaca sama sekali oleh proses
+aplikasi (Prisma CLI membacanya, aplikasinya tidak). Ekspor semua variabel di
+dalam runner script.
+
+### §12.4 Build di server: kapan terpaksa, dan cara menahannya
+
+Idealnya build dilakukan di luar dan server hanya menerima hasilnya. Untuk repo
+ini itu tidak praktis: monorepo pnpm dengan dependensi `workspace:*`, dan
+keluaran `output: "standalone"` Next.js memakai symlink yang tidak selamat
+melewati git bila build lokal dijalankan di Windows (`core.symlinks=false`).
+
+Jadi build dilakukan di server, dengan pagar:
+- Pisahkan langkah, jangan `turbo run build` sekaligus — API dan web berurutan,
+  `--concurrency=1`.
+- Patok `--max-old-space-size` di bawah jatah akun. Kalau memang tidak muat,
+  lebih baik gagal cepat dengan pesan heap daripada membuat seluruh akun
+  kehabisan memori dan menjatuhkan aplikasi lain yang sedang melayani orang.
+- Catat kode keluar tiap langkah, supaya kegagalan terbaca sebagai langkah
+  tertentu, bukan "entah kenapa tidak jalan".
+
+### §12.5 Versi Node
+
+Runtime Manager biasanya menyediakan beberapa versi. **Patok versi di runner
+script** (`PATH` menunjuk `~/.local/share/mise/installs/node/22/bin`), jangan
+mengubah versi global akun — versi global dipakai bersama aplikasi lain di akun
+yang sama. Prisma 5.22 sebaiknya dijalankan pada Node 22; versi yang lebih baru
+dari rilis Prisma-nya belum tentu diuji terhadap engine native-nya.
+
+### §12.6 Satu pengguna basis data sudah cukup — dan kenapa itu aman
+
+Panduan §5 memisahkan `DATABASE_URL` (pemilik tabel) dan `APP_DATABASE_URL`
+(tanpa BYPASSRLS). Di cPanel Anda biasanya hanya bisa membuat satu pengguna
+per basis data, dan pengguna itu pemiliknya.
+
+Itu tetap aman **karena seluruh 162 tabel memakai `FORCE ROW LEVEL SECURITY`**,
+bukan sekadar `ENABLE` — dengan FORCE, pemilik tabel pun tunduk pada kebijakan
+isolasi tenant. Jangan percayai ini sebagai teori: buktikan di basis data yang
+bersangkutan sebelum memasang, dengan tabel sekali pakai.
+
+```sql
+CREATE TABLE _preflight (id int);
+INSERT INTO _preflight VALUES (1);
+ALTER TABLE _preflight ENABLE ROW LEVEL SECURITY;
+ALTER TABLE _preflight FORCE ROW LEVEL SECURITY;
+SELECT count(*) FROM _preflight;   -- HARUS 0. Kalau 1, FORCE tidak berlaku.
+DROP TABLE _preflight;
+```
