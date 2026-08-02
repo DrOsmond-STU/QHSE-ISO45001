@@ -30,7 +30,7 @@ export class MetricsService implements OnModuleDestroy {
   private readonly httpRequestDuration: Histogram<"method" | "route" | "status">;
 
   private readonly adminPrisma: PrismaClient;
-  private readonly queueConnection: Redis;
+  private readonly queueConnection: Redis | null;
   private readonly queues: Map<string, Queue>;
 
   constructor() {
@@ -53,17 +53,28 @@ export class MetricsService implements OnModuleDestroy {
 
     // Koneksi ioredis SENDIRI, maxRetriesPerRequest:null (pola sama
     // WorkflowSlaQueueService 0.9) — Queue di sini HANYA dipakai baca
-    // getJobCounts(), tidak pernah .add()/proses job. lazyConnect:true
-    // (shared-hosting adaptation) — bullmq_queue_depth gauge di-skip total
-    // saat REDIS_ENABLED=false (lihat collect() di bawah), jadi connection
-    // ini TIDAK PERNAH benar-benar dipakai pada mode itu; tanpa lazyConnect
-    // instance ini tetap akan mencoba connect saat construct meski gauge-nya
-    // tidak pernah collect.
-    this.queueConnection = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
-      maxRetriesPerRequest: null,
-      lazyConnect: true,
-    });
-    this.queues = new Map(
+    // getJobCounts(), tidak pernah .add()/proses job.
+    //
+    // REDIS_ENABLED=false (shared hosting cPanel) — koneksi DAN Map Queue
+    // TIDAK dibuat sama sekali, pola sama seluruh *-queue.service.ts.
+    // CATATAN PENTING (diverifikasi empiris, jangan diganti balik jadi
+    // sekadar `lazyConnect:true`): `lazyConnect` pada instance ioredis TIDAK
+    // cukup — constructor `new Queue()` BullMQ langsung memicu koneksi
+    // sendiri (status ioredis berubah `wait` -> `connecting` tepat setelah
+    // `new Queue()`), sehingga di mode shared-hosting dulu menghasilkan loop
+    // retry ECONNREFUSED tak terbatas ke 127.0.0.1:6379 sejak boot
+    // (maxRetriesPerRequest:null = retry selamanya) — ribuan baris error
+    // mentah ke stderr pada satu siklus boot+cron, membanjiri log hosting.
+    // Guard di `collect()` saja tidak menolong krn koneksinya sudah terjadi
+    // di constructor, jauh sebelum gauge pertama kali di-collect.
+    if (!isRedisEnabled()) {
+      this.queueConnection = null;
+      this.queues = new Map();
+    } else {
+      this.queueConnection = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
+        maxRetriesPerRequest: null,
+      });
+      this.queues = new Map(
       [
         WORKFLOW_SLA_SCAN_QUEUE,
         NOTIFICATION_QUEUE,
@@ -78,8 +89,9 @@ export class MetricsService implements OnModuleDestroy {
         // prisma-scope-hierarchy.resolver.ts). Modul Phase 2+ yang menambah
         // queue baru sertakan juga nama literalnya di sini.
         "reminder-scan",
-      ].map((name) => [name, new Queue(name, { connection: this.queueConnection })]),
-    );
+        ].map((name) => [name, new Queue(name, { connection: this.queueConnection! })]),
+      );
+    }
 
     // Bootstrap read-only cross-tenant (pola sama WorkflowSlaScanService 0.9)
     // — metrik bisnis agregat lintas tenant, bukan data satu tenant.
@@ -141,7 +153,7 @@ export class MetricsService implements OnModuleDestroy {
     for (const queue of this.queues.values()) {
       await queue.close();
     }
-    await this.queueConnection.quit();
+    await this.queueConnection?.quit();
     await this.adminPrisma.$disconnect();
   }
 }
