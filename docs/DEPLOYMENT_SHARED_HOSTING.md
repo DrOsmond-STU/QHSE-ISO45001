@@ -160,6 +160,12 @@ Setelah build sukses, kembali ke **Setup Node.js App** di cPanel, klik **Restart
 
 ## §7. Setup Node.js App — Frontend (`apps/web`)
 
+> **PENTING — baca dulu sebelum memasang frontend.** `apps/web` saat ini **BELUM berisi aplikasi yang bisa dipakai pengguna akhir**. Diverifikasi langsung dengan menjalankan build produksinya (2026-08-02): satu-satunya halaman yang ada adalah beranda placeholder Phase-0, halaman notifikasi (`/notifications` + `/notifications/preferences`, hasil task 1.7), dan `/design-system`. **Halaman login TIDAK ADA** — `/login` mengembalikan 404, dan memang tidak ada file login di seluruh `apps/web/app/`. Beranda-nya sendiri secara harfiah menampilkan teks "App shell nyata (topbar, sidebar, state primitives) menyusul di task 0.14" — task itu belum dikerjakan.
+>
+> Artinya: **seluruh 21 modul QHSE hanya bisa diakses lewat API** (lihat `qhse-platform/docs/demo/DEMO_GUIDE.md` + koleksi Postman), bukan lewat antarmuka web. Memasang `apps/web` sekarang hanya berguna kalau Anda memang ingin menyiapkan slot domain/hosting-nya lebih dulu, atau ingin melihat halaman notifikasi. Kalau tujuan Anda memakai sistem sehari-hari lewat browser, frontend-nya harus dibangun dulu (task 0.14 app shell + halaman login + halaman per modul) — itu pekerjaan tersendiri yang belum ada di repo ini.
+>
+> Backend (§4-§6, §8) sepenuhnya siap dan tidak bergantung pada §7 ini — Anda boleh melewati §7 seluruhnya tanpa memengaruhi apa pun.
+
 Ulangi §4 dengan detail berbeda:
 - **Application root**: `qhse-platform/apps/web`
 - **Application URL**: domain utama Anda, mis. `namadomainanda.com`
@@ -201,7 +207,7 @@ Ini SATU cron job yang menjalankan seluruh 31 pengingat otomatis + pengiriman no
 
 1. Buka `https://api.namadomainanda.com/health` di browser — harus muncul `{"status":"ok",...}`.
 2. Buka `https://api.namadomainanda.com/internal/cron/status` — harus muncul `{"redisEnabled":false,"cronSecretConfigured":true,...}`. Kalau `cronSecretConfigured` masih `false`, cek lagi `.env` Anda dan restart aplikasi.
-3. Buka `https://namadomainanda.com` (frontend) — harus muncul halaman login.
+3. (Hanya kalau Anda memasang §7) Buka `https://namadomainanda.com` — yang muncul adalah **halaman placeholder bertuliskan "QHSE Enterprise Platform ... App shell nyata menyusul di task 0.14"**, BUKAN halaman login. Itu perilaku yang benar untuk kondisi repo saat ini, bukan tanda pemasangan gagal — lihat kotak peringatan di §7. Untuk memastikan backend-nya benar-benar bisa dipakai, gunakan koleksi Postman di `qhse-platform/docs/demo/` (login + 15 modul), bukan browser.
 4. Tunggu sampai giliran cron pertama jalan (maks 10 menit), lalu cek cPanel → **Cron Jobs** → lihat log eksekusi (kalau ada), atau tambahkan sementara `curl -v ...` (verbose) ke command cron untuk debug awal, lalu kembalikan ke `-s` (silent) setelah yakin jalan.
 
 ---
@@ -221,6 +227,7 @@ Ini SATU cron job yang menjalankan seluruh 31 pengingat otomatis + pengiriman no
 
 ## §11. Batasan yang Perlu Diketahui (dibanding VPS/Docker)
 
+- **Belum ada antarmuka web untuk pengguna akhir** (batasan TERBESAR, bukan soal shared hosting-nya): 21 modul QHSE hanya terjangkau lewat API. Tidak ada halaman login, tidak ada app shell, tidak ada halaman per modul — lihat kotak peringatan §7. Ini sama saja di VPS/Docker; bukan konsekuensi memilih shared hosting.
 - **Bukan zero-downtime**: restart aplikasi (setelah update kode) akan memutus koneksi aktif sesaat — beda dari prinsip DEPLOYMENT.md §1 yang mengasumsikan Kubernetes rolling update. Untuk instance 1-organisasi, ini biasanya bisa diterima (restart di luar jam kerja).
 - **Presisi pengingat ± interval cron** (§8) — bukan real-time, tapi tetap dalam hitungan menit, bukan jam/hari.
 - **Baris `session_cache_entries`/`authorization_code_entries` yang kedaluwarsa tidak otomatis dibersihkan** — menumpuk pelan-pelan (kedua tabel kecil, baris pendek). Kalau ingin dibersihkan berkala, tambahkan query manual sesekali:
