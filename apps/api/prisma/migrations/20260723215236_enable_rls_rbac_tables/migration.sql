@@ -6,7 +6,7 @@ ALTER TABLE "user_roles" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "user_roles"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "user_roles" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "user_roles" TO qhse_app$sql$; END IF; END $$;
 
 -- roles / role_permissions: tenant_id NULLABLE (baris system role lintas
 -- tenant, Modul 02 §8.1/BR-05) — kebijakan SENGAJA asimetris:
@@ -27,7 +27,7 @@ CREATE POLICY tenant_isolation_policy ON "roles"
   USING (tenant_id IS NULL OR tenant_id = current_setting('app.current_tenant_id', true)::uuid)
   WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "roles" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "roles" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "role_permissions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "role_permissions" FORCE ROW LEVEL SECURITY;
@@ -36,14 +36,14 @@ CREATE POLICY tenant_isolation_policy ON "role_permissions"
   USING (tenant_id IS NULL OR tenant_id = current_setting('app.current_tenant_id', true)::uuid)
   WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "role_permissions" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "role_permissions" TO qhse_app$sql$; END IF; END $$;
 
 -- permissions / permission_groups: TIDAK ADA tenant_id sama sekali (katalog
 -- global, platform-managed, Modul 02 §2.2) — tidak ada RLS (tidak ada yang
 -- perlu difilter, TDD §6.3). qhse_app hanya dapat READ — hanya role
 -- seed/migration yang menulis katalog global, defense-in-depth kalau
 -- instance app ter-compromise.
-GRANT SELECT ON "permissions" TO qhse_app;
-GRANT SELECT ON "permission_groups" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT ON "permissions" TO qhse_app$sql$; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT ON "permission_groups" TO qhse_app$sql$; END IF; END $$;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app$sql$; END IF; END $$;

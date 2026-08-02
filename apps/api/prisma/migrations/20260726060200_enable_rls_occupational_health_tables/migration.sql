@@ -14,80 +14,80 @@ ALTER TABLE "medical_records" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "medical_records" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "medical_records"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "medical_records" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "medical_records" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "mcu_schedules" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "mcu_schedules" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "mcu_schedules"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "mcu_schedules" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "mcu_schedules" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "mcu_results" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "mcu_results" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "mcu_results"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "mcu_results" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "mcu_results" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "fit_to_work_assessments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "fit_to_work_assessments" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "fit_to_work_assessments"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "fit_to_work_assessments" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "fit_to_work_assessments" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "occupational_disease_cases" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "occupational_disease_cases" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "occupational_disease_cases"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "occupational_disease_cases" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "occupational_disease_cases" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "clinic_visit_logs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "clinic_visit_logs" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "clinic_visit_logs"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "clinic_visit_logs" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "clinic_visit_logs" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "health_surveillance_programs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "health_surveillance_programs" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "health_surveillance_programs"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "health_surveillance_programs" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "health_surveillance_programs" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "health_surveillance_enrollments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "health_surveillance_enrollments" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "health_surveillance_enrollments"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "health_surveillance_enrollments" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "health_surveillance_enrollments" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "restricted_duty_assignments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "restricted_duty_assignments" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "restricted_duty_assignments"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "restricted_duty_assignments" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "restricted_duty_assignments" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "occupational_health_authorized_users" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "occupational_health_authorized_users" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "occupational_health_authorized_users"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "occupational_health_authorized_users" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "occupational_health_authorized_users" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "medical_record_access_logs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "medical_record_access_logs" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "medical_record_access_logs"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT ON "medical_record_access_logs" TO qhse_app;
-REVOKE UPDATE, DELETE ON "medical_record_access_logs" FROM qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT ON "medical_record_access_logs" TO qhse_app$sql$; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$REVOKE UPDATE, DELETE ON "medical_record_access_logs" FROM qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "health_data_consents" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "health_data_consents" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "health_data_consents"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "health_data_consents" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "health_data_consents" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "health_data_subject_requests" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "health_data_subject_requests" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "health_data_subject_requests"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "health_data_subject_requests" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "health_data_subject_requests" TO qhse_app$sql$; END IF; END $$;
 
 -- tenant_encryption_keys — TETAP RLS standar (BUKAN pengecualian), lihat
 -- banner comment blok model schema.prisma: tabel ini justru paling kritis
@@ -97,4 +97,4 @@ ALTER TABLE "tenant_encryption_keys" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "tenant_encryption_keys" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "tenant_encryption_keys"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "tenant_encryption_keys" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "tenant_encryption_keys" TO qhse_app$sql$; END IF; END $$;

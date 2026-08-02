@@ -9,18 +9,18 @@ ALTER TABLE "tenant_subscriptions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "tenant_subscriptions" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "tenant_subscriptions"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "tenant_subscriptions" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "tenant_subscriptions" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "module_entitlements" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "module_entitlements" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "module_entitlements"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "module_entitlements" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "module_entitlements" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "usage_counters" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "usage_counters" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "usage_counters"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "usage_counters" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "usage_counters" TO qhse_app$sql$; END IF; END $$;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "subscription_plans" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "subscription_plans" TO qhse_app$sql$; END IF; END $$;

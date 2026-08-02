@@ -10,22 +10,22 @@ ALTER TABLE "regulatory_register" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "regulatory_register" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "regulatory_register"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "regulatory_register" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "regulatory_register" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "compliance_obligations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "compliance_obligations" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "compliance_obligations"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "compliance_obligations" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "compliance_obligations" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "compliance_evaluations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "compliance_evaluations" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "compliance_evaluations"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "compliance_evaluations" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "compliance_evaluations" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "licenses_permits" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "licenses_permits" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "licenses_permits"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "licenses_permits" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "licenses_permits" TO qhse_app$sql$; END IF; END $$;

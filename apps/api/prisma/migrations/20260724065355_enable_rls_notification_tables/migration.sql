@@ -10,7 +10,7 @@ ALTER TABLE "notifications" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "notifications"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "notifications" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "notifications" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "notification_channels" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "notification_channels" FORCE ROW LEVEL SECURITY;
@@ -18,7 +18,7 @@ ALTER TABLE "notification_channels" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "notification_channels"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "notification_channels" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "notification_channels" TO qhse_app$sql$; END IF; END $$;
 
 -- Asimetris (pola sama roles/role_permissions task 0.8): tenant_id NULL =
 -- template default sistem, WAJIB terlihat oleh SEMUA tenant (fallback
@@ -29,7 +29,7 @@ ALTER TABLE "notification_templates" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "notification_templates"
   USING (tenant_id IS NULL OR tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "notification_templates" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "notification_templates" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "notification_preferences" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "notification_preferences" FORCE ROW LEVEL SECURITY;
@@ -37,7 +37,7 @@ ALTER TABLE "notification_preferences" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "notification_preferences"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "notification_preferences" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "notification_preferences" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "notification_logs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "notification_logs" FORCE ROW LEVEL SECURITY;
@@ -45,6 +45,6 @@ ALTER TABLE "notification_logs" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "notification_logs"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "notification_logs" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "notification_logs" TO qhse_app$sql$; END IF; END $$;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app$sql$; END IF; END $$;

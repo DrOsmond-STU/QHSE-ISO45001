@@ -16,7 +16,7 @@ ALTER TABLE "users" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "users"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "users" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "users" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "user_sessions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "user_sessions" FORCE ROW LEVEL SECURITY;
@@ -24,7 +24,7 @@ ALTER TABLE "user_sessions" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "user_sessions"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "user_sessions" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "user_sessions" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "password_policies" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "password_policies" FORCE ROW LEVEL SECURITY;
@@ -32,6 +32,6 @@ ALTER TABLE "password_policies" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "password_policies"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "password_policies" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "password_policies" TO qhse_app$sql$; END IF; END $$;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app$sql$; END IF; END $$;

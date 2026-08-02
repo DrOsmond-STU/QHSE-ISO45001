@@ -41,8 +41,8 @@ CREATE POLICY tenant_isolation_policy ON "system_audit_logs_y2026m08"
 -- (termasuk tabel ini) — tanpa REVOKE eksplisit di bawah, qhse_app bisa
 -- UPDATE/DELETE baris audit walau tidak pernah diberi grant itu secara
 -- sengaja di mana pun.
-GRANT SELECT, INSERT ON "system_audit_logs" TO qhse_app;
-REVOKE UPDATE, DELETE ON "system_audit_logs" FROM qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT ON "system_audit_logs" TO qhse_app$sql$; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$REVOKE UPDATE, DELETE ON "system_audit_logs" FROM qhse_app$sql$; END IF; END $$;
 
 -- Sama utk kedua partisi awal — TERBUKTI TIDAK CUKUP hanya REVOKE di
 -- parent: privilege partisi BARU (dibuat job maintenance) diberikan
@@ -52,10 +52,10 @@ REVOKE UPDATE, DELETE ON "system_audit_logs" FROM qhse_app;
 -- kalau tidak direvoke ulang secara eksplisit per partisi). Job
 -- audit-log-partition-maintenance mengulang REVOKE ini utk SETIAP partisi
 -- baru yang dibuatnya.
-GRANT SELECT, INSERT ON "system_audit_logs_y2026m07" TO qhse_app;
-REVOKE UPDATE, DELETE ON "system_audit_logs_y2026m07" FROM qhse_app;
-GRANT SELECT, INSERT ON "system_audit_logs_y2026m08" TO qhse_app;
-REVOKE UPDATE, DELETE ON "system_audit_logs_y2026m08" FROM qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT ON "system_audit_logs_y2026m07" TO qhse_app$sql$; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$REVOKE UPDATE, DELETE ON "system_audit_logs_y2026m07" FROM qhse_app$sql$; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT ON "system_audit_logs_y2026m08" TO qhse_app$sql$; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$REVOKE UPDATE, DELETE ON "system_audit_logs_y2026m08" FROM qhse_app$sql$; END IF; END $$;
 
 -- _audit_log_smoke_test: tabel SUMBER (dipicu trigger), bukan tabel audit
 -- itu sendiri — pola RLS standar (tenant_id NOT NULL) apa adanya, CRUD
@@ -67,6 +67,6 @@ ALTER TABLE "_audit_log_smoke_test" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "_audit_log_smoke_test"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "_audit_log_smoke_test" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "_audit_log_smoke_test" TO qhse_app$sql$; END IF; END $$;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app$sql$; END IF; END $$;

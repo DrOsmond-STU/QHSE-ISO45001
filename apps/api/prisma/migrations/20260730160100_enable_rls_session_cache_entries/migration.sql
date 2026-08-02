@@ -12,4 +12,4 @@ ALTER TABLE "session_cache_entries" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "session_cache_entries"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "session_cache_entries" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "session_cache_entries" TO qhse_app$sql$; END IF; END $$;

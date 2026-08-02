@@ -9,28 +9,28 @@ ALTER TABLE "calibration_items" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "calibration_items" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "calibration_items"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "calibration_items" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "calibration_items" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "calibration_providers" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "calibration_providers" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "calibration_providers"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "calibration_providers" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "calibration_providers" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "calibration_schedules" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "calibration_schedules" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "calibration_schedules"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "calibration_schedules" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "calibration_schedules" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "calibration_certificates" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "calibration_certificates" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "calibration_certificates"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "calibration_certificates" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "calibration_certificates" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "out_of_tolerance_records" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "out_of_tolerance_records" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "out_of_tolerance_records"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "out_of_tolerance_records" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "out_of_tolerance_records" TO qhse_app$sql$; END IF; END $$;

@@ -15,16 +15,16 @@ ALTER TABLE "holiday_calendars" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "holiday_calendars" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "holiday_calendars"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "holiday_calendars" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "holiday_calendars" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "holiday_calendar_entries" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "holiday_calendar_entries" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "holiday_calendar_entries"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "holiday_calendar_entries" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "holiday_calendar_entries" TO qhse_app$sql$; END IF; END $$;
 
 -- industry_templates TETAP butuh GRANT eksplisit (ALTER DEFAULT PRIVILEGES
 -- sejak 0.8 sudah mencakup ini otomatis untuk tabel baru manapun, baris ini
 -- cuma menegaskan eksplisit pola yang sama dgn tabel lain supaya migration
 -- ini tidak diam-diam mengandalkan default privileges tanpa disebut).
-GRANT SELECT, INSERT, UPDATE, DELETE ON "industry_templates" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "industry_templates" TO qhse_app$sql$; END IF; END $$;

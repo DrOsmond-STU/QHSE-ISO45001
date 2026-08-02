@@ -8,7 +8,7 @@ ALTER TABLE "workflow_definitions" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "workflow_definitions"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_definitions" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_definitions" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "workflow_stages" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "workflow_stages" FORCE ROW LEVEL SECURITY;
@@ -16,7 +16,7 @@ ALTER TABLE "workflow_stages" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "workflow_stages"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_stages" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_stages" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "workflow_transitions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "workflow_transitions" FORCE ROW LEVEL SECURITY;
@@ -24,7 +24,7 @@ ALTER TABLE "workflow_transitions" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "workflow_transitions"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_transitions" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_transitions" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "workflow_instances" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "workflow_instances" FORCE ROW LEVEL SECURITY;
@@ -32,7 +32,7 @@ ALTER TABLE "workflow_instances" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "workflow_instances"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_instances" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_instances" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "workflow_tasks" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "workflow_tasks" FORCE ROW LEVEL SECURITY;
@@ -40,6 +40,6 @@ ALTER TABLE "workflow_tasks" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "workflow_tasks"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_tasks" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "workflow_tasks" TO qhse_app$sql$; END IF; END $$;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO qhse_app$sql$; END IF; END $$;

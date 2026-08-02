@@ -6,16 +6,16 @@ ALTER TABLE "data_import_jobs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "data_import_jobs" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "data_import_jobs"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "data_import_jobs" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "data_import_jobs" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "data_import_errors" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "data_import_errors" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "data_import_errors"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "data_import_errors" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "data_import_errors" TO qhse_app$sql$; END IF; END $$;
 
 ALTER TABLE "tenant_branding_configs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "tenant_branding_configs" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON "tenant_branding_configs"
   USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON "tenant_branding_configs" TO qhse_app;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'qhse_app') THEN EXECUTE $sql$GRANT SELECT, INSERT, UPDATE, DELETE ON "tenant_branding_configs" TO qhse_app$sql$; END IF; END $$;
