@@ -1,0 +1,87 @@
+/* Halaman login — satu-satunya halaman di luar shell (dashboard), jadi
+   punya layout sendiri: kartu terpusat di atas page-plane. Semua warna dan
+   jarak WAJIB dari token @qhse/ui-components (DESIGN.md §3/§5), tidak ada
+   hex/px hardcode. */
+
+.qhse-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--qhse-space-5);
+  background: var(--qhse-page-plane);
+  box-sizing: border-box;
+}
+
+.qhse-login__card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-md);
+  padding: var(--qhse-space-6);
+  box-sizing: border-box;
+}
+
+.qhse-login__brand {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-display-size);
+  line-height: var(--qhse-text-display-lh);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+.qhse-login__tagline {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-text-secondary);
+  margin: var(--qhse-space-1) 0 var(--qhse-space-6);
+}
+
+.qhse-login__input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--qhse-tap-target-min);
+  padding: var(--qhse-space-2) var(--qhse-space-3);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+}
+
+.qhse-login__input:focus-visible {
+  outline: 2px solid var(--qhse-trend-improving);
+  outline-offset: 1px;
+}
+
+.qhse-login__actions {
+  margin-top: var(--qhse-space-5);
+}
+
+.qhse-login__actions .qhse-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.qhse-login__error {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-status-critical);
+  border: 1px solid var(--qhse-status-critical);
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-3);
+  margin: 0 0 var(--qhse-space-4);
+}
+
+.qhse-login__hint {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: var(--qhse-text-micro-lh);
+  color: var(--qhse-text-muted);
+  margin-top: var(--qhse-space-5);
+}

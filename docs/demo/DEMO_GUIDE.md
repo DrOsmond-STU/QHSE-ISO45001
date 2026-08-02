@@ -15,6 +15,20 @@ pnpm exec ts-node -r ts-node/register/transpile-only src/main.ts
 
 Server listens on `http://localhost:3001` (override with `PORT`). Wait for `[qhse-api] listening on :3001` in the log before calling anything.
 
+## 1b. Or: demo it in the browser
+
+There is now a working web UI, so you can walk the same data without Postman:
+
+```bash
+pnpm --filter @qhse/web build && pnpm --filter @qhse/web start
+```
+
+Open `http://localhost:3000` → you land on the login page. Sign in with the Tenant ID from §4 plus any account from §3, and you get a dashboard of per-module record counts, a sidebar grouping all 15 modules, and list + detail pages for each. Everything the UI shows comes from the same read-only `GET` endpoints this collection exercises.
+
+Use Postman (below) when you need anything the UI cannot do — the write-side flows, workflow approvals, and the modules with no read endpoint yet.
+
+> Login uses PKCE, which needs Web Crypto — available on `http://localhost` and on HTTPS, but **not** on plain `http://` to any other host. If you serve the demo from another machine, put it behind HTTPS.
+
 ## 2. Import into Postman
 
 Import `docs/demo/QHSE-Platform-Demo.postman_collection.json` (File → Import). It's self-contained — no separate environment file needed, all variables live at the collection level.

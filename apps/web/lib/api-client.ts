@@ -1,21 +1,24 @@
 import type { ApiErrorResponse, ApiSuccessResponse } from "@qhse/shared-types";
 
 // Task 1.7 — client API PERTAMA di apps/web (0.1-1.6 semua belum menyentuh
-// apps/web sama sekali kecuali placeholder design-system, task 0.14 app
-// shell BELUM dikerjakan). BELUM ADA halaman login di apps/web MANA PUN
-// (diverifikasi: tidak ada task apa pun di TASK_INSTRUCTION.md yang
-// membangunnya) — token diasumsikan sudah ada di sessionStorage lewat
-// jalur LAIN (dev: diisi manual/lewat browser devtools; produksi:
-// menunggu task login UI yang belum ada nomornya, gap TDD §26). Modul ini
-// TIDAK mencoba auto-refresh token kadaluwarsa (0.6 py alur PKCE
-// login->token, refresh token httpOnly cookie terpisah — refresh
-// otomatis di luar scope minimal task ini, gap TDD §26) — 401 diteruskan
-// apa adanya ke caller (halaman) utk ditampilkan sbg state
-// "belum masuk", bukan di-retry diam-diam.
+// apps/web sama sekali kecuali placeholder design-system).
+//
+// PEMBARUAN (task frontend non-PRD): halaman login SUDAH ADA sekarang
+// (app/login/page.tsx, alur PKCE lewat lib/auth-session.ts) dan app shell
+// 0.14 sudah diimplementasikan — komentar lama di sini yang menyatakan
+// "belum ada halaman login di apps/web mana pun, token diisi manual lewat
+// devtools" TIDAK berlaku lagi.
+//
+// Yang MASIH berlaku: modul ini TIDAK mencoba auto-refresh token
+// kadaluwarsa (0.6 py alur PKCE login->token, refresh token httpOnly
+// cookie terpisah di path /auth/token — refresh otomatis tetap di luar
+// scope, gap TDD §26) — 401 diteruskan apa adanya ke caller (halaman)
+// utk ditampilkan sbg state "sesi habis, silakan masuk lagi", bukan
+// di-retry diam-diam.
 
 const ACCESS_TOKEN_KEY = "qhse.accessToken";
 
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 }
 
@@ -50,6 +53,12 @@ export interface ApiFetchOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
+  /**
+   * Header tambahan — dibutuhkan `x-tenant-id` pada POST /auth/login, yang
+   * PRE-auth (tenant belum bisa disimpulkan dari JWT karena JWT-nya justru
+   * belum ada; lihat auth.controller.ts#login).
+   */
+  headers?: Record<string, string>;
 }
 
 function buildQueryString(query?: ApiFetchOptions["query"]): string {
@@ -71,7 +80,7 @@ function buildQueryString(query?: ApiFetchOptions["query"]): string {
  */
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const token = getAccessToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...options.headers };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const response = await fetch(`${getApiBaseUrl()}${path}${buildQueryString(options.query)}`, {
@@ -96,7 +105,7 @@ export async function apiFetchWithMeta<T>(
   options: ApiFetchOptions = {},
 ): Promise<{ data: T; meta?: ApiSuccessResponse<T>["meta"] }> {
   const token = getAccessToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...options.headers };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const response = await fetch(`${getApiBaseUrl()}${path}${buildQueryString(options.query)}`, {

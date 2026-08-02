@@ -1,0 +1,339 @@
+/* App shell — menggantikan `qhse-shell-placeholder` dari task 1.7
+   (dashboard-shell.css, sudah dihapus). Inilah realisasi task 0.14 "App
+   shell & state primitives": topbar + sidebar navigasi berkelompok + drawer
+   mobile.
+
+   Yang BELUM ada dibanding deskripsi 0.14, dan sengaja tidak dipalsukan:
+   scope picker tenant/company/branch/site di topbar (belum ada endpoint
+   yang mengembalikan daftar scope untuk user berjalan) dan penyaringan
+   menu berdasarkan permission (belum ada endpoint "permission milik saya";
+   klaim JWT hanya memuat scope_roles, bukan daftar permission). Menu di
+   sidebar karena itu ditampilkan lengkap — server tetap menolak dengan 403
+   kalau user tidak berhak, dan halaman daftar menampilkan penolakan itu
+   sebagai pesan yang bisa dibaca, bukan layar kosong.
+
+   Namespace kelas tetap `qhse-shell-*` supaya jelas ini milik apps/web,
+   bukan komponen lintas-app di @qhse/ui-components. */
+
+.qhse-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--qhse-page-plane);
+}
+
+/* --- Topbar --- */
+
+.qhse-shell__topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  padding: var(--qhse-space-2) var(--qhse-space-4);
+  min-height: var(--qhse-tap-target-min);
+  background: var(--qhse-surface-1);
+  border-bottom: 1px solid var(--qhse-border);
+}
+
+.qhse-shell__brand {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-h2-size);
+  line-height: var(--qhse-text-h2-lh);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.qhse-shell__spacer {
+  flex: 1;
+}
+
+.qhse-shell__identity {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-text-secondary);
+  text-align: right;
+  min-width: 0;
+}
+
+.qhse-shell__identity strong {
+  display: block;
+  color: var(--qhse-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qhse-shell__roles {
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+}
+
+/* --- Body: sidebar + konten --- */
+
+.qhse-shell__body {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  min-height: 0;
+}
+
+.qhse-shell__sidebar {
+  flex: 0 0 240px;
+  width: 240px;
+  align-self: stretch;
+  padding: var(--qhse-space-4) var(--qhse-space-3);
+  background: var(--qhse-surface-1);
+  border-right: 1px solid var(--qhse-border);
+  box-sizing: border-box;
+  position: sticky;
+  top: calc(var(--qhse-tap-target-min) + var(--qhse-space-1));
+  max-height: calc(100vh - var(--qhse-tap-target-min));
+  overflow-y: auto;
+}
+
+.qhse-shell__nav-group + .qhse-shell__nav-group {
+  margin-top: var(--qhse-space-5);
+}
+
+.qhse-shell__nav-heading {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: var(--qhse-text-micro-lh);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+  margin: 0 0 var(--qhse-space-2);
+  padding: 0 var(--qhse-space-2);
+}
+
+.qhse-shell__nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.qhse-shell__nav-link {
+  display: block;
+  padding: var(--qhse-space-2);
+  border-radius: var(--qhse-radius-sm);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  line-height: var(--qhse-text-body-lh);
+  color: var(--qhse-text-secondary);
+  text-decoration: none;
+}
+
+.qhse-shell__nav-link:hover,
+.qhse-shell__nav-link:focus-visible {
+  background: var(--qhse-page-plane);
+  color: var(--qhse-text-primary);
+}
+
+.qhse-shell__nav-link[aria-current="page"] {
+  background: var(--qhse-page-plane);
+  color: var(--qhse-text-primary);
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 0 var(--qhse-trend-improving);
+}
+
+.qhse-shell__main {
+  flex: 1;
+  min-width: 0;
+  padding: var(--qhse-space-5);
+  box-sizing: border-box;
+}
+
+/* --- Drawer mobile --- */
+
+.qhse-shell__menu-button {
+  display: none;
+}
+
+.qhse-shell__scrim {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .qhse-shell__menu-button {
+    display: inline-flex;
+  }
+
+  /* Drawer tertutup memakai DUA mekanisme sekaligus, dan itu disengaja:
+     `transform` yang menganimasikan geseran, dan `visibility: hidden` yang
+     benar-benar mengeluarkannya dari alur interaksi. Tanpa `visibility`,
+     menu yang "tertutup" tetap bisa di-Tab dan tetap terbaca screen reader
+     dari luar layar — bug aksesibilitas klasik drawer geser. Sebagai bonus,
+     kalau `transform` gagal diterapkan karena alasan apa pun, menu tidak
+     berakhir menutupi konten. Transisi `visibility` ditunda selama durasi
+     geseran supaya menu tidak lenyap seketika saat sedang menutup. */
+  .qhse-shell__sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    max-height: none;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 150ms ease-out,
+      visibility 0s linear 150ms;
+  }
+
+  .qhse-shell__sidebar--open {
+    transform: translateX(0);
+    visibility: visible;
+    transition:
+      transform 150ms ease-out,
+      visibility 0s linear 0s;
+  }
+
+  .qhse-shell__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    background: rgba(0, 0, 0, 0.4);
+    border: 0;
+    padding: 0;
+  }
+
+  .qhse-shell__main {
+    padding: var(--qhse-space-4);
+  }
+
+  .qhse-shell__identity {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qhse-shell__sidebar {
+    transition: none;
+  }
+}
+
+/* --- Primitif halaman yang dipakai lintas halaman dashboard --- */
+
+.qhse-page__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--qhse-space-3);
+  margin-bottom: var(--qhse-space-5);
+}
+
+.qhse-page__eyebrow {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: var(--qhse-text-micro-lh);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+  margin: 0;
+}
+
+.qhse-page__title {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-h1-size);
+  line-height: var(--qhse-text-h1-lh);
+  color: var(--qhse-text-primary);
+  margin: var(--qhse-space-1) 0 0;
+}
+
+.qhse-page__subtitle {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-text-secondary);
+  margin: var(--qhse-space-1) 0 0;
+}
+
+.qhse-page__message {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  line-height: var(--qhse-text-body-lh);
+  color: var(--qhse-text-secondary);
+  margin: 0;
+}
+
+.qhse-page__error {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-status-critical);
+  border: 1px solid var(--qhse-status-critical);
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-3);
+  margin: 0 0 var(--qhse-space-4);
+}
+
+.qhse-page__pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  margin-top: var(--qhse-space-4);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-secondary);
+}
+
+.qhse-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--qhse-space-4);
+}
+
+.qhse-kpi-grid a {
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--qhse-radius-md);
+}
+
+.qhse-kpi-grid a:focus-visible {
+  outline: 2px solid var(--qhse-trend-improving);
+  outline-offset: 2px;
+}
+
+.qhse-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: var(--qhse-space-2) var(--qhse-space-4);
+  margin: 0;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  line-height: var(--qhse-text-body-lh);
+}
+
+.qhse-detail-grid dt {
+  color: var(--qhse-text-secondary);
+}
+
+.qhse-detail-grid dd {
+  margin: 0;
+  color: var(--qhse-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qhse-detail-card {
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-md);
+  padding: var(--qhse-space-5);
+}
+
+@media (max-width: 640px) {
+  .qhse-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qhse-detail-grid dd {
+    margin-bottom: var(--qhse-space-3);
+  }
+}

@@ -160,21 +160,30 @@ Setelah build sukses, kembali ke **Setup Node.js App** di cPanel, klik **Restart
 
 ## §7. Setup Node.js App — Frontend (`apps/web`)
 
-> **PENTING — baca dulu sebelum memasang frontend.** `apps/web` saat ini **BELUM berisi aplikasi yang bisa dipakai pengguna akhir**. Diverifikasi langsung dengan menjalankan build produksinya (2026-08-02): satu-satunya halaman yang ada adalah beranda placeholder Phase-0, halaman notifikasi (`/notifications` + `/notifications/preferences`, hasil task 1.7), dan `/design-system`. **Halaman login TIDAK ADA** — `/login` mengembalikan 404, dan memang tidak ada file login di seluruh `apps/web/app/`. Beranda-nya sendiri secara harfiah menampilkan teks "App shell nyata (topbar, sidebar, state primitives) menyusul di task 0.14" — task itu belum dikerjakan.
+> **Apa yang sudah ada di frontend (diperbarui 2026-08-02, diverifikasi di browser terhadap API yang berjalan).** `apps/web` sekarang **bisa dipakai lewat browser**: halaman login (`/login`, alur OAuth2 Authorization Code + PKCE), app shell dengan topbar + sidebar navigasi + toggle tema terang/gelap + drawer mobile, dashboard ringkasan (`/dashboard`), serta halaman daftar dan detail untuk **15 modul** di `/modules/<slug>`. Halaman notifikasi task 1.7 (`/notifications`, `/notifications/preferences`) ikut masuk ke shell yang sama.
 >
-> Artinya: **seluruh 21 modul QHSE hanya bisa diakses lewat API** (lihat `qhse-platform/docs/demo/DEMO_GUIDE.md` + koleksi Postman), bukan lewat antarmuka web. Memasang `apps/web` sekarang hanya berguna kalau Anda memang ingin menyiapkan slot domain/hosting-nya lebih dulu, atau ingin melihat halaman notifikasi. Kalau tujuan Anda memakai sistem sehari-hari lewat browser, frontend-nya harus dibangun dulu (task 0.14 app shell + halaman login + halaman per modul) — itu pekerjaan tersendiri yang belum ada di repo ini.
+> **Yang masih terbatas, supaya tidak salah harap:** semua halaman modul itu **read-only** — belum ada form untuk membuat/mengubah data, karena API-nya sendiri baru mengekspos endpoint GET untuk 15 modul tersebut (lihat `qhse-platform/docs/demo/DEMO_GUIDE.md`). Seluruh alur tulis (membuat izin kerja, menjalankan approval workflow, menutup CAPA, dst.) tetap hanya lewat service layer + test integrasi, dan bisa didemokan lewat koleksi Postman. Selain itu 6 dari 21 modul PRD belum punya halaman sama sekali (belum ada endpoint read-nya), dan topbar belum punya scope picker company/branch/site.
 >
-> Backend (§4-§6, §8) sepenuhnya siap dan tidak bergantung pada §7 ini — Anda boleh melewati §7 seluruhnya tanpa memengaruhi apa pun.
+> **HTTPS wajib untuk halaman login.** PKCE dihitung dengan Web Crypto (`crypto.subtle`), yang browser hanya sediakan di secure context — HTTPS, atau `http://localhost` saat pengembangan. Kalau domain diakses lewat `http://` biasa, tombol Masuk akan menampilkan pesan error dan login tidak bisa jalan. Aktifkan AutoSSL cPanel sebelum §7 ini dipakai sungguhan.
+>
+> Backend (§4-§6, §8) tetap tidak bergantung pada §7 — Anda boleh melewati §7 kalau memang hanya ingin memakai API.
 
 Ulangi §4 dengan detail berbeda:
 - **Application root**: `qhse-platform/apps/web`
 - **Application URL**: domain utama Anda, mis. `namadomainanda.com`
 - **Application startup file**: sesuai output build Next.js (`node_modules/.bin/next start` biasanya dikonfigurasi lewat `package.json` "start" script, bukan file tunggal — ikuti petunjuk cPanel Node Selector untuk app Next.js, biasanya minta Anda isi startup command bukan startup file untuk framework non-Express).
 
-Environment variable minimal untuk `apps/web/.env`:
+Environment variable minimal untuk `apps/web/.env` (nama variabelnya persis seperti ini — dibaca `apps/web/lib/api-client.ts`; salah nama berarti frontend diam-diam jatuh ke default `http://localhost:3001` dan semua permintaan gagal di browser pengunjung):
 ```bash
-NEXT_PUBLIC_API_BASE_URL="https://api.namadomainanda.com"
+NEXT_PUBLIC_API_URL="https://api.namadomainanda.com"
+
+# Opsional, sangat disarankan untuk deployment satu tenant: mengisi otomatis
+# kolom "Tenant ID" di halaman login sehingga pengguna cukup mengetik email +
+# kata sandi. Isi dengan tenant_id dari database Anda.
+NEXT_PUBLIC_DEFAULT_TENANT_ID=""
 ```
+
+> Variabel `NEXT_PUBLIC_*` di Next.js dibaca **saat build**, bukan saat start. Kalau nilainya diubah, `pnpm run build` harus diulang — restart app saja tidak cukup.
 
 Build & jalankan (Terminal cPanel, virtual environment app web):
 ```bash
@@ -207,7 +216,10 @@ Ini SATU cron job yang menjalankan seluruh 31 pengingat otomatis + pengiriman no
 
 1. Buka `https://api.namadomainanda.com/health` di browser — harus muncul `{"status":"ok",...}`.
 2. Buka `https://api.namadomainanda.com/internal/cron/status` — harus muncul `{"redisEnabled":false,"cronSecretConfigured":true,...}`. Kalau `cronSecretConfigured` masih `false`, cek lagi `.env` Anda dan restart aplikasi.
-3. (Hanya kalau Anda memasang §7) Buka `https://namadomainanda.com` — yang muncul adalah **halaman placeholder bertuliskan "QHSE Enterprise Platform ... App shell nyata menyusul di task 0.14"**, BUKAN halaman login. Itu perilaku yang benar untuk kondisi repo saat ini, bukan tanda pemasangan gagal — lihat kotak peringatan di §7. Untuk memastikan backend-nya benar-benar bisa dipakai, gunakan koleksi Postman di `qhse-platform/docs/demo/` (login + 15 modul), bukan browser.
+3. (Hanya kalau Anda memasang §7) Buka `https://namadomainanda.com` — harus dialihkan otomatis ke **halaman login**. Masuk dengan Tenant ID + email + kata sandi, lalu Anda mendarat di `/dashboard` berisi kartu jumlah data per modul. Klik satu kartu untuk membuka daftarnya, lalu klik nomor di kolom pertama untuk melihat detail record.
+   - Kalau tombol Masuk menampilkan pesan soal Web Crypto, domainnya belum HTTPS — aktifkan AutoSSL dulu (lihat §7).
+   - Kalau kartu dashboard menampilkan "—" dengan keterangan "Tidak berhak / tidak dilanggan", itu **bukan** kegagalan pemasangan: server memang menolak modul itu untuk peran user tersebut, atau modulnya tidak termasuk paket langganan tenant. Coba dengan user yang berperan sesuai.
+   - Kalau semua kartu gagal dan halaman daftar bilang API tidak terjangkau, hampir selalu penyebabnya `NEXT_PUBLIC_API_URL` salah atau `WEB_ORIGIN`/CORS di sisi API belum memuat domain frontend.
 4. Tunggu sampai giliran cron pertama jalan (maks 10 menit), lalu cek cPanel → **Cron Jobs** → lihat log eksekusi (kalau ada), atau tambahkan sementara `curl -v ...` (verbose) ke command cron untuk debug awal, lalu kembalikan ke `-s` (silent) setelah yakin jalan.
 
 ---
@@ -227,7 +239,8 @@ Ini SATU cron job yang menjalankan seluruh 31 pengingat otomatis + pengiriman no
 
 ## §11. Batasan yang Perlu Diketahui (dibanding VPS/Docker)
 
-- **Belum ada antarmuka web untuk pengguna akhir** (batasan TERBESAR, bukan soal shared hosting-nya): 21 modul QHSE hanya terjangkau lewat API. Tidak ada halaman login, tidak ada app shell, tidak ada halaman per modul — lihat kotak peringatan §7. Ini sama saja di VPS/Docker; bukan konsekuensi memilih shared hosting.
+- **Antarmuka web-nya masih read-only** (batasan TERBESAR, bukan soal shared hosting-nya): sudah ada login, app shell, dashboard, dan halaman daftar+detail untuk 15 modul — tapi belum ada satu pun form untuk membuat atau mengubah data, dan 6 modul PRD lain belum punya halaman. Semua alur tulis (approval workflow, penutupan CAPA, penerbitan izin kerja, dsb) masih lewat API/service layer. Lihat §7. Ini sama saja di VPS/Docker; bukan konsekuensi memilih shared hosting.
+- **Halaman login butuh HTTPS** — PKCE memakai Web Crypto yang hanya tersedia di secure context. Di VPS/Docker hal ini sama saja, tapi di shared hosting layak disebut karena AutoSSL kadang perlu diaktifkan manual per domain.
 - **Bukan zero-downtime**: restart aplikasi (setelah update kode) akan memutus koneksi aktif sesaat — beda dari prinsip DEPLOYMENT.md §1 yang mengasumsikan Kubernetes rolling update. Untuk instance 1-organisasi, ini biasanya bisa diterima (restart di luar jam kerja).
 - **Presisi pengingat ± interval cron** (§8) — bukan real-time, tapi tetap dalam hitungan menit, bukan jam/hari.
 - **Baris `session_cache_entries`/`authorization_code_entries` yang kedaluwarsa tidak otomatis dibersihkan** — menumpuk pelan-pelan (kedua tabel kecil, baris pendek). Kalau ingin dibersihkan berkala, tambahkan query manual sesekali:

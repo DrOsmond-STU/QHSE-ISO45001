@@ -2,15 +2,15 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "qhse-dev",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
-      "port": 3000
-    },
-    {
       "name": "qhse-web-prod",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@qhse/web", "start"],
+      "port": 3000
+    },
+    {
+      "name": "qhse-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
       "port": 3000
     }
   ]

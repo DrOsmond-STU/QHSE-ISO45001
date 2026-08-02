@@ -1,11 +1,22 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useHasAccessToken } from "../lib/use-auth-token";
+
+// Root "/" tidak punya isi sendiri — hanya menyalurkan ke /dashboard (kalau
+// sudah masuk) atau /login (kalau belum). Keputusan itu HARUS diambil di
+// browser, bukan lewat `redirect()` server, karena penanda sesi yang dipakai
+// apps/web adalah access token di sessionStorage (lihat api-client.ts) yang
+// tidak terlihat dari server.
 export default function Home() {
-  return (
-    <main style={{ padding: 32 }}>
-      <h1>QHSE Enterprise Platform</h1>
-      <p>
-        Bootstrap monorepo (TASK_INSTRUCTION.md Phase 0, task 0.1). App shell nyata
-        (topbar, sidebar, state primitives) menyusul di task 0.14.
-      </p>
-    </main>
-  );
+  const router = useRouter();
+  const hasToken = useHasAccessToken();
+
+  useEffect(() => {
+    if (hasToken === null) return; // masih hidrasi, status login belum diketahui
+    router.replace(hasToken ? "/dashboard" : "/login");
+  }, [hasToken, router]);
+
+  return null;
 }
