@@ -5,9 +5,9 @@
 generator client {
   provider = "prisma-client-js"
 
-  // `rhel-openssl-3.0.x` ditambahkan UNTUK DEPLOYMENT SHARED HOSTING, bukan
-  // untuk pengembangan lokal. Alasannya konkret: `prisma generate` untuk skema
-  // 162 model ini butuh lebih dari 1 GB memori, sedangkan paket hosting tujuan
+  // Target Linux di sini ada UNTUK DEPLOYMENT SHARED HOSTING, bukan untuk
+  // pengembangan lokal. Alasannya konkret: `prisma generate` untuk skema 162
+  // model ini butuh lebih dari 1 GB memori, sedangkan paket hosting tujuan
   // membatasi memori fisik akun tepat 1 GB — prosesnya DIBUNUH SIGKILL setelah
   // 16 detik, dan itu bukan dugaan (diukur: ulimit cpu/memori unlimited, host
   // punya 36 GB bebas, sinyal 9 bukan 24, jadi yang membunuh adalah batas LVE
@@ -19,8 +19,14 @@ generator client {
   // berubah sama sekali. Menambah target hanya menambah unduhan engine saat
   // generate; tidak ada perilaku runtime yang berubah.
   //
-  // el10 (RHEL/AlmaLinux 10) dipastikan dari versi paket server, bukan ditebak.
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  // KENAPA debian, padahal paket servernya bernama el10 (RHEL/AlmaLinux 10):
+  // karena yang menentukan adalah deteksi runtime Prisma di mesin itu sendiri,
+  // bukan penamaan paket. Percobaan dengan `rhel-openssl-3.0.x` gagal dan
+  // Prisma menyebut targetnya sendiri:
+  //   "could not locate the Query Engine for runtime debian-openssl-3.0.x"
+  // Jadi nilai ini berasal dari pesan galat di server, bukan dari kesimpulan
+  // atas nama distribusi — yang ternyata menyesatkan di CloudLinux.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

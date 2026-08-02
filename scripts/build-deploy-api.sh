@@ -74,17 +74,35 @@ for f in index.js default.js edge.js index-browser.js package.json wasm.js; do
   [ -f "$CLIENT_SRC/$f" ] && cp "$CLIENT_SRC/$f" "$OUT/prisma-client/"
 done
 
-echo "==> menyalin engine Linux (rhel-openssl-3.0.x)"
-# Prisma menaruh engine untuk binaryTargets TAMBAHAN di direktori paket CLI,
-# bukan di direktori client — jadi diambil dari sana.
-ENGINE=$(find "$ROOT/node_modules" -name 'libquery_engine-rhel-openssl-3.0.x.so.node' -not -path '*.tmp*' | head -1)
-if [ -z "$ENGINE" ]; then
-  echo "GAGAL: engine rhel-openssl-3.0.x tidak ditemukan."
-  echo "Pastikan binaryTargets di prisma/schema.prisma memuat rhel-openssl-3.0.x,"
-  echo "lalu jalankan 'pnpm exec prisma generate' sekali agar engine-nya diunduh."
+# Target dibaca DARI schema.prisma, tidak ditulis mati di sini. Sebelumnya
+# nama target ada di dua tempat, dan keduanya sempat berbeda: schema memakai
+# rhel-openssl-3.0.x sementara server ternyata meminta debian-openssl-3.0.x.
+# Kegagalannya baru terlihat saat aplikasi dijalankan di server, jauh dari
+# tempat kesalahannya. Dengan dibaca dari satu sumber, selisih itu mustahil.
+# sed POSIX, bukan `grep -oP`: PCRE tidak tersedia di Git Bash pada locale
+# non-UTF-8 ("grep: -P supports only unibyte and UTF-8 locales"), dan skrip
+# ini memang dijalankan dari Windows.
+TARGETS=$(sed -n 's/.*binaryTargets[[:space:]]*=[[:space:]]*\[\([^]]*\)\].*/\1/p' \
+            "$API/prisma/schema.prisma" \
+          | tr -d '" ' | tr ',' '\n' | grep -v '^native$' | grep -v '^$')
+if [ -z "$TARGETS" ]; then
+  echo "GAGAL: tidak ada binaryTargets non-native di prisma/schema.prisma."
+  echo "Tanpa itu artefak ini tidak akan bisa jalan di Linux."
   exit 1
 fi
-cp "$ENGINE" "$OUT/prisma-client/"
+
+for t in $TARGETS; do
+  echo "==> menyalin engine Linux ($t)"
+  # Prisma menaruh engine untuk binaryTargets TAMBAHAN di direktori paket CLI,
+  # bukan di direktori client — jadi diambil dari sana.
+  ENGINE=$(find "$ROOT/node_modules" -name "libquery_engine-$t.so.node" -not -path '*.tmp*' | head -1)
+  if [ -z "$ENGINE" ]; then
+    echo "GAGAL: engine $t tidak ditemukan setelah generate."
+    echo "Periksa apakah $t memang nama target Prisma yang sah."
+    exit 1
+  fi
+  cp "$ENGINE" "$OUT/prisma-client/"
+done
 
 # Prisma Client membaca nama engine dari berkas ini saat runtime.
 cp "$API/prisma/schema.prisma" "$OUT/prisma-client/schema.prisma"
