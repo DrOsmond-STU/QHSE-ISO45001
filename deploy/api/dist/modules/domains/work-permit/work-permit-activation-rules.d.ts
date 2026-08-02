@@ -1,0 +1,28 @@
+import { GasTestResultValue, IsolationLotoStatus } from "@prisma/client";
+export interface GasTestActivationCandidate {
+    result: GasTestResultValue;
+}
+/**
+ * BR-02 (PRD Modul 06 §6) — "Jika work_permit_types.requires_gas_test=TRUE,
+ * minimal satu gas_test_results dengan result=PASS wajib ada sebelum
+ * status ACTIVE." requiresGasTest=false -> tidak ada gate sama sekali;
+ * baris FAIL sebelumnya TIDAK memblokir selama ada minimal 1 PASS
+ * (retest berhasil sesudah gagal tetap meloloskan).
+ */
+export declare function assertGasTestPassedIfRequired(requiresGasTest: boolean, results: GasTestActivationCandidate[]): void;
+export interface LotoActivationCandidate {
+    status: IsolationLotoStatus;
+}
+/**
+ * BR-03 (PRD Modul 06 §6) — "Jika requires_loto=TRUE, seluruh
+ * isolation_loto_records terkait wajib berstatus VERIFIED (dengan
+ * verified_by ≠ applied_by)... sebelum status ACTIVE." Dibaca SIMETRIS
+ * dgn BR-02 (minimal 1 record HARUS ada, BUKAN vacuously-true kalau nol
+ * record) — teks literal BR-03 sendiri TIDAK eksplisit sebut "minimal
+ * satu" (beda dari BR-02), tapi permit requires_loto=TRUE TANPA isolasi
+ * SAMA SEKALI yang tetap lolos ACTIVE bertentangan dgn tujuan BR itu
+ * sendiri — interpretasi diperluas, didokumentasikan TDD §26.
+ * verified_by≠applied_by DITEGAKKAN di IsolationLotoRecordService.verify()
+ * saat status berubah jadi VERIFIED (titik yang tepat, bukan di sini).
+ */
+export declare function assertLotoVerifiedIfRequired(requiresLoto: boolean, records: LotoActivationCandidate[]): void;

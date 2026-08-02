@@ -1,6 +1,18 @@
 node_modules/
 dist/
 .next/
+
+# Artefak deploy shared hosting SENGAJA di-commit — bukan kelalaian.
+# Server tujuan dibatasi memori 1 GB oleh LVE CloudLinux, sedangkan
+# `prisma generate` untuk skema 162 model menghasilkan index.d.ts 90 MB dan
+# butuh lebih dari itu (diukur: dibunuh SIGKILL sementara ulimit unlimited).
+# `tsc` API kena sebab yang sama karena harus mem-parsing berkas itu. Jadi
+# API dibangun di luar dan hasilnya dikirim lewat repositori ini.
+# Cara memperbaruinya: scripts/build-deploy-api.sh — WAJIB dijalankan ulang
+# setiap kali apps/api atau schema.prisma berubah, kalau tidak server akan
+# menjalankan kode lama tanpa pesan error apa pun.
+!/deploy/api/dist/
+!/deploy/api/dist/**
 .turbo/
 coverage/
 *.log
