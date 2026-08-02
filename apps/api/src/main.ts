@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 import { AppLoggerService } from "./platform/observability/app-logger.service";
@@ -11,8 +12,21 @@ async function bootstrap() {
   // resolusi DI module lain) ditampung dulu, di-flush begitu AppLoggerService
   // terpasang, bukan hilang/jatuh ke logger default Nest (TDD §15 — seluruh
   // log aplikasi WAJIB lewat Pino terstruktur, termasuk log bootstrap).
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   app.useLogger(app.get(AppLoggerService));
+
+  // TRUST_PROXY — WAJIB diisi kalau API berjalan di belakang reverse proxy
+  // (mis. Apache mod_proxy di shared hosting cPanel). Tanpa ini Express
+  // melaporkan `req.ip` = 127.0.0.1 untuk SEMUA permintaan, sehingga kolom
+  // `ip_address` pada user_sessions — yang memang sengaja direkam sebagai
+  // jejak audit — berisi alamat proxy, bukan alamat pengguna. Sengaja TIDAK
+  // dinyalakan secara default: mempercayai header X-Forwarded-For saat TIDAK
+  // ada proxy di depan berarti klien mana pun bisa memalsukan alamatnya
+  // sendiri. Isi dengan jumlah hop proxy (biasanya "1") atau "true".
+  const trustProxy = process.env.TRUST_PROXY;
+  if (trustProxy) {
+    app.set("trust proxy", /^\d+$/.test(trustProxy) ? parseInt(trustProxy, 10) : trustProxy);
+  }
 
   // Task 0.6 — refresh token httpOnly cookie (CSRF stance, lihat
   // platform/auth/auth.controller.ts).

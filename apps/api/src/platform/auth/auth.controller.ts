@@ -21,10 +21,19 @@ import { Public } from "./public.decorator";
 import { RateLimitGuard } from "./rate-limit.guard";
 
 // Cookie httpOnly+Secure+SameSite=Strict untuk refresh token (CSRF stance §8
-// plan) — path dipersempit ke /auth/token supaya browser cuma kirim cookie
-// ini ke endpoint yang memang butuh, bukan ke seluruh domain.
+// plan) — path dipersempit ke endpoint yang memang butuh, bukan seluruh domain.
+//
+// Path-nya HARUS bisa dikonfigurasi, bukan konstanta: kalau API dipasang di
+// belakang reverse proxy yang menambahkan awalan (mis. satu subdomain melayani
+// frontend di `/` dan API di `/api`, seperti deployment cPanel di
+// DEPLOYMENT_SHARED_HOSTING.md), peramban melihat endpoint-nya di
+// `/api/auth/token` sementara Nest melihat `/auth/token`. Cookie ber-path
+// `/auth/token` akan tersimpan di peramban tapi TIDAK PERNAH dikirim balik,
+// karena peramban tidak pernah meminta path itu — refresh token mati diam-diam
+// tanpa pesan error apa pun. Isi REFRESH_COOKIE_PATH dengan path yang DILIHAT
+// PERAMBAN (termasuk awalan proxy-nya).
 const REFRESH_COOKIE_NAME = "refresh_token";
-const REFRESH_COOKIE_PATH = "/auth/token";
+const REFRESH_COOKIE_PATH = process.env.REFRESH_COOKIE_PATH ?? "/auth/token";
 
 function setRefreshCookie(res: Response, token: string): void {
   res.cookie(REFRESH_COOKIE_NAME, token, {
