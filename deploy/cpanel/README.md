@@ -147,6 +147,7 @@ dikerjakan:
 | `qhse-demo-seed.request` | semai data dummy lewat `apps/demo-api` — jalur yang muat di akun ini |
 | `qhse-restart.request` | matikan kedua proses; cron menyalakan lagi |
 | `qhse-rss.request` | diagnostik memori (`qhse-apitest.sh`) |
+| `qhse-live.request` | periksa situs lewat URL publiknya (`qhse-live-check.sh`) |
 
 Dua berkas lain di `~` BUKAN penanda sekali pakai — keduanya bertahan dan
 mengubah perilaku runner selama masih ada:
