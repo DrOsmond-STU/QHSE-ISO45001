@@ -1,15 +1,19 @@
+/* Field formulir. Warna dan jarak SELALU dari token — tidak ada hex/px
+   langsung di sini. */
+
 .qhse-form-field {
   display: flex;
   flex-direction: column;
-  gap: var(--qhse-space-1);
+  gap: var(--qhse-space-2);
   margin-bottom: var(--qhse-space-4);
   font-family: var(--qhse-font-ui);
 }
 
 .qhse-form-field__label {
-  font-size: var(--qhse-text-body-size);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
   font-weight: 600;
-  color: var(--qhse-text-primary);
+  color: var(--qhse-text-secondary);
 }
 
 /* Ditandai warna text-primary (bukan merah polos) — DESIGN §7.2. */
@@ -18,13 +22,100 @@
   font-weight: 700;
 }
 
+/* Kolom isian digayakan lewat selektor turunan, BUKAN kelas sendiri: komponen
+   FormField menerima input-nya sebagai `children`, jadi pemanggil menyerahkan
+   elemen <input> polos. Tanpa aturan ini, setiap formulir di aplikasi
+   menampilkan kotak bawaan peramban — persis satu-satunya bagian layar yang
+   masih terlihat seperti formulir tahun 2005 padahal sisanya sudah tidak. */
+.qhse-form-field input[type="text"],
+.qhse-form-field input[type="email"],
+.qhse-form-field input[type="password"],
+.qhse-form-field input[type="number"],
+.qhse-form-field input[type="search"],
+.qhse-form-field input[type="tel"],
+.qhse-form-field input[type="url"],
+.qhse-form-field input[type="date"],
+.qhse-form-field input[type="datetime-local"],
+.qhse-form-field input[type="time"],
+.qhse-form-field select,
+.qhse-form-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--qhse-tap-target-min);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  line-height: var(--qhse-text-body-lh);
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-2);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.qhse-form-field textarea {
+  min-height: calc(var(--qhse-tap-target-min) * 2);
+  resize: vertical;
+}
+
+.qhse-form-field input::placeholder,
+.qhse-form-field textarea::placeholder {
+  color: var(--qhse-text-muted);
+}
+
+.qhse-form-field input:hover:not(:disabled),
+.qhse-form-field select:hover:not(:disabled),
+.qhse-form-field textarea:hover:not(:disabled) {
+  border-color: var(--qhse-brand-light);
+}
+
+.qhse-form-field input:focus,
+.qhse-form-field select:focus,
+.qhse-form-field textarea:focus {
+  outline: none;
+  background: var(--qhse-surface-1);
+  border-color: var(--qhse-brand);
+  box-shadow: 0 0 0 3px var(--qhse-brand-wash);
+}
+
+.qhse-form-field input:disabled,
+.qhse-form-field select:disabled,
+.qhse-form-field textarea:disabled {
+  color: var(--qhse-text-muted);
+  background: var(--qhse-gridline);
+  cursor: not-allowed;
+}
+
+/* Field bermasalah ditandai di kotaknya sendiri, bukan cuma lewat teks di
+   bawahnya — pada formulir panjang, teks merah di bawah mudah terlewat kalau
+   kotaknya sendiri tidak ikut berubah. */
+.qhse-form-field:has(.qhse-form-field__error) input,
+.qhse-form-field:has(.qhse-form-field__error) select,
+.qhse-form-field:has(.qhse-form-field__error) textarea {
+  border-color: var(--qhse-status-critical);
+  background: var(--qhse-status-critical-wash);
+}
+
+.qhse-form-field:has(.qhse-form-field__error) input:focus,
+.qhse-form-field:has(.qhse-form-field__error) select:focus,
+.qhse-form-field:has(.qhse-form-field__error) textarea:focus {
+  box-shadow: 0 0 0 3px var(--qhse-status-critical-wash);
+}
+
 .qhse-form-field__hint {
   font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
   color: var(--qhse-text-muted);
+  margin: 0;
 }
 
 .qhse-form-field__error {
   font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
   color: var(--qhse-status-critical);
   font-weight: 600;
+  margin: 0;
 }
