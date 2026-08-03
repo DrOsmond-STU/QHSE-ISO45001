@@ -53,13 +53,39 @@ Options -Indexes -MultiViews
   RewriteRule .* http://127.0.0.1:3400%{REQUEST_URI} [P,QSA,L]
 </IfModule>
 
+<IfModule mod_setenvif.c>
+  # Menandai permintaan berkas yang MEMANG harus bisa dibingkai halaman kita
+  # sendiri. Request_URI di SetEnvIf dievaluasi sebelum rewrite dan tanpa
+  # query string, jadi pola ini cocok untuk /api/files/download?token=...
+  SetEnvIf Request_URI "^/api/files/download" QHSE_INLINE_FILE=1
+</IfModule>
+
 <IfModule mod_headers.c>
   # Tanpa header ini aplikasi mengira permintaan datang lewat HTTP polos.
   RequestHeader set X-Forwarded-Proto "https" env=HTTPS
 
-  Header always set X-Content-Type-Options "nosniff"
+  # setifempty, BUKAN set: demo-api sudah memasang nosniff sendiri pada
+  # unduhan berkas, dan `set` di sini akan menambahkan yang kedua sehingga
+  # nilainya terkirim sebagai "nosniff, nosniff". Fungsinya tetap benar, tapi
+  # header ganda membingungkan siapa pun yang memeriksanya — dan pemeriksaan
+  # otomatis kita sendiri sempat gagal karenanya.
+  Header always setifempty X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-  Header always set X-Frame-Options "DENY"
+
+  # ---------------------------------------------------------------------------
+  #  X-Frame-Options: DENY untuk semua halaman, SAMEORIGIN untuk unduhan berkas.
+  #
+  #  DENY menolak pembingkaian dari SIAPA PUN, termasuk dari origin yang sama.
+  #  Penampil dokumen terkendali menampilkan PDF di dalam <iframe> yang
+  #  menunjuk /api/files/download pada origin ini juga — dengan DENY, bingkai
+  #  itu kosong dan penampilnya tidak menampilkan apa pun.
+  #
+  #  Ini tidak terlihat saat pengembangan lokal karena di sana tidak ada
+  #  Apache sama sekali; baru muncul di server. Pemeriksaan otomatis sekarang
+  #  ikut memeriksa header ini pada unduhan berkas.
+  # ---------------------------------------------------------------------------
+  Header always set X-Frame-Options "DENY" env=!QHSE_INLINE_FILE
+  Header always set X-Frame-Options "SAMEORIGIN" env=QHSE_INLINE_FILE
 </IfModule>
 
 # ----------------------------------------------------------------------------

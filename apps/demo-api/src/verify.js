@@ -349,7 +349,22 @@ async function main() {
         (unduh.headers.get("content-disposition") || "").startsWith("inline"),
         "disajikan inline supaya bisa ditampilkan penampil",
       );
-      report(unduh.headers.get("x-content-type-options") === "nosniff", "nosniff dipasang pada unduhan");
+      // includes(), bukan kesetaraan: header ini bisa datang dari demo-api,
+      // dari Apache, atau dari keduanya — dan yang penting nilainya ADA, bukan
+      // berapa lapis yang memasangnya.
+      report(
+        (unduh.headers.get("x-content-type-options") || "").includes("nosniff"),
+        "nosniff dipasang pada unduhan",
+        unduh.headers.get("x-content-type-options") || "(kosong)",
+      );
+
+      // PEMERIKSAAN YANG PALING PENTING DI BAGIAN INI. Penampil dokumen
+      // menampilkan PDF di dalam <iframe> pada origin yang sama. Kalau proxy
+      // di depan memasang X-Frame-Options: DENY pada respons ini, bingkainya
+      // kosong — dan tidak ada satu pun pemeriksaan API lain yang akan
+      // memperlihatkannya, karena berkasnya tetap terunduh dengan benar.
+      const xfo = (unduh.headers.get("x-frame-options") || "").toUpperCase();
+      report(!xfo.includes("DENY"), "unduhan boleh dibingkai halaman sendiri", xfo || "(tanpa X-Frame-Options)");
     }
 
     const tokenPalsu = await fetch(`${BASE}/files/download?token=ngawur.deadbeef`);
