@@ -112,7 +112,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
           <span className="qhse-shell__brand-text">
             QHSE Platform
-            <span className="qhse-shell__brand-sub">Petro Nusantara Sejahtera</span>
+            {/* Baris kedua menyebut PRODUKNYA, bukan nama tenant. Nama tenant
+                sempat ditulis di sini dan itu keliru: token JWT hanya memuat
+                tenant_id, tidak ada satu pun sumber nama tenant di sisi
+                klien — jadi nama apa pun yang ditulis di sini adalah nama
+                yang dikarang, dan akan salah untuk setiap tenant selain satu
+                yang kebetulan dipakai saat menulisnya. Identitas tenant yang
+                benar-benar diketahui sudah ditampilkan di sisi kanan topbar
+                sebagai "Tenant <id>". */}
+            <span className="qhse-shell__brand-sub">Mutu · K3 · Lingkungan</span>
           </span>
         </Link>
         <span className="qhse-shell__spacer" />
