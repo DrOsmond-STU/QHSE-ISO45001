@@ -2,17 +2,37 @@
 // halaman detail, dan kartu KPI dashboard.
 //
 // Setiap entri memetakan satu endpoint GET read-only yang benar-benar ada di
-// apps/api (lihat *.controller.ts di modules/domains/*). Kolom yang
-// didaftarkan di sini adalah nama field Prisma apa adanya — API mengembalikan
-// objek model mentah, tidak ada lapisan DTO/serializer di endpoint read-only
-// itu, jadi nama field di sini HARUS sama persis dengan schema.prisma.
+// apps/demo-api (dan, di lingkungan yang mampu menjalankannya, di apps/api).
+// Nama field di sini adalah nama kolom basis data dalam bentuk camelCase —
+// API mengembalikan baris apa adanya, tidak ada lapisan DTO/serializer di
+// endpoint read-only itu.
 //
 // Halaman daftar/detail digerakkan konfigurasi (satu route dinamis
 // app/(dashboard)/modules/[slug]) alih-alih 15 file halaman kembar — cerminan
-// dari fakta bahwa 15 controller-nya sendiri lahir dari satu template yang
-// sama. Menambah modul ke-16 nanti = menambah satu entri di array ini.
+// dari fakta bahwa 15 endpoint-nya sendiri lahir dari satu pola yang sama.
+// Menambah modul ke-16 nanti = menambah satu entri di array ini DAN satu
+// entri padanan di apps/demo-api/src/modules.js.
+//
+// ---------------------------------------------------------------------------
+// KENAPA `detailSections` ADA, dan kenapa isinya BUKAN "seluruh field"
+//
+// Versi pertama halaman detail menampilkan SEMUA field yang dikembalikan API,
+// dengan alasan bahwa menyembunyikan sebagian akan membuat halaman berbohong
+// tentang isi record. Alasan itu terdengar benar dan ternyata salah dalam
+// praktik: yang muncul di layar adalah dua puluh baris berisi UUID mentah,
+// `Tenant id`, `Created by`, dan selusin tanda pisah untuk kolom kosong.
+//
+// Halaman yang menampilkan `Owner user id: b1171e4a-06d8-5441-...` tidak
+// lebih jujur daripada yang menampilkan `Pemilik dokumen: Hendra Kusuma`. Ia
+// hanya memindahkan pekerjaan menerjemahkan ke kepala pembaca, dan pembaca
+// tidak punya tabel `users` di kepalanya.
+//
+// Karena itu tiap modul kini memilih fieldnya secara eksplisit, dikelompokkan
+// menurut cara orang membacanya, dan API menyediakan `<field>Label` untuk
+// setiap kunci asing supaya yang tampil adalah nama, bukan pengenal.
+// ---------------------------------------------------------------------------
 
-export type ColumnType = "text" | "enum" | "status" | "date" | "datetime" | "number" | "bool";
+export type ColumnType = "text" | "enum" | "status" | "date" | "datetime" | "number" | "bool" | "currency" | "longtext";
 
 export interface ModuleColumn {
   key: string;
@@ -20,28 +40,45 @@ export interface ModuleColumn {
   type?: ColumnType; // default "text"
 }
 
+export interface DetailField {
+  key: string;
+  label: string;
+  type?: ColumnType;
+  /** Teks panjang: dirender selebar kartu sebagai paragraf, bukan sel definisi sempit. */
+  wide?: boolean;
+}
+
+export interface DetailSection {
+  title: string;
+  fields: DetailField[];
+}
+
+export interface ModuleChild {
+  /** Ditempel setelah `${endpoint}/${id}`, mis. "/findings". */
+  pathSuffix: string;
+  title: string;
+  /**
+   * Kalimat yang ditampilkan ketika anaknya memang belum ada. Ditulis
+   * spesifik per modul, bukan "Belum ada data": audit yang belum
+   * dilaksanakan memang belum punya temuan, dan mengatakannya begitu adalah
+   * beda antara sistem yang menjelaskan dirinya dan sistem yang tampak rusak.
+   */
+  emptyMessage: string;
+  columns: ModuleColumn[];
+}
+
 export interface ModuleDefinition {
   slug: string;
-  /** Path API relatif terhadap NEXT_PUBLIC_API_URL, mis. "/documents". */
   endpoint: string;
   title: string;
-  /** Nomor modul PRD — dipakai di judul halaman supaya nyambung ke dokumen desain. */
   moduleNumber: string;
   group: string;
-  /** Field yang jadi judul di halaman detail (nomor dokumen/permit/dst). */
   labelField: string;
+  /** Baris kedua judul halaman detail — biasanya judul/uraian recordnya. */
+  subtitleField?: string;
   columns: ModuleColumn[];
-  /**
-   * Daftar anak opsional yang ikut ditampilkan di halaman detail. Saat ini
-   * hanya audit yang punya (GET /audits/:id/findings) — satu-satunya endpoint
-   * anak yang tersedia di API; modul lain belum punya padanannya.
-   */
-  children?: {
-    /** Ditempel setelah `${endpoint}/${id}`, mis. "/findings". */
-    pathSuffix: string;
-    title: string;
-    columns: ModuleColumn[];
-  };
+  detailSections: DetailSection[];
+  children?: ModuleChild[];
 }
 
 export const MODULE_GROUPS = [
@@ -54,6 +91,17 @@ export const MODULE_GROUPS = [
   "Aset & Mitra Kerja",
 ] as const;
 
+/** Blok pencatatan yang sama di seluruh modul — siapa membuat, siapa terakhir mengubah. */
+const REKAMAN: DetailSection = {
+  title: "Pencatatan",
+  fields: [
+    { key: "createdBy", label: "Dibuat oleh" },
+    { key: "createdAt", label: "Dibuat pada", type: "datetime" },
+    { key: "updatedBy", label: "Diubah terakhir oleh" },
+    { key: "updatedAt", label: "Diubah pada", type: "datetime" },
+  ],
+};
+
 export const MODULES: ModuleDefinition[] = [
   {
     slug: "documents",
@@ -62,6 +110,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 03",
     group: "Dokumen & Kepatuhan",
     labelField: "documentNumber",
+    subtitleField: "title",
     columns: [
       { key: "documentNumber", header: "Nomor" },
       { key: "title", header: "Judul" },
@@ -69,6 +118,46 @@ export const MODULES: ModuleDefinition[] = [
       { key: "status", header: "Status", type: "status" },
       { key: "effectiveDate", header: "Berlaku", type: "date" },
       { key: "nextReviewDate", header: "Tinjauan berikutnya", type: "date" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas dokumen",
+        fields: [
+          { key: "documentNumber", label: "Nomor dokumen" },
+          { key: "title", label: "Judul" },
+          { key: "documentType", label: "Jenis", type: "enum" },
+          { key: "documentCategoryId", label: "Kategori" },
+          { key: "classification", label: "Klasifikasi", type: "enum" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "ownerUserId", label: "Pemilik dokumen" },
+        ],
+      },
+      { title: "Isi dokumen", fields: [{ key: "description", label: "Ringkasan isi", type: "longtext", wide: true }] },
+      {
+        title: "Masa berlaku dan peninjauan",
+        fields: [
+          { key: "effectiveDate", label: "Mulai berlaku", type: "date" },
+          { key: "nextReviewDate", label: "Tinjauan berikutnya", type: "date" },
+          { key: "reviewCycleMonths", label: "Siklus tinjauan (bulan)", type: "number" },
+          { key: "retentionYears", label: "Masa retensi (tahun)", type: "number" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/versions",
+        title: "Riwayat versi",
+        emptyMessage: "Dokumen ini belum punya versi yang tercatat.",
+        columns: [
+          { key: "majorVersion", header: "Versi", type: "number" },
+          { key: "fileName", header: "Nama berkas" },
+          { key: "status", header: "Status", type: "status" },
+          { key: "changeSummary", header: "Ringkasan perubahan" },
+          { key: "publishedAt", header: "Terbit", type: "date" },
+          { key: "createdBy", header: "Disiapkan oleh" },
+        ],
+      },
     ],
   },
   {
@@ -78,6 +167,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 04",
     group: "Dokumen & Kepatuhan",
     labelField: "regulationNumber",
+    subtitleField: "title",
     columns: [
       { key: "regulationNumber", header: "Nomor" },
       { key: "title", header: "Judul" },
@@ -85,6 +175,45 @@ export const MODULES: ModuleDefinition[] = [
       { key: "issuingAuthority", header: "Penerbit" },
       { key: "status", header: "Status", type: "status" },
       { key: "nextReviewDate", header: "Tinjauan berikutnya", type: "date" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas peraturan",
+        fields: [
+          { key: "regulationNumber", label: "Nomor peraturan" },
+          { key: "title", label: "Judul" },
+          { key: "regulationType", label: "Jenis", type: "enum" },
+          { key: "issuingAuthority", label: "Instansi penerbit" },
+          { key: "status", label: "Status", type: "status" },
+        ],
+      },
+      { title: "Ringkasan", fields: [{ key: "summary", label: "Ringkasan dan relevansi", type: "longtext", wide: true }] },
+      {
+        title: "Tanggal dan peninjauan",
+        fields: [
+          { key: "issueDate", label: "Tanggal terbit", type: "date" },
+          { key: "effectiveDate", label: "Mulai berlaku", type: "date" },
+          { key: "nextReviewDate", label: "Tinjauan berikutnya", type: "date" },
+          { key: "reviewCycleMonths", label: "Siklus tinjauan (bulan)", type: "number" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/obligations",
+        title: "Kewajiban kepatuhan",
+        emptyMessage: "Belum ada kewajiban yang diturunkan dari peraturan ini.",
+        columns: [
+          { key: "obligationCode", header: "Kode" },
+          { key: "clauseReference", header: "Pasal" },
+          { key: "obligationDescription", header: "Kewajiban" },
+          { key: "obligationType", header: "Jenis", type: "enum" },
+          { key: "frequency", header: "Frekuensi", type: "enum" },
+          { key: "responsibleUserId", header: "Penanggung jawab" },
+          { key: "nextDueDate", header: "Jatuh tempo", type: "date" },
+        ],
+      },
     ],
   },
   {
@@ -94,6 +223,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 05",
     group: "Risiko & Operasi",
     labelField: "hiraNumber",
+    subtitleField: "activityDescription",
     columns: [
       { key: "hiraNumber", header: "Nomor" },
       { key: "activityDescription", header: "Aktivitas" },
@@ -101,6 +231,47 @@ export const MODULES: ModuleDefinition[] = [
       { key: "status", header: "Status", type: "status" },
       { key: "assessmentDate", header: "Tanggal", type: "date" },
       { key: "reviewDueDate", header: "Jatuh tempo tinjauan", type: "date" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas penilaian",
+        fields: [
+          { key: "hiraNumber", label: "Nomor HIRA" },
+          { key: "assessmentType", label: "Jenis penilaian", type: "enum" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "siteId", label: "Lokasi" },
+          { key: "departmentId", label: "Departemen" },
+          { key: "assessedBy", label: "Dinilai oleh" },
+          { key: "riskMatrixConfigId", label: "Matriks risiko" },
+        ],
+      },
+      { title: "Aktivitas yang dinilai", fields: [{ key: "activityDescription", label: "Uraian aktivitas", type: "longtext", wide: true }] },
+      {
+        title: "Peninjauan",
+        fields: [
+          { key: "assessmentDate", label: "Tanggal penilaian", type: "date" },
+          { key: "reviewDueDate", label: "Jatuh tempo tinjauan", type: "date" },
+          { key: "reviewCycleMonths", label: "Siklus tinjauan (bulan)", type: "number" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/hazards",
+        title: "Bahaya dan pengendalian",
+        emptyMessage: "Belum ada baris bahaya pada penilaian ini.",
+        columns: [
+          { key: "hazardDescriptionFreetext", header: "Bahaya" },
+          { key: "existingControls", header: "Pengendalian yang ada" },
+          { key: "riskScoreBefore", header: "Skor awal", type: "number" },
+          { key: "riskLevelBefore", header: "Tingkat awal", type: "status" },
+          { key: "additionalControlsRequired", header: "Pengendalian tambahan" },
+          { key: "riskScoreAfter", header: "Skor sisa", type: "number" },
+          { key: "riskLevelAfter", header: "Tingkat sisa", type: "status" },
+          { key: "responsibleUserId", header: "Penanggung jawab" },
+        ],
+      },
     ],
   },
   {
@@ -110,6 +281,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 06",
     group: "Risiko & Operasi",
     labelField: "permitNumber",
+    subtitleField: "title",
     columns: [
       { key: "permitNumber", header: "Nomor" },
       { key: "title", header: "Pekerjaan" },
@@ -117,6 +289,52 @@ export const MODULES: ModuleDefinition[] = [
       { key: "status", header: "Status", type: "status" },
       { key: "plannedStartDatetime", header: "Mulai", type: "datetime" },
       { key: "plannedEndDatetime", header: "Selesai", type: "datetime" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas izin",
+        fields: [
+          { key: "permitNumber", label: "Nomor izin" },
+          { key: "title", label: "Pekerjaan" },
+          { key: "workPermitTypeId", label: "Jenis izin" },
+          { key: "riskLevel", label: "Tingkat risiko", type: "status" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "requesterId", label: "Pemohon" },
+          { key: "numberOfWorkers", label: "Jumlah pekerja", type: "number" },
+        ],
+      },
+      { title: "Uraian pekerjaan", fields: [{ key: "description", label: "Uraian", type: "longtext", wide: true }] },
+      {
+        title: "Lokasi dan waktu",
+        fields: [
+          { key: "siteId", label: "Lokasi kerja" },
+          { key: "locationDetail", label: "Rincian lokasi" },
+          { key: "departmentId", label: "Departemen" },
+          { key: "plannedStartDatetime", label: "Rencana mulai", type: "datetime" },
+          { key: "plannedEndDatetime", label: "Rencana selesai", type: "datetime" },
+          { key: "actualStartDatetime", label: "Realisasi mulai", type: "datetime" },
+          { key: "actualEndDatetime", label: "Realisasi selesai", type: "datetime" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/gas-tests",
+        title: "Hasil uji gas",
+        emptyMessage: "Jenis izin ini tidak mensyaratkan uji gas.",
+        columns: [
+          { key: "gasType", header: "Jenis gas", type: "enum" },
+          { key: "readingValue", header: "Hasil ukur", type: "number" },
+          { key: "unit", header: "Satuan" },
+          { key: "acceptableMin", header: "Batas bawah", type: "number" },
+          { key: "acceptableMax", header: "Batas atas", type: "number" },
+          { key: "result", header: "Keputusan", type: "status" },
+          { key: "testDatetime", header: "Waktu uji", type: "datetime" },
+          { key: "instrumentName", header: "Alat ukur" },
+          { key: "testedBy", header: "Diuji oleh" },
+        ],
+      },
     ],
   },
   {
@@ -134,6 +352,76 @@ export const MODULES: ModuleDefinition[] = [
       { key: "incidentDatetime", header: "Waktu kejadian", type: "datetime" },
       { key: "daysLost", header: "Hari hilang", type: "number" },
     ],
+    detailSections: [
+      {
+        title: "Identitas insiden",
+        fields: [
+          { key: "incidentNumber", label: "Nomor laporan" },
+          { key: "classification", label: "Klasifikasi", type: "enum" },
+          { key: "initialClassification", label: "Klasifikasi awal", type: "enum" },
+          { key: "severityLevel", label: "Tingkat keparahan", type: "status" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "reportedBy", label: "Dilaporkan oleh" },
+        ],
+      },
+      {
+        title: "Kejadian",
+        fields: [
+          { key: "description", label: "Kronologi", type: "longtext", wide: true },
+          { key: "immediateActionTaken", label: "Tindakan segera", type: "longtext", wide: true },
+        ],
+      },
+      {
+        title: "Tempat, waktu, dan dampak",
+        fields: [
+          { key: "incidentDatetime", label: "Waktu kejadian", type: "datetime" },
+          { key: "siteId", label: "Lokasi" },
+          { key: "locationDetail", label: "Rincian lokasi" },
+          { key: "departmentId", label: "Departemen" },
+          { key: "daysLost", label: "Hari kerja hilang", type: "number" },
+          { key: "estimatedCost", label: "Estimasi kerugian", type: "currency" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/investigations",
+        title: "Investigasi",
+        emptyMessage: "Insiden ini belum melewati investigasi formal.",
+        columns: [
+          { key: "method", header: "Metode", type: "enum" },
+          { key: "leadInvestigatorId", header: "Ketua investigasi" },
+          { key: "startedAt", header: "Mulai", type: "date" },
+          { key: "targetCompletionAt", header: "Target selesai", type: "date" },
+          { key: "completedAt", header: "Selesai", type: "date" },
+          { key: "status", header: "Status", type: "status" },
+          { key: "findingsSummary", header: "Ringkasan temuan" },
+        ],
+      },
+      {
+        pathSuffix: "/root-causes",
+        title: "Akar masalah",
+        emptyMessage: "Akar masalah belum ditetapkan — investigasinya belum selesai.",
+        columns: [
+          { key: "sequenceNo", header: "Urutan", type: "number" },
+          { key: "causeType", header: "Jenis sebab", type: "enum" },
+          { key: "category", header: "Kategori", type: "enum" },
+          { key: "description", header: "Uraian" },
+          { key: "methodReference", header: "Rujukan metode" },
+        ],
+      },
+      {
+        pathSuffix: "/corrective-actions",
+        title: "Tindak lanjut — CAPA terkait",
+        emptyMessage: "Belum ada CAPA yang ditautkan ke insiden ini.",
+        columns: [
+          { key: "capaRegisterId", header: "Nomor CAPA" },
+          { key: "linkedBy", header: "Ditautkan oleh" },
+          { key: "linkedAt", header: "Ditautkan pada", type: "date" },
+        ],
+      },
+    ],
   },
   {
     slug: "capa-registers",
@@ -142,6 +430,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 10",
     group: "Kejadian & Perbaikan",
     labelField: "capaNumber",
+    subtitleField: "title",
     columns: [
       { key: "capaNumber", header: "Nomor" },
       { key: "title", header: "Judul" },
@@ -149,6 +438,64 @@ export const MODULES: ModuleDefinition[] = [
       { key: "priority", header: "Prioritas", type: "status" },
       { key: "status", header: "Status", type: "status" },
       { key: "targetClosureDate", header: "Target penutupan", type: "date" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas CAPA",
+        fields: [
+          { key: "capaNumber", label: "Nomor CAPA" },
+          { key: "title", label: "Judul" },
+          { key: "sourceType", label: "Sumber", type: "enum" },
+          { key: "sourceReferenceNumber", label: "Nomor rujukan sumber" },
+          { key: "category", label: "Kategori", type: "enum" },
+          { key: "priority", label: "Prioritas", type: "status" },
+          { key: "status", label: "Status", type: "status" },
+        ],
+      },
+      { title: "Masalah", fields: [{ key: "problemStatement", label: "Pernyataan masalah", type: "longtext", wide: true }] },
+      {
+        title: "Penanggung jawab dan target",
+        fields: [
+          { key: "initiatedBy", label: "Diprakarsai oleh" },
+          { key: "initiatedAt", label: "Tanggal prakarsa", type: "date" },
+          // Tidak ada "ditugaskan kepada" di sini dengan sengaja: tabel
+          // capa_register memang tidak punya kolom itu. Kepemilikan CAPA
+          // tinggal pada tiap RENCANA TINDAKAN (kolom PIC di tabel bawah),
+          // yang lebih dekat dengan cara kerjanya — satu CAPA bisa punya
+          // beberapa tindakan dengan penanggung jawab berbeda.
+          { key: "siteId", label: "Lokasi" },
+          { key: "targetClosureDate", label: "Target penutupan", type: "date" },
+          { key: "actualClosureDate", label: "Realisasi penutupan", type: "date" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/root-causes",
+        title: "Analisis akar masalah",
+        emptyMessage: "CAPA ini masih berstatus draf; analisis akar masalah belum dikerjakan.",
+        columns: [
+          { key: "method", header: "Metode", type: "enum" },
+          { key: "rootCauseSummary", header: "Akar masalah" },
+          { key: "contributingFactors", header: "Faktor penyumbang" },
+          { key: "analyzedBy", header: "Dianalisis oleh" },
+          { key: "analyzedAt", header: "Tanggal analisis", type: "date" },
+        ],
+      },
+      {
+        pathSuffix: "/action-plans",
+        title: "Rencana tindakan",
+        emptyMessage: "Belum ada rencana tindakan yang ditetapkan.",
+        columns: [
+          { key: "actionType", header: "Jenis", type: "enum" },
+          { key: "actionDescription", header: "Tindakan" },
+          { key: "justification", header: "Alasan" },
+          { key: "picUserId", header: "PIC" },
+          { key: "dueDate", header: "Jatuh tempo", type: "date" },
+          { key: "statusCache", header: "Status", type: "status" },
+        ],
+      },
     ],
   },
   {
@@ -166,6 +513,45 @@ export const MODULES: ModuleDefinition[] = [
       { key: "plannedDate", header: "Rencana", type: "date" },
       { key: "actualDate", header: "Realisasi", type: "datetime" },
     ],
+    detailSections: [
+      {
+        title: "Identitas inspeksi",
+        fields: [
+          { key: "inspectionRecordNumber", label: "Nomor catatan" },
+          { key: "inspectionChecklistTemplateId", label: "Checklist yang dipakai" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "inspectorId", label: "Pemeriksa" },
+          { key: "siteId", label: "Lokasi" },
+          { key: "departmentId", label: "Departemen" },
+        ],
+      },
+      {
+        title: "Pelaksanaan dan hasil",
+        fields: [
+          { key: "plannedDate", label: "Tanggal rencana", type: "date" },
+          { key: "actualDate", label: "Tanggal realisasi", type: "datetime" },
+          { key: "overallResult", label: "Hasil keseluruhan", type: "status" },
+          { key: "overallScore", label: "Skor", type: "number" },
+        ],
+      },
+      { title: "Catatan pemeriksa", fields: [{ key: "notes", label: "Catatan", type: "longtext", wide: true }] },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/findings",
+        title: "Temuan inspeksi",
+        emptyMessage: "Tidak ada temuan pada inspeksi ini.",
+        columns: [
+          { key: "title", header: "Temuan" },
+          { key: "description", header: "Uraian" },
+          { key: "severity", header: "Keparahan", type: "status" },
+          { key: "areaLocation", header: "Area" },
+          { key: "status", header: "Status", type: "status" },
+          { key: "targetCloseDate", header: "Target penutupan", type: "date" },
+        ],
+      },
+    ],
   },
   {
     slug: "audits",
@@ -182,18 +568,64 @@ export const MODULES: ModuleDefinition[] = [
       { key: "actualStartDate", header: "Realisasi mulai", type: "date" },
       { key: "actualEndDate", header: "Realisasi selesai", type: "date" },
     ],
-    children: {
-      pathSuffix: "/findings",
-      title: "Temuan audit",
-      columns: [
-        { key: "findingNumber", header: "Nomor" },
-        { key: "classification", header: "Klasifikasi", type: "status" },
-        { key: "description", header: "Uraian" },
-        { key: "status", header: "Status", type: "status" },
-        { key: "requiresCapa", header: "Butuh CAPA", type: "bool" },
-        { key: "targetClosureDate", header: "Target penutupan", type: "date" },
-      ],
-    },
+    detailSections: [
+      {
+        title: "Identitas audit",
+        fields: [
+          { key: "auditNumber", label: "Nomor audit" },
+          { key: "auditTypeId", label: "Jenis audit" },
+          { key: "auditChecklistId", label: "Checklist / standar" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "leadAuditorId", label: "Ketua auditor" },
+          { key: "siteId", label: "Lokasi yang diaudit" },
+        ],
+      },
+      {
+        title: "Jadwal dan pelaksanaan",
+        fields: [
+          { key: "plannedStartDate", label: "Rencana mulai", type: "date" },
+          { key: "plannedEndDate", label: "Rencana selesai", type: "date" },
+          { key: "actualStartDate", label: "Realisasi mulai", type: "date" },
+          { key: "actualEndDate", label: "Realisasi selesai", type: "date" },
+          { key: "openingMeetingDatetime", label: "Rapat pembukaan", type: "datetime" },
+          { key: "closingMeetingDatetime", label: "Rapat penutupan", type: "datetime" },
+        ],
+      },
+      {
+        title: "Notulen dan kesimpulan",
+        fields: [
+          { key: "openingMeetingNotes", label: "Notulen rapat pembukaan", type: "longtext", wide: true },
+          { key: "closingMeetingNotes", label: "Notulen rapat penutupan", type: "longtext", wide: true },
+          { key: "overallConclusion", label: "Kesimpulan audit", type: "longtext", wide: true },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/findings",
+        title: "Temuan audit",
+        emptyMessage: "Audit ini belum dilaksanakan, jadi belum ada temuan.",
+        columns: [
+          { key: "findingNumber", header: "Nomor" },
+          { key: "classification", header: "Klasifikasi", type: "status" },
+          { key: "description", header: "Uraian" },
+          { key: "status", header: "Status", type: "status" },
+          { key: "requiresCapa", header: "Butuh CAPA", type: "bool" },
+          { key: "identifiedBy", header: "Ditemukan oleh" },
+          { key: "targetClosureDate", header: "Target penutupan", type: "date" },
+        ],
+      },
+      {
+        pathSuffix: "/team",
+        title: "Tim audit",
+        emptyMessage: "Tim audit belum ditetapkan.",
+        columns: [
+          { key: "userId", header: "Nama" },
+          { key: "roleInTeam", header: "Peran", type: "enum" },
+        ],
+      },
+    ],
   },
   {
     slug: "ncr-records",
@@ -202,6 +634,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 11",
     group: "Mutu & Lingkungan",
     labelField: "ncrNumber",
+    subtitleField: "title",
     columns: [
       { key: "ncrNumber", header: "Nomor" },
       { key: "title", header: "Judul" },
@@ -209,6 +642,54 @@ export const MODULES: ModuleDefinition[] = [
       { key: "severity", header: "Keparahan", type: "status" },
       { key: "disposition", header: "Disposisi", type: "status" },
       { key: "detectedDate", header: "Terdeteksi", type: "date" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas ketidaksesuaian",
+        fields: [
+          { key: "ncrNumber", label: "Nomor NCR" },
+          { key: "title", label: "Judul" },
+          { key: "ncrSource", label: "Sumber", type: "enum" },
+          { key: "severity", label: "Keparahan", type: "status" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "detectionStage", label: "Tahap deteksi", type: "enum" },
+          { key: "detectedBy", label: "Terdeteksi oleh" },
+          { key: "detectedDate", label: "Tanggal terdeteksi", type: "date" },
+        ],
+      },
+      {
+        title: "Objek yang tidak sesuai",
+        fields: [
+          { key: "productName", label: "Produk / material" },
+          { key: "productCode", label: "Kode produk" },
+          { key: "batchLotNumber", label: "Nomor lot" },
+          { key: "quantityNonconforming", label: "Jumlah tidak sesuai", type: "number" },
+          { key: "unitOfMeasure", label: "Satuan" },
+          { key: "processArea", label: "Area proses" },
+          { key: "defectCategory", label: "Kategori cacat" },
+          { key: "supplierName", label: "Pemasok" },
+        ],
+      },
+      {
+        title: "Uraian dan penanganan",
+        fields: [
+          { key: "description", label: "Uraian ketidaksesuaian", type: "longtext", wide: true },
+          { key: "immediateContainmentAction", label: "Tindakan penahanan segera", type: "longtext", wide: true },
+          { key: "dispositionJustification", label: "Alasan disposisi", type: "longtext", wide: true },
+        ],
+      },
+      {
+        title: "Disposisi dan penutupan",
+        fields: [
+          { key: "disposition", label: "Disposisi", type: "status" },
+          { key: "dispositionApprovedBy", label: "Disetujui oleh" },
+          { key: "dispositionApprovedAt", label: "Disetujui pada", type: "date" },
+          { key: "reInspectionResult", label: "Hasil inspeksi ulang", type: "status" },
+          { key: "closedDate", label: "Tanggal ditutup", type: "date" },
+          { key: "closedBy", label: "Ditutup oleh" },
+        ],
+      },
+      REKAMAN,
     ],
   },
   {
@@ -218,6 +699,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 12",
     group: "Mutu & Lingkungan",
     labelField: "registerNumber",
+    subtitleField: "activityProcessArea",
     columns: [
       { key: "registerNumber", header: "Nomor" },
       { key: "activityProcessArea", header: "Aktivitas / area" },
@@ -225,6 +707,42 @@ export const MODULES: ModuleDefinition[] = [
       { key: "significanceScore", header: "Skor", type: "number" },
       { key: "significanceLevel", header: "Signifikansi", type: "status" },
       { key: "isRegulated", header: "Diatur regulasi", type: "bool" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas aspek",
+        fields: [
+          { key: "registerNumber", label: "Nomor register" },
+          { key: "activityProcessArea", label: "Aktivitas / area" },
+          { key: "conditionType", label: "Kondisi operasi", type: "enum" },
+          { key: "impactType", label: "Jenis dampak", type: "enum" },
+          { key: "isRegulated", label: "Diatur regulasi", type: "bool" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "siteId", label: "Lokasi" },
+          { key: "identifiedBy", label: "Diidentifikasi oleh" },
+        ],
+      },
+      {
+        title: "Aspek dan dampaknya",
+        fields: [
+          { key: "environmentalAspect", label: "Aspek lingkungan", type: "longtext", wide: true },
+          { key: "environmentalImpact", label: "Dampak lingkungan", type: "longtext", wide: true },
+        ],
+      },
+      {
+        title: "Penilaian signifikansi",
+        fields: [
+          { key: "likelihoodScore", label: "Kemungkinan", type: "number" },
+          { key: "severityScore", label: "Keparahan", type: "number" },
+          { key: "frequencyScore", label: "Frekuensi", type: "number" },
+          { key: "regulatoryScore", label: "Aspek regulasi", type: "number" },
+          { key: "stakeholderConcernScore", label: "Perhatian pemangku kepentingan", type: "number" },
+          { key: "significanceScore", label: "Skor signifikansi", type: "number" },
+          { key: "significanceThreshold", label: "Ambang signifikan", type: "number" },
+          { key: "significanceLevel", label: "Kesimpulan", type: "status" },
+        ],
+      },
+      REKAMAN,
     ],
   },
   {
@@ -242,6 +760,30 @@ export const MODULES: ModuleDefinition[] = [
       { key: "endDate", header: "Selesai", type: "date" },
       { key: "complianceConfirmedBySupervisor", header: "Dikonfirmasi atasan", type: "bool" },
     ],
+    detailSections: [
+      {
+        title: "Penugasan",
+        fields: [
+          { key: "employeeUserId", label: "Pekerja" },
+          { key: "restrictionType", label: "Jenis pembatasan", type: "enum" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "siteId", label: "Lokasi" },
+          { key: "departmentId", label: "Departemen" },
+          { key: "assignedBy", label: "Ditetapkan oleh" },
+          { key: "supervisorUserId", label: "Atasan langsung" },
+          { key: "complianceConfirmedBySupervisor", label: "Dikonfirmasi atasan", type: "bool" },
+        ],
+      },
+      { title: "Tugas alternatif", fields: [{ key: "alternativeTaskDescription", label: "Uraian tugas", type: "longtext", wide: true }] },
+      {
+        title: "Masa berlaku",
+        fields: [
+          { key: "startDate", label: "Mulai", type: "date" },
+          { key: "endDate", label: "Selesai", type: "date" },
+        ],
+      },
+      REKAMAN,
+    ],
   },
   {
     slug: "emergency-response-plans",
@@ -250,6 +792,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 14",
     group: "Kesehatan & Darurat",
     labelField: "planNumber",
+    subtitleField: "planTitle",
     columns: [
       { key: "planNumber", header: "Nomor" },
       { key: "planTitle", header: "Judul" },
@@ -257,6 +800,46 @@ export const MODULES: ModuleDefinition[] = [
       { key: "severityLevel", header: "Keparahan", type: "status" },
       { key: "status", header: "Status", type: "status" },
       { key: "nextReviewDueDate", header: "Tinjauan berikutnya", type: "date" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas rencana",
+        fields: [
+          { key: "planNumber", label: "Nomor rencana" },
+          { key: "planTitle", label: "Judul" },
+          { key: "emergencyType", label: "Jenis keadaan darurat", type: "enum" },
+          { key: "severityLevel", label: "Tingkat", type: "status" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "versionNumber", label: "Versi", type: "number" },
+          { key: "siteId", label: "Lokasi" },
+        ],
+      },
+      { title: "Skenario", fields: [{ key: "scenarioDescription", label: "Uraian skenario", type: "longtext", wide: true }] },
+      {
+        title: "Pengesahan dan peninjauan",
+        fields: [
+          { key: "effectiveDate", label: "Mulai berlaku", type: "date" },
+          { key: "approvedBy", label: "Disahkan oleh" },
+          { key: "approvedAt", label: "Tanggal pengesahan", type: "date" },
+          { key: "reviewedBy", label: "Ditinjau oleh" },
+          { key: "lastReviewedDate", label: "Tinjauan terakhir", type: "date" },
+          { key: "nextReviewDueDate", label: "Tinjauan berikutnya", type: "date" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/steps",
+        title: "Langkah tanggap darurat",
+        emptyMessage: "Langkah tanggap darurat belum disusun.",
+        columns: [
+          { key: "sequenceNo", header: "Urutan", type: "number" },
+          { key: "stepDescription", header: "Langkah" },
+          { key: "responsibleErtRole", header: "Penanggung jawab", type: "enum" },
+          { key: "maxTimeTargetMinutes", header: "Target (menit)", type: "number" },
+        ],
+      },
     ],
   },
   {
@@ -266,6 +849,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 15",
     group: "Aset & Mitra Kerja",
     labelField: "assetCode",
+    subtitleField: "assetName",
     columns: [
       { key: "assetCode", header: "Kode" },
       { key: "assetName", header: "Nama" },
@@ -273,6 +857,46 @@ export const MODULES: ModuleDefinition[] = [
       { key: "lifecycleStatus", header: "Status", type: "status" },
       { key: "conditionStatus", header: "Kondisi", type: "status" },
       { key: "isSafetyCritical", header: "Safety critical", type: "bool" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas aset",
+        fields: [
+          { key: "assetCode", label: "Kode aset" },
+          { key: "assetName", label: "Nama aset" },
+          { key: "assetCategoryId", label: "Kategori" },
+          { key: "manufacturer", label: "Pabrikan" },
+          { key: "modelNumber", label: "Tipe / model" },
+          { key: "serialNumber", label: "Nomor seri" },
+          { key: "isSafetyCritical", label: "Safety critical", type: "bool" },
+        ],
+      },
+      {
+        title: "Status dan penempatan",
+        fields: [
+          { key: "lifecycleStatus", label: "Status siklus hidup", type: "status" },
+          { key: "conditionStatus", label: "Kondisi", type: "status" },
+          { key: "siteId", label: "Lokasi" },
+          { key: "departmentId", label: "Departemen" },
+          { key: "purchaseDate", label: "Tanggal pembelian", type: "date" },
+          { key: "commissioningDate", label: "Tanggal commissioning", type: "date" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/maintenance",
+        title: "Riwayat pemeliharaan",
+        emptyMessage: "Belum ada rekaman pemeliharaan untuk aset ini.",
+        columns: [
+          { key: "performedDate", header: "Tanggal", type: "date" },
+          { key: "performedBy", header: "Dikerjakan oleh" },
+          { key: "findings", header: "Temuan dan pekerjaan" },
+          { key: "resultCondition", header: "Kondisi akhir", type: "status" },
+          { key: "cost", header: "Biaya", type: "currency" },
+        ],
+      },
     ],
   },
   {
@@ -282,6 +906,7 @@ export const MODULES: ModuleDefinition[] = [
     moduleNumber: "Modul 16",
     group: "Aset & Mitra Kerja",
     labelField: "equipmentTagNo",
+    subtitleField: "measurementParameter",
     columns: [
       { key: "equipmentTagNo", header: "Tag" },
       { key: "measurementParameter", header: "Parameter" },
@@ -289,6 +914,45 @@ export const MODULES: ModuleDefinition[] = [
       { key: "calibrationIntervalMonths", header: "Interval (bulan)", type: "number" },
       { key: "calibrationStatus", header: "Status", type: "status" },
       { key: "isCriticalMeasurement", header: "Pengukuran kritis", type: "bool" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas alat ukur",
+        fields: [
+          { key: "equipmentTagNo", label: "Tag peralatan" },
+          { key: "assetId", label: "Aset terkait" },
+          { key: "measurementParameter", label: "Parameter ukur" },
+          { key: "calibrationStatus", label: "Status", type: "status" },
+          { key: "isCriticalMeasurement", label: "Pengukuran kritis", type: "bool" },
+          { key: "siteId", label: "Lokasi" },
+        ],
+      },
+      {
+        title: "Rentang dan interval",
+        fields: [
+          { key: "measurementRangeMin", label: "Batas bawah", type: "number" },
+          { key: "measurementRangeMax", label: "Batas atas", type: "number" },
+          { key: "measurementRangeUnit", label: "Satuan" },
+          { key: "calibrationIntervalMonths", label: "Interval kalibrasi (bulan)", type: "number" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/certificates",
+        title: "Sertifikat kalibrasi",
+        emptyMessage: "Belum ada sertifikat kalibrasi untuk alat ini.",
+        columns: [
+          { key: "certificateNo", header: "Nomor sertifikat" },
+          { key: "calibrationProviderId", header: "Penyedia" },
+          { key: "calibrationDate", header: "Tanggal kalibrasi", type: "date" },
+          { key: "nextDueDate", header: "Jatuh tempo berikutnya", type: "date" },
+          { key: "calibrationResult", header: "Hasil", type: "status" },
+          { key: "asFoundCondition", header: "Kondisi saat diterima" },
+          { key: "measurementUncertainty", header: "Ketidakpastian" },
+        ],
+      },
     ],
   },
   {
@@ -305,6 +969,55 @@ export const MODULES: ModuleDefinition[] = [
       { key: "overallRiskRating", header: "Risiko", type: "status" },
       { key: "status", header: "Status", type: "status" },
       { key: "registeredAt", header: "Terdaftar", type: "date" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas perusahaan",
+        fields: [
+          { key: "contractorName", label: "Nama perusahaan" },
+          { key: "contractorType", label: "Jenis pekerjaan", type: "enum" },
+          { key: "contractorCategory", label: "Kategori", type: "enum" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "overallRiskRating", label: "Peringkat risiko", type: "status" },
+          { key: "registeredAt", label: "Terdaftar sejak", type: "date" },
+        ],
+      },
+      {
+        title: "Legalitas",
+        fields: [
+          { key: "businessRegistrationNo", label: "Nomor akta / NIB" },
+          { key: "taxIdNpwp", label: "NPWP" },
+          { key: "businessLicenseType", label: "Jenis izin usaha" },
+        ],
+      },
+      {
+        title: "Alamat dan narahubung",
+        fields: [
+          { key: "address", label: "Alamat" },
+          { key: "city", label: "Kota" },
+          { key: "province", label: "Provinsi" },
+          { key: "contactPersonName", label: "Nama narahubung" },
+          { key: "contactPersonPhone", label: "Telepon" },
+          { key: "contactPersonEmail", label: "Surel" },
+        ],
+      },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/evaluations",
+        title: "Evaluasi kinerja",
+        emptyMessage: "Kontraktor ini belum pernah dievaluasi — belum ada penugasan yang selesai.",
+        columns: [
+          { key: "periodStartDate", header: "Periode mulai", type: "date" },
+          { key: "periodEndDate", header: "Periode selesai", type: "date" },
+          { key: "overallRating", header: "Peringkat", type: "status" },
+          { key: "hseComplianceScore", header: "Skor HSE", type: "number" },
+          { key: "incidentCount", header: "Insiden", type: "number" },
+          { key: "manHoursWorked", header: "Man-hours", type: "number" },
+          { key: "recommendation", header: "Rekomendasi" },
+        ],
+      },
     ],
   },
 ];

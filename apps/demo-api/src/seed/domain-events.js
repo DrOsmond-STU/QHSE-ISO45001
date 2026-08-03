@@ -175,6 +175,13 @@ async function seedEvents(client, ctx, ref) {
         location_detail: siteKey === "cepu" ? "Stasiun Pengumpul Menggung" : siteKey === "bpn" ? "Area Tangki Timbun Terminal" : "Gedung Kantor Pusat",
         reported_by: pick(random, [...workers, ...supervisors]).id,
         status,
+        immediate_action_taken:
+          classification === "NEAR_MISS"
+            ? "Kondisi tidak aman diamankan seketika, area diberi pembatas, dan temuan disampaikan pada toolbox meeting shift berikutnya."
+            : classification === "ENVIRONMENTAL_SPILL"
+              ? "Sumber kebocoran diisolasi, tumpahan dibendung dengan absorben, dan material terkontaminasi dikumpulkan ke TPS limbah B3."
+              : "Korban diberikan pertolongan pertama di klinik site, pekerjaan dihentikan sementara, dan area kejadian diamankan untuk investigasi.",
+        estimated_cost: classification === "PROPERTY_DAMAGE" ? intBetween(random, 20, 400) * 1_000_000 : classification === "LOST_TIME_INJURY" ? 85_000_000 : null,
         days_lost: daysLost || null,
       },
       ctx.audit,
@@ -213,10 +220,19 @@ async function seedEvents(client, ctx, ref) {
         department_id: deptOf(capaSequence % 2 === 0 ? "cepu" : "bpn"),
         initiated_by: pick(random, [hseManager, qualityManager, ...hseOfficers]).id,
         initiated_at: daysAgo(initiatedDaysAgo),
+        // Nomor rujukan sumber membuat rantai antar modul bisa ditelusuri
+        // dari sisi CAPA juga, bukan hanya dari sisi modul asalnya.
+        source_reference_number:
+          sourceType === "AUDIT_FINDING"
+            ? `AUD/2026/00${(capaSequence % 7) + 1}`
+            : sourceType === "INCIDENT"
+              ? `INC/2026/${String((capaSequence % 28) + 1).padStart(4, "0")}`
+              : sourceType === "QUALITY_NCR"
+                ? `NCR/2026/${String((capaSequence % 18) + 1).padStart(4, "0")}`
+                : null,
         status,
         target_closure_date: dateOnly(targetClosure),
         actual_closure_date: closed ? dateOnly(daysAgo(intBetween(random, 1, 40))) : null,
-        assigned_to: pick(random, [...supervisors, ...hseOfficers]).id,
       },
       ctx.audit,
     );
@@ -268,6 +284,14 @@ async function seedEvents(client, ctx, ref) {
           actual_date: status === "COMPLETED" ? daysAgo(plannedDaysAgo - 0.2) : null,
           overall_result: overallResult,
           overall_score: overallScore,
+          notes:
+            status === "COMPLETED"
+              ? overallResult === "PASS"
+                ? "Pemeriksaan selesai. Sebagian besar butir memenuhi standar; catatan minor disampaikan langsung kepada pengawas area."
+                : "Pemeriksaan selesai dengan skor di bawah ambang. Temuan diuraikan pada daftar temuan dan ditugaskan kepada pemilik area."
+              : status === "OVERDUE"
+                ? "Jadwal terlewat karena area sedang dalam kegiatan shutdown; penjadwalan ulang diajukan ke Manajer HSE."
+                : null,
         },
         ctx.audit,
       );
@@ -303,6 +327,17 @@ async function seedEvents(client, ctx, ref) {
         planned_end_date: dateOnly(plannedEnd),
         actual_start_date: started ? dateOnly(plannedStart) : null,
         actual_end_date: finished ? dateOnly(plannedEnd) : null,
+        opening_meeting_datetime: started ? new Date(plannedStart.getTime() + 8 * 60 * 60 * 1000) : null,
+        opening_meeting_notes: started
+          ? "Rapat pembukaan dihadiri manajemen site, pemilik proses, dan tim audit. Disepakati lingkup, jadwal harian, jalur komunikasi temuan, dan mekanisme klarifikasi sebelum temuan dinyatakan final."
+          : null,
+        closing_meeting_datetime: finished ? new Date(plannedEnd.getTime() + 15 * 60 * 60 * 1000) : null,
+        closing_meeting_notes: finished
+          ? "Rapat penutupan memaparkan seluruh temuan beserta buktinya. Auditee menyatakan menerima temuan dan menyanggupi penyerahan rencana tindakan perbaikan dalam 14 hari kerja."
+          : null,
+        overall_conclusion: finished
+          ? "Sistem manajemen secara umum diterapkan dan dipelihara sesuai persyaratan standar. Ditemukan ketidaksesuaian yang perlu ditindaklanjuti melalui CAPA, namun tidak ada yang bersifat sistemik terhadap keseluruhan sistem. Sertifikasi direkomendasikan untuk dipertahankan dengan syarat seluruh ketidaksesuaian ditutup sesuai batas waktu."
+          : null,
       },
       ctx.audit,
     );
@@ -370,7 +405,27 @@ async function seedEvents(client, ctx, ref) {
         unit_of_measure: unit,
         disposition,
         status,
+        product_code: `PRD-${String(1000 + ncrSequence).slice(0, 4)}`,
+        product_name: source === "SUPPLIER" ? "Material konstruksi dan komponen perpipaan" : "Produk BBM dan hasil fabrikasi internal",
+        batch_lot_number: `LOT-2026-${String(ncrSequence).padStart(3, "0")}`,
+        process_area: pick(random, ["Fabrikasi & Pengelasan", "Penerimaan Material", "Unit Proses", "Terminal & Pengapalan", "Laboratorium Mutu"]),
+        defect_category: pick(random, ["Dimensi di luar toleransi", "Dokumen mutu tidak lengkap", "Cacat sambungan las", "Ketidaksesuaian spesifikasi material", "Kerusakan penanganan"]),
+        immediate_containment_action:
+          "Lot terkait dikarantina dan diberi label HOLD, penggunaan lebih lanjut dihentikan, serta pemilik proses diberi tahu pada hari yang sama.",
+        disposition_justification:
+          disposition === "USE_AS_IS"
+            ? "Penyimpangan berada di luar karakteristik kritis dan tidak memengaruhi fungsi maupun keselamatan; disetujui digunakan apa adanya dengan pencatatan konsesi."
+            : disposition === "REWORK"
+              ? "Penyimpangan dapat dikembalikan ke spesifikasi melalui pengerjaan ulang, dan biaya pengerjaan ulang lebih rendah daripada penggantian."
+              : disposition === "RETURN_TO_SUPPLIER"
+                ? "Ketidaksesuaian berasal dari pemasok dan tidak dapat diperbaiki di lokasi; dikembalikan sesuai ketentuan kontrak pengadaan."
+                : "Penyimpangan menyentuh karakteristik kritis sehingga tidak dapat digunakan maupun diperbaiki; dimusnahkan sesuai prosedur.",
+        supplier_name: source === "SUPPLIER" ? pick(random, ["PT Baja Perkasa Enjiniring", "PT Cipta Instrumen Presisi", "PT Andalan Logistik Samudra"]) : null,
         re_inspection_result: status === "CLOSED" ? "PASS" : "NOT_YET",
+        closed_date: status === "CLOSED" ? dateOnly(daysAgo(intBetween(random, 1, 60))) : null,
+        closed_by: status === "CLOSED" ? qualityManager.id : null,
+        disposition_approved_by: ["CLOSED", "DISPOSITIONED", "CAPA_LINKED"].includes(status) ? qualityManager.id : null,
+        disposition_approved_at: ["CLOSED", "DISPOSITIONED", "CAPA_LINKED"].includes(status) ? daysAgo(intBetween(random, 5, 90)) : null,
       },
       ctx.audit,
     );

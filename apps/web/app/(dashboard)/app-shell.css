@@ -328,6 +328,60 @@
   padding: var(--qhse-space-5);
 }
 
+/* Judul bagian di dalam kartu detail. Halaman detail dipecah menjadi
+   beberapa kartu bertema (identitas, isi, tanggal, pencatatan) alih-alih
+   satu daftar panjang, karena satu daftar berisi dua puluh baris tanpa
+   pengelompokan memaksa pembaca memindai seluruhnya untuk menemukan satu
+   hal. */
+.qhse-detail-card__title {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+  margin: 0 0 var(--qhse-space-4);
+}
+
+.qhse-page__section-title {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-h2-size, var(--qhse-text-h1-size));
+  line-height: var(--qhse-text-h2-lh, var(--qhse-text-h1-lh));
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+/* Teks panjang (isi dokumen, kronologi insiden, notulen audit) dirender
+   sebagai paragraf selebar kartu, bukan dijejalkan ke kolom nilai selebar
+   sepertiga layar. Lebar barisnya dibatasi supaya tetap nyaman dibaca pada
+   layar lebar. */
+.qhse-detail-prose {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  line-height: var(--qhse-text-body-lh);
+  color: var(--qhse-text-primary);
+  max-width: 78ch;
+}
+
+.qhse-detail-prose:not(:first-child) {
+  margin-top: var(--qhse-space-4);
+}
+
+.qhse-detail-prose h3 {
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-text-secondary);
+  margin: 0 0 var(--qhse-space-2);
+}
+
+.qhse-detail-prose p {
+  margin: 0 0 var(--qhse-space-3);
+}
+
+.qhse-detail-prose p:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 640px) {
   .qhse-detail-grid {
     grid-template-columns: 1fr;

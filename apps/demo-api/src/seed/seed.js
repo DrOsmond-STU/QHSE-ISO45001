@@ -29,6 +29,7 @@ const { seedReference } = require("./reference");
 const { seedCompliance } = require("./domain-compliance");
 const { seedEvents } = require("./domain-events");
 const { seedOperations } = require("./domain-operations");
+const { seedChildren } = require("./domain-children");
 const { seedNotifications } = require("./notifications");
 
 async function main() {
@@ -46,25 +47,33 @@ async function main() {
   }
 
   const summary = await withRls(TENANT_ID, async (client) => {
-    console.log("[1/6] fondasi — tenant, organisasi, pengguna");
+    console.log("[1/7] fondasi — tenant, organisasi, pengguna");
     const ctx = await seedFoundation(client);
 
-    console.log("[2/6] data referensi — kategori, jenis, template");
+    console.log("[2/7] data referensi — kategori, jenis, template");
     const ref = await seedReference(client, ctx);
 
-    console.log("[3/6] dokumen, peraturan, HIRA, izin kerja, tanggap darurat");
+    console.log("[3/7] dokumen, peraturan, HIRA, izin kerja, tanggap darurat");
     const compliance = await seedCompliance(client, ctx, ref);
 
-    console.log("[4/6] insiden, CAPA, inspeksi, audit, NCR mutu");
+    console.log("[4/7] insiden, CAPA, inspeksi, audit, NCR mutu");
     const events = await seedEvents(client, ctx, ref);
 
-    console.log("[5/6] lingkungan, kerja terbatas, aset, kalibrasi, kontraktor");
+    console.log("[5/7] lingkungan, kerja terbatas, aset, kalibrasi, kontraktor");
     const operations = await seedOperations(client, ctx, ref);
 
-    console.log("[6/6] notifikasi");
+    // Baris anak disemai TERAKHIR dan membaca ulang induknya dari basis
+    // data, bukan menerima id dari langkah sebelumnya. Itu membuat langkah
+    // ini bisa dijalankan ulang sendirian setelah data induk berubah, dan
+    // menghilangkan satu jalur di mana anak menunjuk induk yang sudah tidak
+    // ada lagi.
+    console.log("[6/7] isi detail — versi dokumen, temuan, akar masalah, rencana tindakan");
+    const children = await seedChildren(client, ctx);
+
+    console.log("[7/7] notifikasi");
     const notifications = await seedNotifications(client, ctx);
 
-    return { ...compliance, ...events, ...operations, ...notifications, users: ctx.users.length };
+    return { ...compliance, ...events, ...operations, ...children, ...notifications, users: ctx.users.length };
   });
 
   console.log("\n=== selesai dalam %d detik ===", Math.round((Date.now() - started) / 1000));

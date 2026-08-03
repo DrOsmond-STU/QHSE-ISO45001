@@ -20,7 +20,8 @@
 const http = require("node:http");
 const { withRls } = require("./db");
 const { verifyAccessToken } = require("./jwt");
-const { findModuleByEndpoint } = require("./modules");
+const { findModuleByEndpoint, findChild } = require("./modules");
+const { attachLabels } = require("./labels");
 const { login, exchangeAuthorizationCode, exchangeRefreshToken, revokeRefreshToken, AuthError } = require("./auth");
 const { sendData, sendProblem, readJsonBody, parseCookies, readPagination, rowToCamel } = require("./http");
 const { EVENT_CATEGORIES, getCategoryLabel } = require("./event-category");
@@ -80,7 +81,7 @@ async function handleModuleList(res, claims, moduleDef, searchParams) {
       ),
       client.query(`SELECT count(*)::int AS total FROM ${moduleDef.table} WHERE tenant_id = $1`, [claims.tenant_id]),
     ]);
-    return { rows: rows.rows, total: count.rows[0].total };
+    return { rows: await attachLabels(client, rows.rows), total: count.rows[0].total };
   });
   sendData(res, result.rows.map(rowToCamel), { page, limit, total: result.total });
 }
@@ -91,23 +92,32 @@ async function handleModuleDetail(res, claims, moduleDef, id) {
       `SELECT t.*, t.${moduleDef.pk} AS id FROM ${moduleDef.table} t WHERE t.${moduleDef.pk} = $1 AND t.tenant_id = $2`,
       [id, claims.tenant_id],
     );
-    return rows[0] || null;
+    if (!rows[0]) return null;
+    return (await attachLabels(client, rows))[0];
   });
   if (!row) return sendProblem(res, 404, "Data tidak ditemukan.");
   sendData(res, rowToCamel(row));
 }
 
-async function handleModuleChildren(res, claims, moduleDef, parentId) {
-  const child = moduleDef.children;
+async function handleModuleChildren(res, claims, child, parentId) {
+  // `through` untuk anak yang menggantung dua tingkat di bawah induknya
+  // (mis. akar masalah -> investigasi -> laporan insiden). Dinyatakan sebagai
+  // subquery, bukan JOIN, supaya `t.*` tetap berisi kolom anaknya saja dan
+  // tidak ada nama kolom yang bertabrakan diam-diam antara kedua tabel.
+  const where = child.through
+    ? `t.${child.foreignKey} IN (SELECT p.${child.through.pk} FROM ${child.through.table} p
+         WHERE p.${child.through.foreignKey} = $1 AND p.tenant_id = $2)`
+    : `t.${child.foreignKey} = $1`;
+
   const rows = await withRls(claims.tenant_id, async (client) => {
     const { rows: found } = await client.query(
       `SELECT t.*, t.${child.pk} AS id
          FROM ${child.table} t
-        WHERE t.${child.foreignKey} = $1 AND t.tenant_id = $2
+        WHERE ${where} AND t.tenant_id = $2
         ORDER BY ${child.orderBy}`,
       [parentId, claims.tenant_id],
     );
-    return found;
+    return attachLabels(client, found);
   });
   sendData(res, rows.map(rowToCamel));
 }
@@ -131,7 +141,7 @@ async function handleNotificationList(res, claims, searchParams) {
         claims.sub,
       ]),
     ]);
-    return { rows: rows.rows, total: count.rows[0].total };
+    return { rows: await attachLabels(client, rows.rows), total: count.rows[0].total };
   });
   sendData(res, result.rows.map(rowToCamel), { page, limit, total: result.total });
 }
@@ -280,8 +290,9 @@ async function route(req, res, url) {
     if (!claims) return;
     if (segments.length === 1) return handleModuleList(res, claims, moduleDef, searchParams);
     if (segments.length === 2) return handleModuleDetail(res, claims, moduleDef, segments[1]);
-    if (segments.length === 3 && moduleDef.children && `/${segments[2]}` === moduleDef.children.pathSuffix) {
-      return handleModuleChildren(res, claims, moduleDef, segments[1]);
+    if (segments.length === 3) {
+      const child = findChild(moduleDef, `/${segments[2]}`);
+      if (child) return handleModuleChildren(res, claims, child, segments[1]);
     }
   }
 

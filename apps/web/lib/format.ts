@@ -10,6 +10,7 @@ import { humanizeEnum } from "./status-tone";
 const DATE_ONLY = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "UTC" });
 const DATE_TIME = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" });
 const NUMBER = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
+const CURRENCY = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 
 export const EMPTY_PLACEHOLDER = "—";
 
@@ -27,6 +28,12 @@ export function formatCell(value: unknown, type: ColumnType = "text"): string {
       const parsed = Number(value);
       return Number.isNaN(parsed) ? String(value) : NUMBER.format(parsed);
     }
+    case "currency": {
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? String(value) : CURRENCY.format(parsed);
+    }
+    case "longtext":
+      return String(value);
     case "bool":
       return value ? "Ya" : "Tidak";
     case "enum":
@@ -58,6 +65,30 @@ export function inferType(key: string, value: unknown): ColumnType {
   }
   return "text";
 }
+
+/**
+ * Nilai yang SIAP DITAMPILKAN untuk satu field.
+ *
+ * API menempelkan `<field>Label` pada setiap kolom kunci asing (lihat
+ * apps/demo-api/src/labels.js), jadi `siteId` datang berpasangan dengan
+ * `siteIdLabel` berisi "Lapangan Produksi Cepu". Fungsi ini memilih label
+ * itu bila ada, dan jatuh kembali ke nilai aslinya bila tidak — sehingga
+ * satu pemanggil yang sama bekerja untuk kolom biasa maupun kunci asing.
+ *
+ * Kalau labelnya TIDAK ada dan nilainya ternyata UUID, yang ditampilkan
+ * adalah tanda pisah, bukan UUID-nya: pengenal internal di layar tidak
+ * memberi tahu pembaca apa pun, dan kehadirannya justru membuat halaman
+ * terbaca seperti dump basis data.
+ */
+export function displayValue(row: Record<string, unknown>, key: string, type: ColumnType = "text"): string {
+  const label = row[`${key}Label`];
+  if (typeof label === "string" && label.length > 0) return label;
+  const value = row[key];
+  if (typeof value === "string" && UUID_PATTERN.test(value)) return EMPTY_PLACEHOLDER;
+  return formatCell(value, type);
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `plannedStartDatetime` -> `Planned start datetime` — label manusiawi untuk field tak terdaftar. */
 export function humanizeFieldName(key: string): string {

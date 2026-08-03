@@ -118,9 +118,17 @@ async function main() {
     const detail = await call(`${moduleDef.endpoint}/${first.id}`, { token });
     report(detail.status === 200 && Boolean(detail.payload?.data), `${moduleDef.endpoint}/:id detail`, `HTTP ${detail.status}`);
 
-    if (moduleDef.children) {
-      const children = await call(`${moduleDef.endpoint}/${first.id}${moduleDef.children.pathSuffix}`, { token });
-      report(children.status === 200 && Array.isArray(children.payload?.data), `${moduleDef.endpoint}/:id${moduleDef.children.pathSuffix}`, `HTTP ${children.status}`);
+    // Setiap tabel anak diperiksa terpisah. Satu modul kini punya sampai tiga
+    // (mis. insiden: investigasi, akar masalah, CAPA terkait), dan yang paling
+    // mungkin rusak justru yang jarang dibuka.
+    for (const child of moduleDef.children ?? []) {
+      const children = await call(`${moduleDef.endpoint}/${first.id}${child.pathSuffix}`, { token });
+      const rows = children.payload?.data;
+      report(
+        children.status === 200 && Array.isArray(rows),
+        `${moduleDef.endpoint}/:id${child.pathSuffix}`,
+        children.status === 200 ? `${rows?.length ?? 0} baris` : `HTTP ${children.status}`,
+      );
     }
   }
 

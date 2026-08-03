@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button, DataTable, StatusBadge } from "@qhse/ui-components";
 import { ApiError, apiFetchWithMeta } from "../../../../lib/api-client";
-import { formatCell } from "../../../../lib/format";
+import { displayValue } from "../../../../lib/format";
 import { findModule, type ModuleDefinition } from "../../../../lib/modules";
 import { statusTone } from "../../../../lib/status-tone";
 
@@ -113,7 +113,7 @@ function ModuleList({ module }: { module: ModuleDefinition }) {
               header: column.header,
               numeric: column.type === "number",
               render: (row: Row) => {
-                const text = formatCell(row[column.key], column.type);
+                const text = displayValue(row, column.key, column.type);
 
                 if (column.type === "status") {
                   const tone = statusTone(row[column.key]);

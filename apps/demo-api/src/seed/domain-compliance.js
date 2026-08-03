@@ -126,6 +126,34 @@ async function seedCompliance(client, ctx, ref) {
   const workers = actors(ctx, "WORKER_EMPLOYEE");
 
   // --- Modul 03: dokumen terkendali ---
+  //
+  // `description` diisi RINGKASAN ISI dokumennya — tujuan, ruang lingkup,
+  // acuan, dan pokok langkahnya — bukan satu kalimat penjelas. Alasannya
+  // langsung: data demo ini tidak mengunggah satu pun berkas PDF, jadi
+  // kalau kolom ini kosong maka membuka sebuah dokumen tidak
+  // memperlihatkan apa pun tentang dokumen itu, dan modul dokumen
+  // terkendali kehilangan seluruh maknanya di layar.
+  function isiDokumen(title, documentType, categoryCode) {
+    const acuan =
+      categoryCode === "POL"
+        ? "UU No. 1 Tahun 1970, PP No. 50 Tahun 2012, ISO 45001:2018 klausul 5.2"
+        : categoryCode === "MAN"
+          ? "ISO 9001:2015, ISO 14001:2015, ISO 45001:2018"
+          : "PP No. 50 Tahun 2012, Permenaker No. 5 Tahun 2018, Manual SMT QHSE PNS-MAN-001";
+    const lingkup =
+      documentType === "POLICY"
+        ? "Berlaku bagi seluruh pekerja, kontraktor, dan tamu di seluruh wilayah operasi PT Petro Nusantara Sejahtera."
+        : "Berlaku untuk seluruh kegiatan terkait di Lapangan Produksi Cepu dan Terminal & Kilang Balikpapan, termasuk pekerjaan yang dilaksanakan kontraktor.";
+    return [
+      `TUJUAN — ${title} disusun untuk memastikan kegiatan terkait dilaksanakan secara konsisten, aman, dan memenuhi ketentuan peraturan yang berlaku.`,
+      `RUANG LINGKUP — ${lingkup}`,
+      `ACUAN — ${acuan}.`,
+      "TANGGUNG JAWAB — Manajer HSE menetapkan dan meninjau dokumen ini; Supervisor area memastikan pelaksanaannya di lapangan; setiap pekerja wajib mematuhi ketentuan yang diatur di dalamnya.",
+      "POKOK KETENTUAN — (1) Identifikasi bahaya dan penilaian risiko dilakukan sebelum pekerjaan dimulai. (2) Persyaratan izin, kompetensi, dan alat pelindung diri dipenuhi sebelum pelaksanaan. (3) Pengawas melakukan verifikasi lapangan dan mencatat hasilnya. (4) Penyimpangan dihentikan seketika lewat Stop Work Authority dan dilaporkan pada hari yang sama. (5) Rekaman pelaksanaan disimpan sesuai masa retensi yang ditetapkan.",
+      "PENINJAUAN — Dokumen ditinjau sesuai siklus yang ditetapkan, atau lebih awal bila terjadi perubahan proses, peraturan, atau setelah insiden yang relevan.",
+    ].join("\n\n");
+  }
+
   let documentSequence = 0;
   for (const [categoryCode, title, documentType, status, effectiveOffset, cycleMonths] of DOCUMENTS) {
     documentSequence += 1;
@@ -146,9 +174,12 @@ async function seedCompliance(client, ctx, ref) {
         document_category_id: ref.documentCategories[categoryCode],
         owner_user_id: pick(random, [hseManager, controller, ...supervisors]).id,
         status,
+        description: isiDokumen(title, documentType, categoryCode),
+        classification: documentType === "POLICY" ? "PUBLIC" : "INTERNAL",
         effective_date: effective ? dateOnly(effective) : null,
         next_review_date: nextReview ? dateOnly(nextReview) : null,
         review_cycle_months: cycleMonths,
+        retention_years: documentType === "POLICY" ? 10 : 5,
       },
       ctx.audit,
     );
@@ -171,7 +202,12 @@ async function seedCompliance(client, ctx, ref) {
         regulation_number: number,
         title,
         issuing_authority: authority,
-        summary: `${title} — diacu untuk operasi hulu dan hilir migas PT Petro Nusantara Sejahtera.`,
+        summary:
+          `${title}. Peraturan ini diacu dalam operasi hulu dan hilir PT Petro Nusantara Sejahtera. ` +
+          "Kewajiban turunannya diuraikan pada daftar kewajiban kepatuhan di halaman ini, lengkap dengan penanggung jawab dan jatuh temponya.",
+        issue_date: dateOnly(daysAgo(-effectiveOffset - 30)),
+        source_url: "https://peraturan.go.id/",
+        review_cycle_months: 12,
         effective_date: dateOnly(daysAgo(-effectiveOffset)),
         next_review_date: dateOnly(daysFromNow(reviewOffset)),
         status: title.includes("ISO 9001") ? "ACTIVE" : "ACTIVE",
@@ -257,12 +293,25 @@ async function seedCompliance(client, ctx, ref) {
           department_id: siteKey === "cepu" ? ctx.deptIds.ops : siteKey === "bpn" ? ctx.deptIds.mtc : ctx.deptIds.hse,
           title: jobTitle,
           description: `${jobTitle}. Pekerjaan dilaksanakan sesuai SOP terkait, JSA telah dikomunikasikan kepada seluruh pekerja, dan APD wajib sesuai matriks area.`,
-          work_location: siteKey === "cepu" ? "Stasiun Pengumpul Menggung" : siteKey === "bpn" ? "Terminal & Kilang Balikpapan" : "Kantor Pusat Jakarta",
+          // Hanya area spesifiknya. Nama lokasi besarnya sudah tampil di
+          // baris "Lokasi kerja" tepat di atasnya, dan mengulangnya membuat
+          // dua baris berturut-turut mengatakan hal yang sama.
+          location_detail:
+            siteKey === "cepu"
+              ? "Stasiun Pengumpul Menggung, area separator V-101"
+              : siteKey === "bpn"
+                ? "Area tangki timbun, dekat manifold jalur 6 inci"
+                : "Halaman dan area parkir gedung kantor",
           requester_id: pick(random, [...supervisors, ...workers]).id,
           risk_level: riskLevel,
           status: plan.status,
           planned_start_datetime: start,
           planned_end_datetime: end,
+          // Realisasi hanya ada untuk izin yang benar-benar sudah berjalan.
+          // Izin berstatus DRAFT yang punya jam mulai aktual adalah jenis
+          // ketidakcocokan yang langsung terlihat oleh orang lapangan.
+          actual_start_datetime: ["CLOSED", "ACTIVE", "EXPIRED"].includes(plan.status) ? start : null,
+          actual_end_datetime: plan.status === "CLOSED" ? end : null,
           number_of_workers: intBetween(random, 2, 12),
         },
         ctx.audit,
@@ -293,6 +342,9 @@ async function seedCompliance(client, ctx, ref) {
         scenario_description: `${planTitle}. Skenario mencakup deteksi dini, pembunyian alarm, evakuasi ke titik kumpul, penanganan awal oleh tim tanggap darurat, dan eskalasi ke instansi eksternal bila diperlukan.`,
         status,
         version_number: 2,
+        effective_date: status === "APPROVED_ACTIVE" ? dateOnly(daysAgo(intBetween(random, 200, 600))) : null,
+        last_reviewed_date: status === "DRAFT" ? null : dateOnly(daysAgo(intBetween(random, 60, 340))),
+        reviewed_by: status === "DRAFT" ? null : hseManager.id,
         next_review_due_date: dateOnly(daysFromNow(reviewOffset)),
         approved_by: status === "APPROVED_ACTIVE" ? hseManager.id : null,
         approved_at: status === "APPROVED_ACTIVE" ? daysAgo(intBetween(random, 60, 300)) : null,
