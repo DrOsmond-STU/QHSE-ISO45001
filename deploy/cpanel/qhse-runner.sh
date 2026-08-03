@@ -44,13 +44,30 @@
 HOME_DIR=/home/semestat
 APP_DIR=$HOME_DIR/qhse-app
 DATA_DIR=$HOME_DIR/qhse-data
-SRC_TARBALL='https://codeload.github.com/DrOsmond-STU/QHSE-ISO45001/tar.gz/master'
+# Cabang yang diambil bisa diganti tanpa menyunting skrip ini: tulis nama
+# cabangnya ke ~/qhse-branch. Bawaannya master. Ini ada karena pekerjaan yang
+# belum digabung ke master tetap perlu bisa diuji di server yang sebenarnya —
+# menyunting URL langsung di sini berarti perubahan sementara itu ikut
+# tercadangkan ke repositori dan gampang tertinggal di sana.
+SRC_BRANCH=$(cat /home/semestat/qhse-branch 2>/dev/null | tr -d ' \t\r\n')
+[ -z "$SRC_BRANCH" ] && SRC_BRANCH=master
+SRC_TARBALL="https://codeload.github.com/DrOsmond-STU/QHSE-ISO45001/tar.gz/refs/heads/$SRC_BRANCH"
 
 PROBE=$HOME_DIR/qhse-probe.request
 REQUEST=$HOME_DIR/qhse-install.request
 WEBREQ=$HOME_DIR/qhse-web.request
 SEED=$HOME_DIR/qhse-seed.request
+DEMOSEED=$HOME_DIR/qhse-demo-seed.request
 RESTART=$HOME_DIR/qhse-restart.request
+
+# Kehadiran berkas ini memilih demo-api (apps/demo-api) sebagai proses yang
+# melayani /api, menggantikan NestJS. Ia ADA karena apps/api terbukti tidak
+# muat di akun ini: RSS puncaknya 814 MB saat boot melawan batas keras 1024 MB,
+# dan sekitar 620 MB dari angka itu adalah memori native engine Prisma yang
+# memuat skema 162 model — bukan heap JavaScript, jadi tidak ada setelan Node
+# yang bisa menurunkannya. Hapus berkas ini begitu penyebab itu hilang
+# (paket hosting yang lebih besar, atau Prisma tanpa engine terpisah).
+DEMOMODE=$HOME_DIR/qhse-demo-mode
 
 API_PID=$HOME_DIR/qhse-api.pid
 WEB_PID=$HOME_DIR/qhse-web.pid
@@ -63,6 +80,11 @@ INSTALL_LOG=$HOME_DIR/qhse-install.log
 # mematahkannya.
 API_ENTRY=$APP_DIR/apps/api/build/src/main.js
 SEED_ENTRY=$APP_DIR/apps/api/build/prisma/seed-demo-data.js
+
+# demo-api adalah JavaScript polos tanpa langkah build — tidak ada padanan
+# artefak deploy/ untuknya, dan memang tidak perlu ada.
+DEMO_API_ENTRY=$APP_DIR/apps/demo-api/src/server.js
+DEMO_SEED_ENTRY=$APP_DIR/apps/demo-api/src/seed/seed.js
 
 # pnpm hanya menaruh `next` di apps/web/node_modules/.bin. Jalur akar
 # workspace membuat web gagal menyala enam kali berturut-turut dengan
@@ -103,6 +125,9 @@ HEAP_INSTALL='--max-old-space-size=320'
 HEAP_MIGRATE='--max-old-space-size=384'
 HEAP_BUILD='--max-old-space-size=448'
 HEAP_API='--max-old-space-size=420'
+# demo-api terukur memakai ~65 MB RSS saat melayani seluruh rute; 128 MB
+# memberi ruang lebih dari cukup tanpa mengambil jatah proses web.
+HEAP_DEMO_API='--max-old-space-size=128'
 HEAP_WEB='--max-old-space-size=256'
 
 for f in "$API_LOG" "$WEB_LOG" "$INSTALL_LOG"; do
@@ -223,7 +248,7 @@ if [ -f "$REQUEST" ]; then
       mv "$APP_DIR.lama/node_modules" "$APP_DIR/node_modules"
       echo "node_modules dari pemasangan sebelumnya dipakai ulang"
     fi
-    for d in apps/api apps/web packages/i18n packages/shared-types packages/ui-components; do
+    for d in apps/api apps/demo-api apps/web packages/i18n packages/shared-types packages/ui-components; do
       [ -d "$APP_DIR.lama/$d/node_modules" ] && mv "$APP_DIR.lama/$d/node_modules" "$APP_DIR/$d/node_modules" 2>/dev/null
     done
     rm -rf "$APP_DIR.lama"
@@ -261,6 +286,15 @@ NPMRC
     mkdir -p "$CLIENT_PARENT/.prisma/client"
     cp -a "$APP_DIR/deploy/api/prisma-client/." "$CLIENT_PARENT/.prisma/client/"
     ls -1 "$CLIENT_PARENT/.prisma/client" | grep libquery_engine | sed 's/^/  engine: /'
+
+    # Dua dependensi saja (pg + argon2) dan keduanya sudah ada di store pnpm
+    # karena apps/api memakai argon2 — langkah ini nyaris tidak berbiaya.
+    # `|| true` disengaja: kalau demo-api gagal dipasang, sisa pemasangan
+    # (web, migrasi, artefak API) tetap harus selesai.
+    if [ -d "$APP_DIR/apps/demo-api" ]; then
+      jalankan "pnpm install (demo-api)" env NODE_OPTIONS="$HEAP_INSTALL" \
+        pnpm install --frozen-lockfile --prod=false --filter @qhse/demo-api || true
+    fi
 
     jalankan "pnpm install (web + 3 paket workspace)" env NODE_OPTIONS="$HEAP_INSTALL" \
       pnpm install --frozen-lockfile --prod=false --filter "@qhse/web..." || exit 0
@@ -302,20 +336,53 @@ if [ -f "$SEED" ] && [ -f "$SEED_ENTRY" ]; then
   } >> "$INSTALL_LOG" 2>&1
 fi
 
+# --- 2b. Semai data dummy lewat demo-api ------------------------------------
+# Jalur ini TIDAK memuat AppModule maupun Prisma, jadi ia berhasil di akun ini
+# sementara langkah 2 di atas tidak. Id tenant-nya tetap (diturunkan dari kode
+# tenant, bukan diacak) dan ditulis ke ~/qhse-tenant-id supaya build web
+# berikutnya membakarnya sebagai NEXT_PUBLIC_DEFAULT_TENANT_ID — halaman masuk
+# jadi terisi otomatis, tanpa ada yang perlu menyalin UUID dengan tangan.
+if [ -f "$DEMOSEED" ] && [ -f "$DEMO_SEED_ENTRY" ]; then
+  {
+    echo "=== $(date) menyemai data dummy (demo-api) ==="
+    rm -f "$DEMOSEED"
+    cd "$APP_DIR/apps/demo-api" || exit 1
+    QHSE_TENANT_ID_FILE="$HOME_DIR/qhse-tenant-id" NODE_OPTIONS="$HEAP_DEMO_API" node "$DEMO_SEED_ENTRY"
+    echo "--- seed demo-api kode keluar $? ---"
+    echo "tenant id tersimpan: $(cat "$HOME_DIR/qhse-tenant-id" 2>/dev/null || echo '<kosong>')"
+  } >> "$INSTALL_LOG" 2>&1
+fi
+
 # --- 3. Nyalakan ulang ------------------------------------------------------
 if [ -f "$RESTART" ]; then rm -f "$RESTART"; stop_all; fi
 
-# --- 4. Belum ada API? Diam. ------------------------------------------------
-[ -f "$API_ENTRY" ] || exit 0
+# --- 4. Pilih proses mana yang melayani /api --------------------------------
+# Bila ~/qhse-demo-mode ada DAN demo-api benar-benar terpasang, dialah yang
+# dipakai. Pemeriksaan berkasnya dilakukan di sini, bukan diasumsikan: mode
+# demo yang menunjuk berkas yang tidak ada akan membuat /api mati tanpa
+# satu pun baris log yang menjelaskan kenapa.
+if [ -f "$DEMOMODE" ] && [ -f "$DEMO_API_ENTRY" ]; then
+  AKTIF_ENTRY=$DEMO_API_ENTRY
+  AKTIF_HEAP=$HEAP_DEMO_API
+  AKTIF_NAMA='demo-api'
+  AKTIF_CWD=$APP_DIR/apps/demo-api
+else
+  AKTIF_ENTRY=$API_ENTRY
+  AKTIF_HEAP=$HEAP_API
+  AKTIF_NAMA='NestJS'
+  AKTIF_CWD=$APP_DIR/apps/api
+fi
+
+[ -f "$AKTIF_ENTRY" ] || exit 0
 
 # --- 5. Nyalakan API bila mati ----------------------------------------------
 # Keadaannya DIPERIKSA setelah dinyalakan. Tanpa ini, proses yang mati saat
 # boot menghilang tanpa jejak apa pun di log — persis yang terjadi enam kali
 # dan menghabiskan banyak waktu untuk didiagnosis.
 if ! alive "$API_PID"; then
-  cd "$APP_DIR/apps/api" || exit 1
-  echo "=== menyalakan API $(date) — node $(node -v 2>&1) ===" >> "$API_LOG"
-  PORT=3401 NODE_OPTIONS="$HEAP_API" nohup node "$API_ENTRY" >> "$API_LOG" 2>&1 &
+  cd "$AKTIF_CWD" || exit 1
+  echo "=== menyalakan API ($AKTIF_NAMA) $(date) — node $(node -v 2>&1) ===" >> "$API_LOG"
+  PORT=3401 NODE_OPTIONS="$AKTIF_HEAP" nohup node "$AKTIF_ENTRY" >> "$API_LOG" 2>&1 &
   APIPID=$!
   echo $APIPID > "$API_PID"
   sleep 12

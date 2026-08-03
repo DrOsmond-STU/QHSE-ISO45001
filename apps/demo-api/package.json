@@ -1,0 +1,16 @@
+{
+  "name": "@qhse/demo-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API baca-saja ringan + penyemai data dummy untuk demo/presentasi. Sengaja JavaScript polos tanpa langkah build — lihat README.md.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "seed": "node src/seed/seed.js",
+    "verify": "node src/verify.js"
+  },
+  "dependencies": {
+    "argon2": "^0.45.1",
+    "pg": "^8.13.1"
+  }
+}

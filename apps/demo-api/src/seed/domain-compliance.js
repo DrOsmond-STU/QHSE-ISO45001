@@ -1,0 +1,307 @@
+// Modul 03 Dokumen Terkendali, Modul 04 Register Peraturan, Modul 05 HIRA,
+// Modul 06 Izin Kerja, Modul 14 Rencana Tanggap Darurat.
+//
+// Isinya ditulis sebagai kalimat kerja yang benar-benar dipakai operator
+// migas Indonesia — nomor peraturan yang nyata, nama unit proses yang nyata
+// (SP Menggung, tangki T-101, dermaga jetty 3). Data demo yang berisi
+// "Dokumen 1", "Dokumen 2" menguji tampilan dengan baik dan menceritakan
+// kemampuan sistem dengan buruk; yang dilihat penonton presentasi adalah
+// apakah sistem ini mengerti pekerjaan mereka.
+//
+// Sebaran statusnya juga disengaja. Setiap modul memuat baris yang sedang
+// berjalan, baris yang sudah selesai, DAN baris yang terlambat — karena
+// nilai perangkat lunak QHSE justru terletak pada yang terlambat, dan daftar
+// yang seluruhnya hijau tidak memperlihatkan apa pun tentang itu.
+const { uuidFor, upsert, seededRandom, pick, intBetween, dateOnly, daysAgo, daysFromNow, NOW } = require("./lib");
+const { actor, actors } = require("./foundation");
+
+const DOCUMENTS = [
+  ["SOP", "SOP Izin Kerja Panas (Hot Work Permit)", "SOP", "PUBLISHED", -280, 12],
+  ["SOP", "SOP Bekerja di Ruang Terbatas (Confined Space Entry)", "SOP", "PUBLISHED", -265, 12],
+  ["SOP", "SOP Isolasi Energi — Lock Out Tag Out (LOTO)", "SOP", "PUBLISHED", -250, 12],
+  ["SOP", "SOP Penanganan Tumpahan Minyak di Area Produksi", "SOP", "PUBLISHED", -240, 12],
+  ["SOP", "SOP Kerja di Ketinggian dan Penggunaan Full Body Harness", "SOP", "PUBLISHED", -230, 12],
+  ["SOP", "SOP Pemuatan dan Pembongkaran BBM di Jetty", "SOP", "PUBLISHED", -215, 12],
+  ["SOP", "SOP Pemeriksaan Gas (Gas Testing) Sebelum Pekerjaan Panas", "SOP", "PUBLISHED", -205, 12],
+  ["SOP", "SOP Investigasi Insiden dan Analisis Akar Masalah", "SOP", "PUBLISHED", -190, 24],
+  ["SOP", "SOP Pengelolaan Limbah B3 di TPS", "SOP", "PUBLISHED", -180, 12],
+  ["SOP", "SOP Inspeksi dan Pengujian Alat Pemadam Api Ringan", "SOP", "PUBLISHED", -175, 12],
+  ["SOP", "SOP Seleksi dan Evaluasi Kinerja Kontraktor", "SOP", "PUBLISHED", -160, 24],
+  ["SOP", "SOP Kalibrasi Alat Ukur dan Penanganan Out of Tolerance", "SOP", "PUBLISHED", -150, 12],
+  ["SOP", "SOP Pemeriksaan Kesehatan Berkala Pekerja", "SOP", "PUBLISHED", -140, 24],
+  ["SOP", "SOP Manajemen Perubahan (Management of Change)", "SOP", "IN_REVIEW", -30, 24],
+  ["SOP", "SOP Penanganan Kebocoran Gas H2S di Wellpad", "SOP", "DRAFT", -12, 12],
+  ["SOP", "SOP Pengendalian Pekerjaan Penggalian dan Utilitas Bawah Tanah", "SOP", "UNDER_REVISION", -95, 12],
+  ["POL", "Kebijakan K3 dan Lingkungan Perusahaan", "POLICY", "PUBLISHED", -320, 36],
+  ["POL", "Kebijakan Mutu PT Petro Nusantara Sejahtera", "POLICY", "PUBLISHED", -318, 36],
+  ["POL", "Kebijakan Larangan Narkoba dan Alkohol di Tempat Kerja", "POLICY", "PUBLISHED", -300, 36],
+  ["POL", "Kebijakan Stop Work Authority", "POLICY", "PUBLISHED", -295, 36],
+  ["MAN", "Manual Sistem Manajemen Terintegrasi QHSE", "MANUAL", "PUBLISHED", -310, 36],
+  ["MAN", "Manual Tanggap Darurat Terminal Balikpapan", "MANUAL", "PUBLISHED", -200, 24],
+  ["MAN", "Manual Sistem Manajemen Mutu ISO 9001:2015", "MANUAL", "OBSOLETE", -700, 36],
+  ["FRM", "Formulir Laporan Nyaris Celaka (Near Miss Report)", "FORM", "PUBLISHED", -260, 24],
+];
+
+const REGULATIONS = [
+  ["LAW_UU", "UU No. 1 Tahun 1970", "Keselamatan Kerja", "Pemerintah Republik Indonesia", -9000],
+  ["LAW_UU", "UU No. 32 Tahun 2009", "Perlindungan dan Pengelolaan Lingkungan Hidup", "Pemerintah Republik Indonesia", -6100],
+  ["LAW_UU", "UU No. 13 Tahun 2003", "Ketenagakerjaan", "Pemerintah Republik Indonesia", -8300],
+  ["LAW_UU", "UU No. 22 Tahun 2001", "Minyak dan Gas Bumi", "Pemerintah Republik Indonesia", -8900],
+  ["GOVERNMENT_REGULATION_PP", "PP No. 50 Tahun 2012", "Penerapan Sistem Manajemen Keselamatan dan Kesehatan Kerja", "Pemerintah Republik Indonesia", -5100],
+  ["GOVERNMENT_REGULATION_PP", "PP No. 22 Tahun 2021", "Penyelenggaraan Perlindungan dan Pengelolaan Lingkungan Hidup", "Pemerintah Republik Indonesia", -1900],
+  ["GOVERNMENT_REGULATION_PP", "PP No. 88 Tahun 2019", "Kesehatan Kerja", "Pemerintah Republik Indonesia", -2500],
+  ["MINISTERIAL_REGULATION_PERMEN", "Permenaker No. 5 Tahun 2018", "Keselamatan dan Kesehatan Kerja Lingkungan Kerja", "Kementerian Ketenagakerjaan", -2900],
+  ["MINISTERIAL_REGULATION_PERMEN", "Permenaker No. 8 Tahun 2020", "Pesawat Angkat dan Pesawat Angkut", "Kementerian Ketenagakerjaan", -2200],
+  ["MINISTERIAL_REGULATION_PERMEN", "Permenaker No. 9 Tahun 2016", "K3 dalam Pekerjaan pada Ketinggian", "Kementerian Ketenagakerjaan", -3600],
+  ["MINISTERIAL_REGULATION_PERMEN", "Permenaker No. 37 Tahun 2016", "K3 Bejana Tekanan dan Tangki Timbun", "Kementerian Ketenagakerjaan", -3500],
+  ["MINISTERIAL_REGULATION_PERMEN", "Permen ESDM No. 18 Tahun 2018", "Pemeriksaan Keselamatan Instalasi dan Peralatan Migas", "Kementerian ESDM", -2800],
+  ["MINISTERIAL_REGULATION_PERMEN", "PermenLHK No. 6 Tahun 2021", "Tata Cara dan Persyaratan Pengelolaan Limbah B3", "Kementerian LHK", -1800],
+  ["MINISTERIAL_DECREE_KEPMEN", "Kepmenaker No. 187 Tahun 1999", "Pengendalian Bahan Kimia Berbahaya di Tempat Kerja", "Kementerian Ketenagakerjaan", -9700],
+  ["INTERNATIONAL_STANDARD", "ISO 45001:2018", "Occupational Health and Safety Management Systems", "International Organization for Standardization", -2900],
+  ["INTERNATIONAL_STANDARD", "ISO 14001:2015", "Environmental Management Systems", "International Organization for Standardization", -3900],
+  ["INTERNATIONAL_STANDARD", "ISO 9001:2015", "Quality Management Systems", "International Organization for Standardization", -3900],
+  ["LOCAL_REGULATION_PERDA", "Perda Kota Balikpapan No. 3 Tahun 2019", "Pengelolaan Kualitas Air dan Pengendalian Pencemaran", "Pemerintah Kota Balikpapan", -2400],
+];
+
+const HIRA_ACTIVITIES = [
+  ["Pengoperasian dan pemantauan rutin Stasiun Pengumpul Menggung", "ROUTINE", "cepu"],
+  ["Pekerjaan panas penggantian spool line 6 inci area separator", "NON_ROUTINE", "cepu"],
+  ["Masuk ruang terbatas untuk pembersihan tangki timbun T-101", "NON_ROUTINE", "bpn"],
+  ["Bongkar muat BBM dari kapal tanker di Jetty 3", "ROUTINE", "bpn"],
+  ["Pekerjaan penggalian jalur pipa distribusi sepanjang 400 meter", "PROJECT_BASED", "cepu"],
+  ["Pemeliharaan berkala pompa transfer P-201A/B", "ROUTINE", "bpn"],
+  ["Pengoperasian genset darurat 500 kVA saat pemadaman", "NON_ROUTINE", "cepu"],
+  ["Penanganan dan penyimpanan bahan kimia demulsifier", "ROUTINE", "cepu"],
+  ["Pekerjaan di ketinggian pada struktur flare stack", "NON_ROUTINE", "cepu"],
+  ["Pengangkatan beban berat menggunakan mobile crane 50 ton", "NON_ROUTINE", "bpn"],
+  ["Pengelasan struktur baja pada proyek perluasan tangki", "PROJECT_BASED", "bpn"],
+  ["Pemeriksaan dan penggantian katup pengaman (PSV) unit proses", "ROUTINE", "bpn"],
+  ["Kegiatan administrasi dan perkantoran kantor pusat", "ROUTINE", "hq"],
+  ["Perjalanan dinas kendaraan operasional lintas kabupaten", "ROUTINE", "cepu"],
+  ["Peninjauan berkala HIRA seluruh aktivitas Site Cepu", "PERIODIC_REVIEW", "cepu"],
+  ["Peninjauan berkala HIRA seluruh aktivitas Terminal Balikpapan", "PERIODIC_REVIEW", "bpn"],
+];
+
+const WORK_PERMIT_JOBS = [
+  ["HOT", "Pengelasan sambungan pipa 6\" jalur inlet separator V-101", "cepu"],
+  ["HOT", "Pemotongan struktur penyangga pipa lama area manifold", "cepu"],
+  ["HOT", "Pengelasan patch plate pada dinding tangki T-104", "bpn"],
+  ["HOT", "Grinding dan pengelasan dudukan pompa P-305", "bpn"],
+  ["CSE", "Pembersihan endapan lumpur dalam tangki timbun T-101", "bpn"],
+  ["CSE", "Inspeksi internal bejana tekan V-220 setelah shutdown", "bpn"],
+  ["CSE", "Pembersihan sump pit area pengolahan air terproduksi", "cepu"],
+  ["HEI", "Penggantian lampu penerangan pada tower flare", "cepu"],
+  ["HEI", "Pengecatan struktur atap gudang material", "bpn"],
+  ["HEI", "Pemasangan scaffolding untuk perawatan kolom fraksinasi", "bpn"],
+  ["EXC", "Penggalian jalur pipa distribusi segmen KM 2+400", "cepu"],
+  ["EXC", "Penggalian pondasi rumah pompa baru", "bpn"],
+  ["ELE", "Penggantian breaker 380 V panel distribusi MDP-2", "cepu"],
+  ["ELE", "Pemeliharaan trafo distribusi 20 kV gardu utama", "bpn"],
+  ["GEN", "Penggantian gasket flange jalur air pendingin", "cepu"],
+  ["GEN", "Pembersihan filter udara kompresor instrumen", "bpn"],
+  ["GEN", "Perawatan taman dan pemotongan rumput area perkantoran", "hq"],
+  ["GEN", "Pemasangan rambu K3 baru di area wellpad", "cepu"],
+];
+
+const EMERGENCY_PLANS = [
+  ["Rencana Tanggap Darurat Kebakaran Tangki Timbun", "FIRE", "LEVEL_3_COMPANY_WIDE_EXTERNAL_AGENCY", "bpn", "APPROVED_ACTIVE"],
+  ["Rencana Tanggap Darurat Kebocoran Gas H2S", "HAZMAT_SPILL", "LEVEL_3_COMPANY_WIDE_EXTERNAL_AGENCY", "cepu", "APPROVED_ACTIVE"],
+  ["Rencana Tanggap Darurat Tumpahan Minyak ke Perairan", "HAZMAT_SPILL", "LEVEL_3_COMPANY_WIDE_EXTERNAL_AGENCY", "bpn", "APPROVED_ACTIVE"],
+  ["Rencana Tanggap Darurat Gempa Bumi", "EARTHQUAKE", "LEVEL_2_SITE_WIDE", "bpn", "APPROVED_ACTIVE"],
+  ["Rencana Tanggap Darurat Kecelakaan Kerja Berat", "MEDICAL_EMERGENCY", "LEVEL_2_SITE_WIDE", "cepu", "APPROVED_ACTIVE"],
+  ["Rencana Tanggap Darurat Ledakan Unit Proses", "EXPLOSION", "LEVEL_3_COMPANY_WIDE_EXTERNAL_AGENCY", "bpn", "APPROVED_ACTIVE"],
+  ["Rencana Tanggap Darurat Banjir Area Lapangan", "FLOOD", "LEVEL_2_SITE_WIDE", "cepu", "APPROVED_ACTIVE"],
+  ["Rencana Tanggap Darurat Kebakaran Gedung Kantor", "FIRE", "LEVEL_1_LOCAL", "hq", "APPROVED_ACTIVE"],
+  ["Rencana Tanggap Darurat Ancaman Keamanan dan Demonstrasi", "SECURITY_THREAT", "LEVEL_2_SITE_WIDE", "cepu", "UNDER_REVIEW"],
+  ["Rencana Tanggap Darurat Cuaca Ekstrem Operasi Jetty", "SEVERE_WEATHER", "LEVEL_2_SITE_WIDE", "bpn", "DRAFT"],
+];
+
+async function seedCompliance(client, ctx, ref) {
+  const random = seededRandom("compliance");
+  const controller = actor(ctx, "DOCUMENT_CONTROLLER");
+  const compliance = actor(ctx, "COMPLIANCE_OFFICER");
+  const hseManager = actor(ctx, "HSE_MANAGER");
+  const supervisors = actors(ctx, "SUPERVISOR");
+  const hseOfficers = actors(ctx, "HSE_OFFICER");
+  const workers = actors(ctx, "WORKER_EMPLOYEE");
+
+  // --- Modul 03: dokumen terkendali ---
+  let documentSequence = 0;
+  for (const [categoryCode, title, documentType, status, effectiveOffset, cycleMonths] of DOCUMENTS) {
+    documentSequence += 1;
+    const number = `DOC/${categoryCode}/2026/${String(documentSequence).padStart(3, "0")}`;
+    const effective = status === "DRAFT" ? null : daysAgo(-effectiveOffset);
+    const nextReview = effective ? new Date(effective.getTime()) : null;
+    if (nextReview) nextReview.setMonth(nextReview.getMonth() + cycleMonths);
+
+    await upsert(
+      client,
+      "documents",
+      "document_id",
+      {
+        document_id: uuidFor("document", number),
+        document_number: number,
+        title,
+        document_type: documentType,
+        document_category_id: ref.documentCategories[categoryCode],
+        owner_user_id: pick(random, [hseManager, controller, ...supervisors]).id,
+        status,
+        effective_date: effective ? dateOnly(effective) : null,
+        next_review_date: nextReview ? dateOnly(nextReview) : null,
+        review_cycle_months: cycleMonths,
+      },
+      ctx.audit,
+    );
+  }
+
+  // --- Modul 04: register peraturan ---
+  let regulationSequence = 0;
+  for (const [type, number, title, authority, effectiveOffset] of REGULATIONS) {
+    regulationSequence += 1;
+    // Peraturan ditinjau ulang setahun sekali. Sebagian sengaja sudah lewat
+    // jatuh tempo — itu justru gunanya register kepatuhan.
+    const reviewOffset = regulationSequence % 5 === 0 ? -intBetween(random, 5, 60) : intBetween(random, 20, 330);
+    await upsert(
+      client,
+      "regulatory_register",
+      "regulatory_register_id",
+      {
+        regulatory_register_id: uuidFor("regulation", number),
+        regulation_type: type,
+        regulation_number: number,
+        title,
+        issuing_authority: authority,
+        summary: `${title} — diacu untuk operasi hulu dan hilir migas PT Petro Nusantara Sejahtera.`,
+        effective_date: dateOnly(daysAgo(-effectiveOffset)),
+        next_review_date: dateOnly(daysFromNow(reviewOffset)),
+        status: title.includes("ISO 9001") ? "ACTIVE" : "ACTIVE",
+        company_id: ctx.companyId,
+        identified_by: compliance.id,
+      },
+      ctx.audit,
+    );
+  }
+
+  // --- Modul 05: HIRA ---
+  const HIRA_STATUSES = ["ACTIVE", "ACTIVE", "ACTIVE", "APPROVED", "IN_REVIEW", "DRAFT", "REQUIRES_REVISION"];
+  let hiraSequence = 0;
+  for (const [activity, assessmentType, siteKey] of HIRA_ACTIVITIES) {
+    hiraSequence += 1;
+    const number = `HIRA/${siteKey.toUpperCase()}/2026/${String(hiraSequence).padStart(3, "0")}`;
+    const assessedDaysAgo = intBetween(random, 20, 330);
+    const reviewDue = daysFromNow(365 - assessedDaysAgo - (hiraSequence % 6 === 0 ? 400 : 0));
+    await upsert(
+      client,
+      "hira_assessments",
+      "hira_id",
+      {
+        hira_id: uuidFor("hira", number),
+        hira_number: number,
+        risk_matrix_config_id: ref.riskMatrixConfigId,
+        site_id: ctx.siteIds[siteKey],
+        department_id: siteKey === "cepu" ? ctx.deptIds.ops : siteKey === "bpn" ? ctx.deptIds.mtc : ctx.deptIds.hse,
+        activity_description: activity,
+        assessment_type: assessmentType,
+        status: HIRA_STATUSES[hiraSequence % HIRA_STATUSES.length],
+        assessment_date: dateOnly(daysAgo(assessedDaysAgo)),
+        review_due_date: dateOnly(reviewDue),
+        assessed_by: pick(random, hseOfficers).id,
+        review_cycle_months: 12,
+      },
+      ctx.audit,
+    );
+  }
+
+  // --- Modul 06: izin kerja ---
+  // Sebaran statusnya mengikuti bentuk yang sebenarnya terjadi di lapangan:
+  // sebagian besar izin lama sudah ditutup, beberapa sedang berjalan hari
+  // ini, dan sedikit yang tertahan menunggu persetujuan.
+  const PERMIT_PLAN = [
+    { status: "ACTIVE", startOffset: -1, durationHours: 30 },
+    { status: "ACTIVE", startOffset: 0, durationHours: 8 },
+    { status: "PENDING_HSE_APPROVAL", startOffset: 1, durationHours: 10 },
+    { status: "PENDING_ISSUER_APPROVAL", startOffset: 2, durationHours: 6 },
+    { status: "APPROVED", startOffset: 1, durationHours: 12 },
+    { status: "DRAFT", startOffset: 4, durationHours: 8 },
+    { status: "REJECTED", startOffset: -3, durationHours: 8 },
+    { status: "EXPIRED", startOffset: -9, durationHours: 8 },
+  ];
+
+  let permitSequence = 0;
+  for (let round = 0; round < 3; round++) {
+    for (const [typeCode, jobTitle, siteKey] of WORK_PERMIT_JOBS) {
+      permitSequence += 1;
+      // Ronde 0 dan 1 mengisi riwayat (semuanya sudah ditutup), ronde 2
+      // mengisi keadaan hari ini.
+      const plan =
+        round < 2
+          ? { status: "CLOSED", startOffset: -(intBetween(random, 10, 240)), durationHours: intBetween(random, 4, 24) }
+          : PERMIT_PLAN[permitSequence % PERMIT_PLAN.length];
+
+      const number = `PTW/${typeCode}/2026/${String(permitSequence).padStart(4, "0")}`;
+      const start = new Date(NOW.getTime() + plan.startOffset * 24 * 60 * 60 * 1000);
+      start.setHours(7 + (permitSequence % 4), 0, 0, 0);
+      const end = new Date(start.getTime() + plan.durationHours * 60 * 60 * 1000);
+      const riskLevel = typeCode === "GEN" ? "LOW" : typeCode === "EXC" ? "MEDIUM" : "HIGH";
+
+      await upsert(
+        client,
+        "work_permits",
+        "work_permit_id",
+        {
+          work_permit_id: uuidFor("work-permit", number),
+          permit_number: number,
+          work_permit_type_id: ref.workPermitTypes[typeCode],
+          company_id: ctx.companyId,
+          site_id: ctx.siteIds[siteKey],
+          department_id: siteKey === "cepu" ? ctx.deptIds.ops : siteKey === "bpn" ? ctx.deptIds.mtc : ctx.deptIds.hse,
+          title: jobTitle,
+          description: `${jobTitle}. Pekerjaan dilaksanakan sesuai SOP terkait, JSA telah dikomunikasikan kepada seluruh pekerja, dan APD wajib sesuai matriks area.`,
+          work_location: siteKey === "cepu" ? "Stasiun Pengumpul Menggung" : siteKey === "bpn" ? "Terminal & Kilang Balikpapan" : "Kantor Pusat Jakarta",
+          requester_id: pick(random, [...supervisors, ...workers]).id,
+          risk_level: riskLevel,
+          status: plan.status,
+          planned_start_datetime: start,
+          planned_end_datetime: end,
+          number_of_workers: intBetween(random, 2, 12),
+        },
+        ctx.audit,
+      );
+    }
+  }
+
+  // --- Modul 14: rencana tanggap darurat ---
+  let planSequence = 0;
+  for (const [planTitle, emergencyType, severity, siteKey, status] of EMERGENCY_PLANS) {
+    planSequence += 1;
+    const number = `ERP/2026/${String(planSequence).padStart(3, "0")}`;
+    // Satu rencana sengaja lewat jatuh tempo tinjauan — pemicu yang dipakai
+    // emergency-plan-review-overdue-scan di apps/api.
+    const reviewOffset = planSequence === 3 ? -45 : intBetween(random, 30, 300);
+    await upsert(
+      client,
+      "emergency_response_plans",
+      "emergency_response_plan_id",
+      {
+        emergency_response_plan_id: uuidFor("erp", number),
+        plan_number: number,
+        company_id: ctx.companyId,
+        site_id: ctx.siteIds[siteKey],
+        plan_title: planTitle,
+        emergency_type: emergencyType,
+        severity_level: severity,
+        scenario_description: `${planTitle}. Skenario mencakup deteksi dini, pembunyian alarm, evakuasi ke titik kumpul, penanganan awal oleh tim tanggap darurat, dan eskalasi ke instansi eksternal bila diperlukan.`,
+        status,
+        version_number: 2,
+        next_review_due_date: dateOnly(daysFromNow(reviewOffset)),
+        approved_by: status === "APPROVED_ACTIVE" ? hseManager.id : null,
+        approved_at: status === "APPROVED_ACTIVE" ? daysAgo(intBetween(random, 60, 300)) : null,
+      },
+      ctx.audit,
+    );
+  }
+
+  return { documents: DOCUMENTS.length, regulations: REGULATIONS.length, hira: HIRA_ACTIVITIES.length, workPermits: permitSequence, emergencyPlans: EMERGENCY_PLANS.length };
+}
+
+module.exports = { seedCompliance };
