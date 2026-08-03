@@ -1,0 +1,72 @@
+# ============================================================================
+#  QHSE Enterprise Platform — .htaccess untuk document root subdomain.
+#  SALIN menjadi `.htaccess` di document root (mis.
+#  ~/qhse.semestateknologiutama.com/.htaccess).
+#
+#  Dua proses Node.js dijaga hidup oleh ~/qhse-runner.sh lewat cron:
+#     127.0.0.1:3400  Next.js  (antarmuka pengguna)
+#     127.0.0.1:3401  NestJS   (API)
+#
+#  Document root ini sengaja KOSONG. Seluruh berkas aplikasi ada di ~/qhse-app
+#  dan lampiran pengguna di ~/qhse-data, dua-duanya di luar jangkauan HTTP.
+# ============================================================================
+
+DirectoryIndex disabled
+Options -Indexes -MultiViews
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # --------------------------------------------------------------------------
+  #  Paksa HTTPS.
+  #
+  #  Bukan sekadar praktik baik di aplikasi ini: halaman login menghitung PKCE
+  #  dengan Web Crypto, yang peramban HANYA sediakan pada secure context. Lewat
+  #  http:// polos, tombol Masuk gagal dengan pesan soal Web Crypto dan tidak
+  #  ada yang bisa masuk sama sekali.
+  # --------------------------------------------------------------------------
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # Verifikasi AutoSSL / Let's Encrypt dilayani Apache langsung, jangan diproxy.
+  RewriteRule ^\.well-known/ - [L]
+
+  # --------------------------------------------------------------------------
+  #  /api/*  ->  proses API, DENGAN awalan /api dipotong.
+  #
+  #  NestJS memasang rute di akar (/auth/login, /documents, ...), sementara
+  #  peramban memanggilnya di bawah /api. $1 di bawah inilah yang memotong
+  #  awalan itu. Karena pemotongan ini, path cookie refresh token di sisi
+  #  aplikasi harus disetel ke /api/auth/token — sudah dilakukan lewat
+  #  REFRESH_COOKIE_PATH di ~/qhse-runner.sh.
+  #
+  #  Menaruh API pada origin yang SAMA dengan frontend juga berarti tidak ada
+  #  permintaan lintas-origin sama sekali, jadi tidak ada CORS preflight yang
+  #  perlu dijaga benar.
+  # --------------------------------------------------------------------------
+  RewriteRule ^api/(.*)$ http://127.0.0.1:3401/$1 [P,QSA,L]
+  RewriteRule ^api$      http://127.0.0.1:3401/    [P,QSA,L]
+
+  # Sisanya -> Next.js.
+  RewriteCond %{REQUEST_URI} !^/\.well-known/ [NC]
+  RewriteRule .* http://127.0.0.1:3400%{REQUEST_URI} [P,QSA,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Tanpa header ini aplikasi mengira permintaan datang lewat HTTP polos.
+  RequestHeader set X-Forwarded-Proto "https" env=HTTPS
+
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "DENY"
+</IfModule>
+
+# ----------------------------------------------------------------------------
+#  mod_pagespeed menulis ulang HTML dan memangkas header Vary/Cache-Control.
+#  Next.js sudah mengoptimalkan asetnya saat build dan mengatur sendiri
+#  kebijakan cache-nya (aset ber-hash immutable, HTML no-cache).
+# ----------------------------------------------------------------------------
+<IfModule pagespeed_module>
+  ModPagespeed off
+</IfModule>
