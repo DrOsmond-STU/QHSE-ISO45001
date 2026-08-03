@@ -330,6 +330,12 @@ async function main() {
     const dibukaLagi = await call(`/work-permits/${permitId}`, { token });
     report(dibukaLagi.status === 404, "baris terhapus tidak bisa dibuka lewat URL-nya", `HTTP ${dibukaLagi.status}`);
 
+    // Anaknya diperiksa terpisah dari induknya, karena keduanya pernah
+    // berbeda: detail sudah menjawab 404 sementara daftar anaknya masih
+    // terbuka lebar.
+    const anakSetelahHapus = await call(`/work-permits/${permitId}/gas-tests`, { token });
+    report(anakSetelahHapus.status === 404, "daftar anak ikut tertutup", `HTTP ${anakSetelahHapus.status}`);
+
     const totalSesudah = (await call("/work-permits?page=1&limit=1", { token })).payload?.meta?.total ?? -2;
     report(totalSesudah === totalSebelum, "jumlah record kembali seperti semula", `${totalSebelum} -> ${totalSesudah}`);
   }

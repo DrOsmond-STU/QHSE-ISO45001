@@ -145,7 +145,7 @@ async function handleModuleDetail(res, claims, moduleDef, id) {
   sendData(res, rowToCamel(row));
 }
 
-async function handleModuleChildren(res, claims, child, parentId) {
+async function handleModuleChildren(res, claims, moduleDef, child, parentId) {
   // `through` untuk anak yang menggantung dua tingkat di bawah induknya
   // (mis. akar masalah -> investigasi -> laporan insiden). Dinyatakan sebagai
   // subquery, bukan JOIN, supaya `t.*` tetap berisi kolom anaknya saja dan
@@ -159,6 +159,21 @@ async function handleModuleChildren(res, claims, child, parentId) {
   const where = child.where ? `${base} AND ${child.where}` : base;
 
   const rows = await withRls(claims.tenant_id, async (client) => {
+    // Induknya diperiksa lebih dulu, bukan hanya anaknya.
+    //
+    // Tanpa ini, menghapus sebuah dokumen menutup halaman detailnya (404) tapi
+    // MEMBIARKAN /documents/<id>/versions terbuka — daftar revisi milik
+    // dokumen yang sudah tidak ada lagi, lengkap dengan tautan berkasnya.
+    // Kebocoran yang sama dengan yang baru saja ditutup di daftar dan detail,
+    // cuma satu tingkat lebih ke bawah dan karena itu lebih mudah terlewat.
+    const indukHidup = await softDeleteClause(client, moduleDef.table, "p");
+    const { rows: induk } = await client.query(
+      `SELECT 1 FROM ${moduleDef.table} p
+        WHERE p.${moduleDef.pk} = $1 AND p.tenant_id = $2${indukHidup}`,
+      [parentId, claims.tenant_id],
+    );
+    if (!induk[0]) return null;
+
     const hidup = await softDeleteClause(client, child.table);
     const { rows: found } = await client.query(
       `SELECT t.*, t.${child.pk} AS id
@@ -169,6 +184,7 @@ async function handleModuleChildren(res, claims, child, parentId) {
     );
     return attachLabels(client, found);
   });
+  if (rows === null) return sendProblem(res, 404, "Data tidak ditemukan.");
   sendData(res, rows.map(rowToCamel));
 }
 
@@ -499,7 +515,7 @@ async function route(req, res, url) {
       if (segments.length === 3) {
         if (segments[2] === "approval") return writes.handleApprovalPanel(res, claims, moduleDef, segments[1]);
         const child = findChild(moduleDef, `/${segments[2]}`);
-        if (child) return handleModuleChildren(res, claims, child, segments[1]);
+        if (child) return handleModuleChildren(res, claims, moduleDef, child, segments[1]);
       }
     }
 
