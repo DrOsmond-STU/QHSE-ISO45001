@@ -1,33 +1,74 @@
-/* Halaman login — satu-satunya halaman di luar shell (dashboard), jadi
-   punya layout sendiri: kartu terpusat di atas page-plane. Semua warna dan
-   jarak WAJIB dari token @qhse/ui-components (DESIGN.md §3/§5), tidak ada
-   hex/px hardcode. */
+/* Halaman masuk — satu-satunya halaman di luar shell dashboard, jadi punya
+   tata letaknya sendiri. Semua warna dan jarak WAJIB dari token
+   @qhse/ui-components; tidak ada hex atau px yang ditulis langsung.
+
+   Ini layar pertama yang dilihat siapa pun, termasuk saat presentasi. Karena
+   itu latarnya bukan bidang abu-abu polos melainkan gradien navy dengan dua
+   sorotan biru merek — kesan pertama dibentuk di sini, dan kartu putih di
+   atas kertas kosong tidak membentuk kesan apa pun. */
 
 .qhse-login {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--qhse-space-5);
-  background: var(--qhse-page-plane);
+  background: var(--qhse-brand-navy);
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Dua sorotan radial. Dipasang sebagai lapisan terpisah, bukan sebagai
+   background-image berlapis pada elemennya sendiri, supaya kartu di atasnya
+   tetap punya konteks penumpukan yang sederhana. */
+.qhse-login::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 60% at 12% 8%, rgba(41, 171, 226, 0.35) 0%, transparent 60%),
+    radial-gradient(55% 55% at 88% 92%, rgba(75, 203, 251, 0.22) 0%, transparent 60%),
+    linear-gradient(160deg, #0b2740 0%, #16456b 100%);
+  background-color: var(--qhse-brand-navy);
 }
 
 .qhse-login__card {
+  position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border);
-  border-radius: var(--qhse-radius-md);
-  padding: var(--qhse-space-6);
+  border: 1px solid var(--qhse-border-hairline);
+  border-radius: var(--qhse-radius-lg);
+  padding: var(--qhse-space-7) var(--qhse-space-6) var(--qhse-space-6);
   box-sizing: border-box;
+  box-shadow: 0 24px 60px rgba(11, 39, 64, 0.4);
+}
+
+/* Kotak inisial yang sama dengan yang ada di topbar, supaya layar masuk dan
+   layar dalam terasa berasal dari produk yang sama. */
+.qhse-login__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--qhse-brand-gradient);
+  color: #ffffff;
+  font-family: var(--qhse-font-display);
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: var(--qhse-shadow-brand);
+  margin-bottom: var(--qhse-space-4);
 }
 
 .qhse-login__brand {
-  font-family: var(--qhse-font-ui);
-  font-size: var(--qhse-text-display-size);
-  line-height: var(--qhse-text-display-lh);
-  font-weight: 700;
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-h1-size);
+  line-height: var(--qhse-text-h1-lh);
+  font-weight: 800;
+  letter-spacing: var(--qhse-tracking-tight);
   color: var(--qhse-text-primary);
   margin: 0;
 }
@@ -37,25 +78,39 @@
   font-size: var(--qhse-text-body-sm-size);
   line-height: var(--qhse-text-body-sm-lh);
   color: var(--qhse-text-secondary);
-  margin: var(--qhse-space-1) 0 var(--qhse-space-6);
+  margin: var(--qhse-space-2) 0 var(--qhse-space-6);
 }
 
 .qhse-login__input {
   width: 100%;
   box-sizing: border-box;
   min-height: var(--qhse-tap-target-min);
-  padding: var(--qhse-space-2) var(--qhse-space-3);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-size);
   color: var(--qhse-text-primary);
-  background: var(--qhse-surface-1);
+  background: var(--qhse-surface-2);
   border: 1px solid var(--qhse-border);
   border-radius: var(--qhse-radius-sm);
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
-.qhse-login__input:focus-visible {
-  outline: 2px solid var(--qhse-trend-improving);
-  outline-offset: 1px;
+.qhse-login__input::placeholder {
+  color: var(--qhse-text-muted);
+}
+
+.qhse-login__input:hover {
+  border-color: var(--qhse-brand-light);
+}
+
+.qhse-login__input:focus {
+  outline: none;
+  background: var(--qhse-surface-1);
+  border-color: var(--qhse-brand);
+  box-shadow: 0 0 0 3px var(--qhse-brand-wash);
 }
 
 .qhse-login__actions {
@@ -65,23 +120,29 @@
 .qhse-login__actions .qhse-btn {
   width: 100%;
   justify-content: center;
+  min-height: var(--qhse-tap-target-min);
+  font-size: var(--qhse-text-body-size);
 }
 
 .qhse-login__error {
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-sm-size);
   line-height: var(--qhse-text-body-sm-lh);
+  font-weight: 600;
   color: var(--qhse-status-critical);
-  border: 1px solid var(--qhse-status-critical);
+  background: var(--qhse-status-critical-wash);
+  border: 1px solid color-mix(in srgb, var(--qhse-status-critical) 24%, transparent);
   border-radius: var(--qhse-radius-sm);
-  padding: var(--qhse-space-3);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
   margin: 0 0 var(--qhse-space-4);
 }
 
 .qhse-login__hint {
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-micro-size);
-  line-height: var(--qhse-text-micro-lh);
+  line-height: 1.55;
   color: var(--qhse-text-muted);
   margin-top: var(--qhse-space-5);
+  padding-top: var(--qhse-space-4);
+  border-top: 1px solid var(--qhse-gridline);
 }

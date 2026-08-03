@@ -1,7 +1,26 @@
+/* Dasar dokumen. Semua nilai diambil dari token @qhse/ui-components supaya
+   halaman, sidebar, dan komponen tidak pernah memakai keluarga huruf atau
+   warna latar yang berbeda satu sama lain. */
 html,
 body {
   margin: 0;
   padding: 0;
-  font-family:
-    -apple-system, "Segoe UI", "SF Pro Text", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--qhse-font-ui);
+  background: var(--qhse-page-plane);
+  color: var(--qhse-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Warna sorotan seleksi ikut warna merek — detail kecil, tapi seleksi biru
+   bawaan peramban adalah salah satu hal yang paling cepat membuat antarmuka
+   terasa tidak dirancang. */
+::selection {
+  background: var(--qhse-brand-wash);
+  color: var(--qhse-brand);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--qhse-brand-bright);
+  outline-offset: 2px;
 }

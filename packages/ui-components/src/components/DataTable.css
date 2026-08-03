@@ -1,14 +1,20 @@
+/* Tabel data. Bidangnya dipisahkan oleh bayangan halus dan baris kepala
+   berlatar, BUKAN oleh kisi garis penuh: kisi penuh membuat setiap sel
+   tampak sama pentingnya, dan itulah yang membuat tabel terbaca seperti
+   lembar sebar lama alih-alih daftar kerja. */
 .qhse-data-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--qhse-border-hairline);
   border-radius: var(--qhse-radius-md);
+  background: var(--qhse-surface-1);
+  box-shadow: var(--qhse-shadow-sm);
 }
 
 .qhse-data-table {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--qhse-font-ui);
-  font-size: var(--qhse-text-body-size);
+  font-size: var(--qhse-text-body-sm-size);
   background: var(--qhse-surface-1);
   color: var(--qhse-text-primary);
 }
@@ -19,19 +25,28 @@
   z-index: 1;
   text-align: left;
   font-size: var(--qhse-text-micro-size);
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
   text-transform: uppercase;
   color: var(--qhse-text-muted);
-  background: var(--qhse-surface-1);
-  border-bottom: 1px solid var(--qhse-gridline);
-  padding: var(--qhse-space-2) var(--qhse-space-3);
+  background: var(--qhse-surface-2);
+  border-bottom: 1px solid var(--qhse-border-hairline);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
   white-space: nowrap;
 }
 
 .qhse-data-table td {
   border-bottom: 1px solid var(--qhse-gridline);
-  padding: 0 var(--qhse-space-3);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  vertical-align: middle;
+}
+
+.qhse-data-table tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.qhse-data-table tbody tr:hover {
+  background: var(--qhse-surface-2);
 }
 
 .qhse-data-table--comfortable td,
@@ -42,10 +57,24 @@
 .qhse-data-table--compact td,
 .qhse-data-table--compact th {
   height: var(--qhse-row-height-compact);
+  padding-top: var(--qhse-space-2);
+  padding-bottom: var(--qhse-space-2);
 }
 
 .qhse-data-table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+/* Tautan di dalam tabel — nomor dokumen, nomor izin — adalah jalan masuk ke
+   halaman detail, jadi diberi warna merek, bukan biru bawaan peramban. */
+.qhse-data-table a {
+  color: var(--qhse-brand);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.qhse-data-table a:hover {
+  text-decoration: underline;
 }
 
 .qhse-col-numeric {
@@ -56,6 +85,6 @@
 .qhse-data-table__empty {
   text-align: center;
   color: var(--qhse-text-muted);
-  padding: var(--qhse-space-6) var(--qhse-space-3);
+  padding: var(--qhse-space-7) var(--qhse-space-4);
   height: auto !important;
 }

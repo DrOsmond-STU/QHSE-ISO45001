@@ -70,6 +70,9 @@ export default function LoginPage() {
   return (
     <div className="qhse-login">
       <form className="qhse-login__card" onSubmit={handleSubmit}>
+        <span className="qhse-login__mark" aria-hidden="true">
+          QH
+        </span>
         <h1 className="qhse-login__brand">QHSE Platform</h1>
         <p className="qhse-login__tagline">{t("auth.login.title")}</p>
 

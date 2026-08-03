@@ -1,16 +1,49 @@
+/* Kartu KPI. Seluruh kartu adalah target klik di dashboard, jadi ia bereaksi
+   saat disentuh kursor — kartu yang diam saat di-hover membuat orang ragu
+   apakah ia bisa diklik sama sekali. */
 .qhse-kpi-card {
+  position: relative;
+  overflow: hidden;
   background: var(--qhse-surface-1);
   border: 1px solid var(--qhse-border-hairline);
   border-radius: var(--qhse-radius-md);
-  padding: var(--qhse-space-4);
+  padding: var(--qhse-space-5);
   font-family: var(--qhse-font-ui);
+  box-shadow: var(--qhse-shadow-sm);
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    border-color 160ms ease;
+}
+
+/* Pita merek tipis di sisi atas, menyala penuh saat kartu di-hover. */
+.qhse-kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--qhse-brand-gradient);
+  opacity: 0.5;
+  transition: opacity 160ms ease;
+}
+
+a:hover .qhse-kpi-card,
+.qhse-kpi-card:hover {
+  box-shadow: var(--qhse-shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--qhse-border);
+}
+
+a:hover .qhse-kpi-card::before {
+  opacity: 1;
 }
 
 .qhse-kpi-card__label {
   font-size: var(--qhse-text-body-sm-size);
   line-height: var(--qhse-text-body-sm-lh);
-  color: var(--qhse-text-muted);
-  margin-bottom: var(--qhse-space-2);
+  font-weight: 600;
+  color: var(--qhse-text-secondary);
+  margin-bottom: var(--qhse-space-3);
 }
 
 .qhse-kpi-card__row {
@@ -20,15 +53,20 @@
 }
 
 .qhse-kpi-card__value {
+  font-family: var(--qhse-font-display);
   font-size: var(--qhse-text-display-size);
   line-height: var(--qhse-text-display-lh);
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: var(--qhse-tracking-tight);
   color: var(--qhse-text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .qhse-kpi-card__target {
-  font-size: var(--qhse-text-body-sm-size);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 600;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
   color: var(--qhse-text-muted);
 }
 

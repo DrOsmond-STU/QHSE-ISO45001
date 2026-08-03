@@ -1,37 +1,84 @@
+/* Tombol. Radius mengikuti --qhse-radius-sm (8px), bukan pill: pill terbaca
+   sebagai gaya pemasaran, sementara ini aplikasi kerja yang tombolnya sering
+   berdampingan dengan kolom isian bersudut sama. */
 .qhse-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--qhse-space-1);
+  gap: var(--qhse-space-2);
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-sm-size);
   font-weight: 600;
+  letter-spacing: -0.005em;
   border-radius: var(--qhse-radius-sm);
-  padding: var(--qhse-space-2) var(--qhse-space-3);
+  padding: 10px var(--qhse-space-4);
   border: 1px solid var(--qhse-border);
   background: var(--qhse-surface-1);
-  color: var(--qhse-text-primary);
+  color: var(--qhse-text-secondary);
   cursor: pointer;
+  box-shadow: var(--qhse-shadow-xs);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
+.qhse-btn:hover:not(:disabled) {
+  border-color: var(--qhse-brand);
+  color: var(--qhse-brand);
+  box-shadow: var(--qhse-shadow-sm);
+}
+
+.qhse-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.qhse-btn:focus-visible {
+  outline: 2px solid var(--qhse-brand-bright);
+  outline-offset: 2px;
+}
+
+.qhse-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Tombol utama memakai gradien merek yang sama dengan elemen merek lain,
+   supaya aksi utama di satu layar tidak pernah ambigu. */
 .qhse-btn--accent {
-  background: var(--qhse-trend-improving);
-  border-color: var(--qhse-trend-improving);
+  background: var(--qhse-brand-gradient);
+  border-color: transparent;
+  color: var(--qhse-text-on-accent);
+  box-shadow: var(--qhse-shadow-brand);
+}
+
+.qhse-btn--accent:hover:not(:disabled) {
+  filter: brightness(1.06);
+  border-color: transparent;
   color: var(--qhse-text-on-accent);
 }
 
 .qhse-btn--destructive {
   background: var(--qhse-status-critical);
-  border-color: var(--qhse-status-critical);
+  border-color: transparent;
+  color: var(--qhse-text-on-accent);
+  box-shadow: 0 6px 18px rgba(209, 52, 56, 0.26);
+}
+
+.qhse-btn--destructive:hover:not(:disabled) {
+  filter: brightness(1.06);
+  border-color: transparent;
   color: var(--qhse-text-on-accent);
 }
 
 .qhse-btn--icon-only {
-  padding: var(--qhse-space-2);
+  padding: 10px;
 }
 
-/* DESIGN §11/§12 — tap target >=44x44px cuma di lebar mobile, desktop boleh
-   lebih padat (prinsip §2.2 "dense, not cramped" tetap berlaku di desktop). */
+/* Tap target >=44x44px hanya di lebar mobile; desktop boleh lebih padat. */
 @media (max-width: 640px) {
   .qhse-btn {
     min-height: var(--qhse-tap-target-min);

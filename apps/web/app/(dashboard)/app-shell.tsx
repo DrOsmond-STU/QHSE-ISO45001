@@ -107,7 +107,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           Menu
         </Button>
         <Link href="/dashboard" className="qhse-shell__brand">
-          QHSE Platform
+          <span className="qhse-shell__brand-mark" aria-hidden="true">
+            QH
+          </span>
+          <span className="qhse-shell__brand-text">
+            QHSE Platform
+            <span className="qhse-shell__brand-sub">Petro Nusantara Sejahtera</span>
+          </span>
         </Link>
         <span className="qhse-shell__spacer" />
         {session && (

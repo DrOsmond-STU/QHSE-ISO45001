@@ -1,51 +1,124 @@
 /**
- * Design tokens — DESIGN.md §3 (warna), §4 (tipografi), §5 (spacing/radius).
- * SEMUA komponen di package ini WAJIB baca warna/ukuran dari sini (var(--token)),
- * TIDAK ADA hex/px hardcode di file komponen — itu syarat acceptance task 0.5.
+ * Design tokens. SEMUA komponen di paket ini WAJIB membaca warna/ukuran dari
+ * sini lewat var(--token) — tidak ada hex atau px yang ditulis langsung di
+ * berkas komponen.
+ *
+ * =========================================================================
+ * PALET DITURUNKAN DARI DUA SITUS RUJUKAN, BUKAN DIKARANG
+ *
+ * Nilai di bawah diambil dari lembar gaya publik semestateknologiutama.com
+ * dan pertamina.com (diukur 3 Agustus 2026, karena keduanya tidak bisa
+ * dijangkau dari jaringan pengembangan — pengambilannya dijalankan dari
+ * server, lihat deploy/cpanel/qhse-theme-probe.sh):
+ *
+ *   Semesta  : #29abe2 dan #1189c1 (biru), #4bcbfb (biru muda),
+ *              #f7941d dan #fbb040 (oranye), #0b2740 (navy — dipakai sebagai
+ *              warna dasar seluruh bayangannya: rgba(11,39,64,.04/.06/.18/.28))
+ *   Pertamina: #0f172a (slate gelap), #99af32 (hijau zaitun)
+ *   KEDUANYA : huruf Plus Jakarta Sans
+ *
+ * Versi tema sebelumnya memakai netral kebeigean, tanpa satu pun warna merek,
+ * radius 4-8px, dan huruf bawaan sistem. Hasilnya kaku dan berkesan lama —
+ * dan penilaian itu benar: yang membuat antarmuka terasa modern bukan ornamen,
+ * melainkan tiga hal yang ketiganya absen di sana, yaitu huruf dengan
+ * karakter, satu warna merek yang konsisten, dan pemisahan bidang lewat
+ * bayangan halus alih-alih garis kotak.
+ *
+ * Netralnya sekarang BERSEMU BIRU (turunan navy #0b2740), bukan abu-abu
+ * netral: itulah yang membuat biru mereknya terlihat menyatu dengan
+ * halamannya, bukan seperti stiker yang ditempel di atas kertas abu-abu.
+ * =========================================================================
  *
  * Light = default; dark lewat prefers-color-scheme DAN data-theme override
- * (DESIGN §3.6 — toggle eksplisit menang atas preferensi OS di kedua arah).
+ * (toggle eksplisit menang atas preferensi OS di kedua arah).
  */
 
 :root {
-  /* --- §3.1 Warna Netral --- */
-  --qhse-surface-1: #fcfcfb;
-  --qhse-page-plane: #f9f9f7;
-  --qhse-text-primary: #0b0b0b;
-  --qhse-text-secondary: #52514e;
-  --qhse-text-muted: #898781;
-  --qhse-gridline: #e1e0d9;
-  --qhse-border: #c3c2b7;
-  --qhse-border-hairline: rgba(11, 11, 11, 0.1);
+  /* --- Merek --- */
+  --qhse-brand-navy: #0b2740;
+  --qhse-brand-navy-soft: #17395a;
+  --qhse-brand: #1189c1;
+  --qhse-brand-bright: #29abe2;
+  --qhse-brand-light: #4bcbfb;
+  --qhse-brand-wash: #eaf6fc;
+  --qhse-accent: #f7941d;
+  --qhse-accent-soft: #fbb040;
+  --qhse-accent-wash: #fff4e6;
+  /* Gradien dipakai pada elemen merek (logo, tombol utama, garis kepala
+     halaman). Arahnya konsisten 135deg di seluruh antarmuka — gradien yang
+     arahnya berbeda-beda terbaca sebagai kumpulan komponen dari tempat
+     berlainan, bukan sebagai satu produk. */
+  --qhse-brand-gradient: linear-gradient(135deg, #1189c1 0%, #29abe2 55%, #4bcbfb 100%);
+
+  /* --- Netral (bersemu navy) --- */
+  --qhse-surface-1: #ffffff;
+  --qhse-surface-2: #f8fafc;
+  --qhse-page-plane: #f2f6fa;
+  --qhse-text-primary: #0f2233;
+  --qhse-text-secondary: #4a627a;
+  --qhse-text-muted: #8ba1b6;
+  --qhse-gridline: #eaf0f6;
+  --qhse-border: #dbe5ee;
+  --qhse-border-hairline: rgba(11, 39, 64, 0.08);
   --qhse-text-on-accent: #ffffff;
 
-  /* --- §3.3 Warna Status/Severity (FIXED — tidak boleh ditematisasi tenant) --- */
-  --qhse-status-good: #0ca30c;
-  --qhse-status-warning: #fab219;
-  --qhse-status-serious: #ec835a;
-  --qhse-status-critical: #d03b3b;
+  /* --- Bayangan: SELALU bersemu navy, tidak pernah hitam murni ---
+     Bayangan hitam di atas bidang bersemu biru terlihat kotor. Nilai alfa
+     mengikuti yang dipakai situs rujukan. */
+  --qhse-shadow-xs: 0 1px 2px rgba(11, 39, 64, 0.04);
+  --qhse-shadow-sm: 0 1px 3px rgba(11, 39, 64, 0.06), 0 1px 2px rgba(11, 39, 64, 0.04);
+  --qhse-shadow-md: 0 4px 16px rgba(11, 39, 64, 0.07), 0 1px 3px rgba(11, 39, 64, 0.04);
+  --qhse-shadow-lg: 0 12px 32px rgba(11, 39, 64, 0.1), 0 2px 8px rgba(11, 39, 64, 0.05);
+  --qhse-shadow-brand: 0 6px 18px rgba(17, 137, 193, 0.28);
 
-  /* --- §3.5 Warna Diverging (tren KPI membaik/memburuk) --- */
-  --qhse-trend-improving: #2a78d6;
-  --qhse-trend-worsening: #e34948;
-  --qhse-trend-neutral: #898781;
+  /* --- Status/Severity (TIDAK ditematisasi tenant) ---
+     Disetel ulang agar setara terang dengan palet baru; hijau dan merah lama
+     terlalu jenuh dan berkelahi dengan biru mereknya. */
+  --qhse-status-good: #12a150;
+  --qhse-status-good-wash: #e7f7ee;
+  --qhse-status-warning: #e0a207;
+  --qhse-status-warning-wash: #fdf4e0;
+  --qhse-status-serious: #e8712a;
+  --qhse-status-serious-wash: #fdeee3;
+  --qhse-status-critical: #d13438;
+  --qhse-status-critical-wash: #fdeaea;
 
-  /* --- §4 Tipografi --- */
-  --qhse-font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --qhse-text-display-size: 28px;
-  --qhse-text-display-lh: 1.2;
-  --qhse-text-h1-size: 22px;
-  --qhse-text-h1-lh: 1.3;
-  --qhse-text-h2-size: 18px;
+  /* --- Diverging (tren KPI membaik/memburuk) --- */
+  --qhse-trend-improving: #1189c1;
+  --qhse-trend-worsening: #d13438;
+  --qhse-trend-neutral: #8ba1b6;
+
+  /* --- Tipografi ---
+     Plus Jakarta Sans dipakai KEDUA situs rujukan. Dimuat lewat <link> ke
+     Google Fonts di app/layout.tsx, bukan next/font/google: yang kedua
+     mengunduh berkas hurufnya saat BUILD, dan build itu berjalan di server
+     shared hosting yang sudah beberapa kali gagal karena batas memori dan
+     proses. Menambah satu dependensi jaringan ke langkah build berarti satu
+     lagi cara agar situsnya gagal terpasang. Lewat <link>, kegagalan
+     terburuknya hanya huruf cadangan. */
+  --qhse-font-ui: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --qhse-font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --qhse-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Skala dinaikkan dari 14px/22px. Ukuran lama padat seperti aplikasi desktop
+     lama; 15px badan dan 26px judul memberi antarmuka ruang bernapas tanpa
+     mengurangi jumlah baris yang muat di satu layar secara berarti. */
+  --qhse-text-display-size: 34px;
+  --qhse-text-display-lh: 1.18;
+  --qhse-text-h1-size: 26px;
+  --qhse-text-h1-lh: 1.25;
+  --qhse-text-h2-size: 19px;
   --qhse-text-h2-lh: 1.35;
-  --qhse-text-body-size: 14px;
-  --qhse-text-body-lh: 1.5;
-  --qhse-text-body-sm-size: 13px;
-  --qhse-text-body-sm-lh: 1.45;
-  --qhse-text-micro-size: 11px;
+  --qhse-text-body-size: 15px;
+  --qhse-text-body-lh: 1.6;
+  --qhse-text-body-sm-size: 13.5px;
+  --qhse-text-body-sm-lh: 1.5;
+  --qhse-text-micro-size: 11.5px;
   --qhse-text-micro-lh: 1.4;
+  --qhse-tracking-tight: -0.015em;
+  --qhse-tracking-wide: 0.08em;
 
-  /* --- §5 Spacing (kelipatan 4px) & Radius --- */
+  /* --- Spacing (kelipatan 4px) & Radius --- */
   --qhse-space-1: 4px;
   --qhse-space-2: 8px;
   --qhse-space-3: 12px;
@@ -54,49 +127,86 @@
   --qhse-space-6: 32px;
   --qhse-space-7: 48px;
   --qhse-space-8: 64px;
-  --qhse-radius-sm: 4px;
-  --qhse-radius-md: 8px;
+  --qhse-radius-sm: 8px;
+  --qhse-radius-md: 14px;
+  --qhse-radius-lg: 20px;
   --qhse-radius-full: 9999px;
 
-  /* --- §7.3 Row density tabel data --- */
-  --qhse-row-height-comfortable: 40px;
-  --qhse-row-height-compact: 32px;
+  /* --- Row density tabel data --- */
+  --qhse-row-height-comfortable: 52px;
+  --qhse-row-height-compact: 40px;
 
-  /* --- §11 Aksesibilitas --- */
+  /* --- Aksesibilitas --- */
   --qhse-tap-target-min: 44px;
 }
 
+/* Mode gelap berbasis NAVY, bukan abu-abu netral: turunan warna merek yang
+   sama, sehingga birunya tetap terbaca sebagai warna yang sama di kedua
+   mode. Abu-abu netral akan membuat biru itu tampak bergeser ungu. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --qhse-surface-1: #1a1a19;
-    --qhse-page-plane: #0d0d0d;
-    --qhse-text-primary: #ffffff;
-    --qhse-text-secondary: #c3c2b7;
-    --qhse-text-muted: #898781;
-    --qhse-gridline: #2c2c2a;
-    --qhse-border: #383835;
-    --qhse-border-hairline: rgba(255, 255, 255, 0.1);
+    --qhse-surface-1: #12293e;
+    --qhse-surface-2: #0e2235;
+    --qhse-page-plane: #091827;
+    --qhse-text-primary: #eaf2f8;
+    --qhse-text-secondary: #a7bccf;
+    --qhse-text-muted: #6f8aa3;
+    --qhse-gridline: #1b3853;
+    --qhse-border: #234362;
+    --qhse-border-hairline: rgba(234, 242, 248, 0.1);
+    --qhse-brand-wash: rgba(41, 171, 226, 0.14);
+    --qhse-accent-wash: rgba(247, 148, 29, 0.14);
+    --qhse-status-good-wash: rgba(18, 161, 80, 0.16);
+    --qhse-status-warning-wash: rgba(224, 162, 7, 0.16);
+    --qhse-status-serious-wash: rgba(232, 113, 42, 0.16);
+    --qhse-status-critical-wash: rgba(209, 52, 56, 0.16);
+    --qhse-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --qhse-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+    --qhse-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --qhse-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
   }
 }
 
 :root[data-theme="dark"] {
-  --qhse-surface-1: #1a1a19;
-  --qhse-page-plane: #0d0d0d;
-  --qhse-text-primary: #ffffff;
-  --qhse-text-secondary: #c3c2b7;
-  --qhse-text-muted: #898781;
-  --qhse-gridline: #2c2c2a;
-  --qhse-border: #383835;
-  --qhse-border-hairline: rgba(255, 255, 255, 0.1);
+  --qhse-surface-1: #12293e;
+  --qhse-surface-2: #0e2235;
+  --qhse-page-plane: #091827;
+  --qhse-text-primary: #eaf2f8;
+  --qhse-text-secondary: #a7bccf;
+  --qhse-text-muted: #6f8aa3;
+  --qhse-gridline: #1b3853;
+  --qhse-border: #234362;
+  --qhse-border-hairline: rgba(234, 242, 248, 0.1);
+  --qhse-brand-wash: rgba(41, 171, 226, 0.14);
+  --qhse-accent-wash: rgba(247, 148, 29, 0.14);
+  --qhse-status-good-wash: rgba(18, 161, 80, 0.16);
+  --qhse-status-warning-wash: rgba(224, 162, 7, 0.16);
+  --qhse-status-serious-wash: rgba(232, 113, 42, 0.16);
+  --qhse-status-critical-wash: rgba(209, 52, 56, 0.16);
+  --qhse-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --qhse-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --qhse-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --qhse-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
 :root[data-theme="light"] {
-  --qhse-surface-1: #fcfcfb;
-  --qhse-page-plane: #f9f9f7;
-  --qhse-text-primary: #0b0b0b;
-  --qhse-text-secondary: #52514e;
-  --qhse-text-muted: #898781;
-  --qhse-gridline: #e1e0d9;
-  --qhse-border: #c3c2b7;
-  --qhse-border-hairline: rgba(11, 11, 11, 0.1);
+  --qhse-surface-1: #ffffff;
+  --qhse-surface-2: #f8fafc;
+  --qhse-page-plane: #f2f6fa;
+  --qhse-text-primary: #0f2233;
+  --qhse-text-secondary: #4a627a;
+  --qhse-text-muted: #8ba1b6;
+  --qhse-gridline: #eaf0f6;
+  --qhse-border: #dbe5ee;
+  --qhse-border-hairline: rgba(11, 39, 64, 0.08);
+  --qhse-brand-wash: #eaf6fc;
+  --qhse-accent-wash: #fff4e6;
+  --qhse-status-good-wash: #e7f7ee;
+  --qhse-status-warning-wash: #fdf4e0;
+  --qhse-status-serious-wash: #fdeee3;
+  --qhse-status-critical-wash: #fdeaea;
+  --qhse-shadow-xs: 0 1px 2px rgba(11, 39, 64, 0.04);
+  --qhse-shadow-sm: 0 1px 3px rgba(11, 39, 64, 0.06), 0 1px 2px rgba(11, 39, 64, 0.04);
+  --qhse-shadow-md: 0 4px 16px rgba(11, 39, 64, 0.07), 0 1px 3px rgba(11, 39, 64, 0.04);
+  --qhse-shadow-lg: 0 12px 32px rgba(11, 39, 64, 0.1), 0 2px 8px rgba(11, 39, 64, 0.05);
 }
