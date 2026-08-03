@@ -8,6 +8,9 @@ import { ApiError, apiFetch } from "../../../../../lib/api-client";
 import { displayValue, EMPTY_PLACEHOLDER, formatCell } from "../../../../../lib/format";
 import { findModule, type DetailField, type ModuleChild, type ModuleColumn, type ModuleDefinition } from "../../../../../lib/modules";
 import { statusTone } from "../../../../../lib/status-tone";
+import { RecordActions } from "./RecordActions";
+import { RecordForm } from "../RecordForm";
+import "../../../records.css";
 
 // Halaman detail generik — pasangan dari modules/[slug]/page.tsx.
 //
@@ -56,6 +59,7 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
   const [record, setRecord] = useState<Record_ | null>(null);
   const [childRows, setChildRows] = useState<Record<string, Record_[]>>({});
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -115,6 +119,29 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
           {subtitle && subtitle !== EMPTY_PLACEHOLDER && <p className="qhse-page__subtitle">{subtitle}</p>}
         </div>
       </header>
+
+      <RecordActions
+        slug={module.slug}
+        title={module.title}
+        id={id}
+        record={record}
+        onChanged={() => void load()}
+        onEdit={() => setEditing((value) => !value)}
+      />
+
+      {editing && (
+        <RecordForm
+          slug={module.slug}
+          title={module.title}
+          recordId={id}
+          initialRow={record}
+          onSaved={() => {
+            setEditing(false);
+            void load();
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      )}
 
       {module.detailSections.map((section) => (
         <DetailCard key={section.title} title={section.title} fields={section.fields} record={record} />

@@ -113,6 +113,28 @@ function statusOf(moduleDef, row) {
   return column ? row[column] : null;
 }
 
+/**
+ * Status yang berada DI DALAM pipa persetujuan — diturunkan dari tabel
+ * transisinya, bukan didaftar tangan: sebuah status ada di dalam pipa kalau
+ * hasil persetujuan bisa dicapai langsung darinya, ditambah status menunggu
+ * pertamanya sendiri.
+ *
+ * Untuk izin kerja hasilnya PENDING_ISSUER_APPROVAL dan PENDING_HSE_APPROVAL.
+ * Keduanya tidak boleh dicapai lewat tombol transisi: yang pertama karena
+ * tugas persetujuannya harus ikut dibuat, yang kedua karena mencapainya
+ * langsung berarti melompati tanda tangan tahap pertama.
+ */
+function approvalPipelineStatuses(moduleDef) {
+  const approval = moduleDef.write?.approval;
+  if (!approval) return [];
+  const lifecycle = moduleDef.write.lifecycle || {};
+  const inside = Object.keys(lifecycle).filter(
+    (status) =>
+      lifecycle[status].includes(approval.approvedStatus) || lifecycle[status].includes(approval.rejectedStatus),
+  );
+  return [...new Set([approval.pendingStatus, ...inside])];
+}
+
 function assertTransitionAllowed(moduleDef, from, to) {
   const lifecycle = moduleDef.write?.lifecycle;
   if (!lifecycle) throw new HttpError(409, "Modul ini tidak punya alur status.");
@@ -157,6 +179,9 @@ async function handleSchema(res, claims, moduleDef) {
           pendingStatus: write.approval.pendingStatus,
           approvedStatus: write.approval.approvedStatus,
           rejectedStatus: write.approval.rejectedStatus,
+          // Dikirim ke klien supaya tombol transisi yang pasti ditolak server
+          // tidak pernah digambar sejak awal.
+          pipelineStatuses: approvalPipelineStatuses(moduleDef),
         }
       : null,
   });
@@ -268,18 +293,57 @@ async function handleTransition(res, claims, moduleDef, id, body) {
       const from = statusOf(moduleDef, existing);
       assertTransitionAllowed(moduleDef, from, to);
 
-      // Status menunggu-persetujuan tidak boleh dicapai lewat pintu ini —
-      // itu tugas /submit, yang sekaligus memulai instance workflow-nya.
-      // Tanpa penjagaan ini, sebuah baris bisa terlihat "menunggu persetujuan"
-      // padahal tidak ada satu pun tugas persetujuan yang pernah dibuat.
+      // DUA PENJAGAAN, dan keduanya menutup lubang yang sama dari sisi
+      // berlawanan.
       const approval = moduleDef.write?.approval;
-      if (approval && to === approval.pendingStatus && from === approval.fromStatus) {
-        return {
-          conflict: {
-            title: "Gunakan pengajuan persetujuan.",
-            detail: `Perpindahan ke ${to} dilakukan lewat tombol Ajukan Persetujuan supaya tugas persetujuannya ikut dibuat.`,
-          },
-        };
+      if (approval) {
+        // (1) Status menunggu-persetujuan tidak boleh dicapai lewat pintu ini.
+        // Tanpa ini, sebuah baris bisa terlihat "menunggu persetujuan" padahal
+        // tidak ada satu pun tugas persetujuan yang pernah dibuat.
+        if (approvalPipelineStatuses(moduleDef).includes(to)) {
+          return {
+            conflict: {
+              title: "Gunakan pengajuan persetujuan.",
+              detail: `${to} adalah status di dalam alur persetujuan. Mencapainya lewat tombol transisi berarti melompati tanda tangan yang seharusnya ada di antaranya.`,
+            },
+          };
+        }
+
+        // Selama persetujuannya BERJALAN, status tidak boleh dipindahkan sama
+        // sekali dari pintu ini. Tanpa ini, sebuah izin yang sedang menunggu
+        // supervisor bisa dibatalkan atau digeser manual sementara tugas
+        // persetujuannya tetap hidup di kotak masuk orang lain — dua sumber
+        // kebenaran tentang berkas yang sama.
+        const berjalan = await workflow.instanceForEntity(client, claims.tenant_id, approval.entityType, id);
+        if (berjalan && berjalan.instance.status === "IN_PROGRESS") {
+          return {
+            conflict: {
+              title: "Sedang menunggu persetujuan.",
+              detail: "Status berikutnya ditentukan oleh hasil persetujuan yang sedang berjalan, bukan dari halaman ini.",
+            },
+          };
+        }
+        // (2) Hasil persetujuan tidak boleh DITULIS TANGAN.
+        //
+        // Ini penjagaan terpenting di berkas ini. Tabel transisi izin kerja
+        // memang membolehkan PENDING_HSE_APPROVAL -> APPROVED — perpindahan
+        // itu sah, tapi HANYA sebagai hasil tanda tangan. Tanpa penjagaan ini
+        // halaman detail menampilkan tombol "Approved" pada izin yang sedang
+        // menunggu HSE, dan siapa pun yang bisa membuka halamannya bisa
+        // menyetujui izin kerja tanpa satu pun persetujuan — persis hal yang
+        // seluruh modul ini dibangun untuk mencegahnya. Ditemukan saat
+        // memeriksa halaman detail di peramban, bukan lewat pembacaan kode.
+        //
+        // Status hasil hanya ditulis handleAct(), setelah mesin workflow
+        // menyatakan instance-nya tuntas.
+        if (to === approval.approvedStatus || to === approval.rejectedStatus) {
+          return {
+            conflict: {
+              title: "Hanya bisa lewat persetujuan.",
+              detail: `Status ${to} adalah hasil proses persetujuan dan tidak bisa ditetapkan langsung. Ajukan persetujuan, lalu penyetujunya yang memutuskan.`,
+            },
+          };
+        }
       }
 
       const { rows } = await client.query(
@@ -311,18 +375,35 @@ async function handleSubmit(res, claims, moduleDef, id) {
       if (!existing) return { notFound: true };
 
       const from = statusOf(moduleDef, existing);
-      if (from !== approval.fromStatus) {
+      const running = await workflow.instanceForEntity(client, claims.tenant_id, approval.entityType, id);
+      if (running && running.instance.status === "IN_PROGRESS") {
+        return { conflict: { title: "Sudah diajukan.", detail: "Persetujuannya masih berjalan." } };
+      }
+
+      // Yang boleh diajukan: baris di status awal alurnya, ATAU baris yang
+      // SUDAH berada di dalam pipa persetujuan tapi tidak punya satu pun
+      // instance.
+      //
+      // Yang kedua ada karena data yang ditulis langsung lewat SQL (data demo
+      // disemai begitu) bisa lahir di tengah pipa. Tanpa jalur ini baris
+      // semacam itu buntu selamanya: tidak bisa diajukan karena statusnya
+      // bukan status awal, dan — setelah penjagaan (2) di handleTransition —
+      // tidak bisa disetujui manual juga. Buntu diam-diam lebih buruk daripada
+      // salah: tidak ada pesan apa pun yang memberitahu jalan keluarnya.
+      //
+      // "Di dalam pipa" DITURUNKAN dari tabel transisinya, bukan didaftar
+      // tangan: sebuah status ada di dalam pipa kalau hasil persetujuan bisa
+      // dicapai langsung darinya. Untuk izin kerja itu berarti
+      // PENDING_ISSUER_APPROVAL dan PENDING_HSE_APPROVAL, keduanya tanpa perlu
+      // disebutkan — dan kalau tabel transisinya berubah, daftar ini ikut.
+      const bolehDiajukan = from === approval.fromStatus || (!running && approvalPipelineStatuses(moduleDef).includes(from));
+      if (!bolehDiajukan) {
         return {
           conflict: {
             title: "Belum siap diajukan.",
             detail: `Hanya baris berstatus ${approval.fromStatus} yang bisa diajukan; yang ini berstatus ${from}.`,
           },
         };
-      }
-
-      const running = await workflow.instanceForEntity(client, claims.tenant_id, approval.entityType, id);
-      if (running && running.instance.status === "IN_PROGRESS") {
-        return { conflict: { title: "Sudah diajukan.", detail: "Persetujuannya masih berjalan." } };
       }
 
       const contextData = await buildContext(client, claims.tenant_id, moduleDef, existing);

@@ -1,0 +1,395 @@
+/* Formulir, bilah aksi, jejak persetujuan, dan kotak persetujuan.
+   Semua warna dan jarak dari token @qhse/ui-components. */
+
+/* --- Formulir --- */
+
+.qhse-form {
+  background: var(--qhse-surface-1);
+  border: 1px solid color-mix(in srgb, var(--qhse-brand) 22%, transparent);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm);
+  padding: var(--qhse-space-5);
+  margin-bottom: var(--qhse-space-5);
+}
+
+.qhse-form__head {
+  padding-bottom: var(--qhse-space-4);
+  margin-bottom: var(--qhse-space-4);
+  border-bottom: 1px solid var(--qhse-gridline);
+}
+
+.qhse-form__title {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-h2-size);
+  line-height: var(--qhse-text-h2-lh);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+.qhse-form__hint {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-text-secondary);
+  margin: var(--qhse-space-2) 0 0;
+  max-width: 78ch;
+}
+
+.qhse-form__error {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-status-critical);
+  background: var(--qhse-status-critical-wash);
+  border: 1px solid color-mix(in srgb, var(--qhse-status-critical) 24%, transparent);
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  margin: 0 0 var(--qhse-space-4);
+}
+
+.qhse-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0 var(--qhse-space-5);
+}
+
+/* Field teks panjang mengambil seluruh lebar: uraian insiden dan pernyataan
+   masalah CAPA ditulis dalam kalimat, dan kotak selebar seperempat layar
+   membuat orang menulis lebih pendek daripada yang seharusnya. */
+.qhse-form__cell--wide {
+  grid-column: 1 / -1;
+}
+
+.qhse-form__actions {
+  display: flex;
+  gap: var(--qhse-space-3);
+  padding-top: var(--qhse-space-4);
+  border-top: 1px solid var(--qhse-gridline);
+}
+
+/* --- Bilah aksi --- */
+
+.qhse-actions {
+  margin-bottom: var(--qhse-space-5);
+}
+
+.qhse-actions__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qhse-space-3);
+  padding: var(--qhse-space-4);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border-hairline);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm);
+}
+
+.qhse-actions__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qhse-space-2);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-secondary);
+}
+
+.qhse-actions__spacer {
+  flex: 1 1 auto;
+}
+
+.qhse-actions__ok,
+.qhse-actions__bad,
+.qhse-actions__note {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  margin: var(--qhse-space-3) 0 0;
+}
+
+.qhse-actions__ok {
+  color: var(--qhse-status-good);
+  background: var(--qhse-status-good-wash);
+  font-weight: 600;
+}
+
+.qhse-actions__bad {
+  color: var(--qhse-status-critical);
+  background: var(--qhse-status-critical-wash);
+  font-weight: 600;
+}
+
+.qhse-actions__note {
+  color: var(--qhse-text-secondary);
+  background: var(--qhse-surface-2);
+}
+
+/* --- Jejak persetujuan --- */
+
+.qhse-approval {
+  margin-top: var(--qhse-space-4);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border-hairline);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm);
+  padding: var(--qhse-space-5);
+}
+
+.qhse-approval__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--qhse-space-4);
+  padding-bottom: var(--qhse-space-4);
+  margin-bottom: var(--qhse-space-4);
+  border-bottom: 1px solid var(--qhse-gridline);
+}
+
+.qhse-approval__title {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-body-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+.qhse-approval__caption {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: 1.45;
+  color: var(--qhse-text-muted);
+  margin: var(--qhse-space-1) 0 0;
+  max-width: 70ch;
+}
+
+.qhse-approval__head .qhse-status-badge {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.qhse-approval__stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-approval__stage {
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  background: var(--qhse-surface-2);
+  border: 1px solid var(--qhse-border-hairline);
+  border-left: 3px solid var(--qhse-gridline);
+  border-radius: var(--qhse-radius-sm);
+}
+
+.qhse-approval__stage--done {
+  border-left-color: var(--qhse-status-good);
+}
+
+/* Tahap yang sedang berjalan diberi warna merek, bukan warna status: ia bukan
+   "baik" maupun "buruk", ia sekadar tempat berkasnya berada sekarang. */
+.qhse-approval__stage--current {
+  border-left-color: var(--qhse-brand);
+  background: var(--qhse-brand-wash);
+}
+
+.qhse-approval__stagehead {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  font-family: var(--qhse-font-ui);
+}
+
+.qhse-approval__seq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: var(--qhse-radius-full);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  color: var(--qhse-text-secondary);
+}
+
+.qhse-approval__stagename {
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+}
+
+.qhse-approval__sla {
+  margin-left: auto;
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+  white-space: nowrap;
+}
+
+.qhse-approval__pending {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+  margin: var(--qhse-space-2) 0 0 34px;
+}
+
+.qhse-approval__tasks {
+  list-style: none;
+  margin: var(--qhse-space-2) 0 0 34px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-2);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+}
+
+.qhse-approval__tasks li {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  flex-wrap: wrap;
+}
+
+.qhse-approval__who {
+  font-weight: 600;
+  color: var(--qhse-text-primary);
+}
+
+.qhse-approval__waiting {
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+}
+
+.qhse-approval__when {
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+}
+
+.qhse-approval__comment {
+  flex: 1 1 100%;
+  font-style: italic;
+  color: var(--qhse-text-secondary);
+}
+
+.qhse-approval__act {
+  margin-top: var(--qhse-space-4);
+  padding-top: var(--qhse-space-4);
+  border-top: 1px solid var(--qhse-gridline);
+}
+
+.qhse-approval__act label {
+  display: block;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-text-secondary);
+  margin-bottom: var(--qhse-space-2);
+}
+
+.qhse-approval__act textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-2);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+  resize: vertical;
+}
+
+.qhse-approval__act textarea:focus {
+  outline: none;
+  border-color: var(--qhse-brand);
+  box-shadow: 0 0 0 3px var(--qhse-brand-wash);
+}
+
+.qhse-approval__buttons {
+  display: flex;
+  gap: var(--qhse-space-3);
+  margin-top: var(--qhse-space-3);
+}
+
+/* --- Kotak persetujuan --- */
+
+.qhse-inbox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-inbox__item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qhse-space-4);
+  padding: var(--qhse-space-4) var(--qhse-space-5);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border-hairline);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm);
+}
+
+.qhse-inbox__main {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.qhse-inbox__module {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: var(--qhse-brand);
+  margin: 0;
+}
+
+.qhse-inbox__stage {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-body-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: var(--qhse-space-1) 0 0;
+}
+
+.qhse-inbox__flow {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: 1.45;
+  color: var(--qhse-text-muted);
+  margin: var(--qhse-space-1) 0 0;
+}
+
+.qhse-inbox__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-4);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.qhse-inbox__since {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+}
+
+.qhse-inbox__open {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 700;
+  color: var(--qhse-brand);
+  white-space: nowrap;
+}

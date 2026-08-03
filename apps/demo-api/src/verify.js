@@ -61,6 +61,24 @@ async function main() {
     process.exit(1);
   }
 
+  /** Token akses untuk pengguna lain — dipakai memeriksa alur persetujuan
+   *  berjenjang, yang mustahil diperiksa dari satu akun saja. */
+  async function tokenFor(email) {
+    const verifier = base64Url(crypto.randomBytes(32));
+    const challenge = base64Url(crypto.createHash("sha256").update(verifier).digest());
+    const login = await call("/auth/login", {
+      method: "POST",
+      tenantId: TENANT_ID,
+      body: { email, password: PASSWORD, codeChallenge: challenge, codeChallengeMethod: "S256" },
+    });
+    if (login.status !== 200) return null;
+    const exchanged = await call("/auth/token", {
+      method: "POST",
+      body: { grantType: "authorization_code", code: login.payload.data.code, codeVerifier: verifier },
+    });
+    return exchanged.payload?.data?.accessToken ?? null;
+  }
+
   console.log("\n--- masuk (Authorization Code + PKCE) ---");
   const codeVerifier = base64Url(crypto.randomBytes(32));
   const codeChallenge = base64Url(crypto.createHash("sha256").update(codeVerifier).digest());
@@ -203,6 +221,106 @@ async function main() {
   const rejected = await call("/dashboard-layouts/analytics", { method: "PUT", token, body: { layout: "bukan objek" } });
   report(rejected.status === 400, "susunan tidak sah ditolak", `HTTP ${rejected.status}`);
   if (original) await call("/dashboard-layouts/analytics", { method: "PUT", token, body: { layout: original } });
+
+  console.log("\n--- CRUD & persetujuan (izin kerja) ---");
+  // Membuat baris SUNGGUHAN lalu menghapusnya lunak di akhir. Alurnya tidak
+  // bisa diperiksa tanpa menjalankannya: yang paling mungkin rusak setelah
+  // pemasangan justru penomoran, penyelesaian approver, dan percabangan
+  // bersyarat — dan ketiganya hanya terlihat saat benar-benar dijalankan.
+  const schemaRes = await call("/work-permits/schema", { token });
+  const fields = schemaRes.payload?.data?.fields ?? [];
+  report(schemaRes.status === 200 && fields.length > 0, "GET /work-permits/schema", `${fields.length} field`);
+  report(!fields.some((f) => f.column === "status"), "kolom status tidak bisa diisi lewat formulir");
+
+  const pilihan = (kolom) => fields.find((f) => f.column === kolom)?.options ?? [];
+  const tipeHot = pilihan("work_permit_type_id").find((o) => /Panas|Hot/i.test(o.label));
+  const lokasi = pilihan("site_id")[0];
+  const pemohon = pilihan("requester_id")[0];
+
+  const dibuat = await call("/work-permits", {
+    method: "POST",
+    token,
+    body: {
+      title: "Pemeriksaan otomatis pascapemasangan",
+      description: "Dibuat qhse-live-check lalu dihapus lunak di akhir pemeriksaan.",
+      workPermitTypeId: tipeHot?.value,
+      siteId: lokasi?.value,
+      requesterId: pemohon?.value,
+      riskLevel: "HIGH",
+      locationDetail: "—",
+      plannedStartDatetime: new Date(Date.now() + 86400000).toISOString(),
+      plannedEndDatetime: new Date(Date.now() + 172800000).toISOString(),
+      numberOfWorkers: 2,
+    },
+  });
+  const permitId = dibuat.payload?.data?.id;
+  report(dibuat.status === 200 && Boolean(permitId), "POST /work-permits", dibuat.payload?.data?.permitNumber || `HTTP ${dibuat.status}`);
+
+  if (permitId) {
+    const kosong = await call("/work-permits", { method: "POST", token, body: {} });
+    report(kosong.status === 422, "field wajib kosong ditolak", `HTTP ${kosong.status}`);
+
+    const lompat = await call(`/work-permits/${permitId}/transition`, { method: "POST", token, body: { status: "APPROVED" } });
+    report(lompat.status === 409, "DRAFT -> APPROVED ditolak state machine", `HTTP ${lompat.status}`);
+
+    const ajukan = await call(`/work-permits/${permitId}/submit`, { method: "POST", token });
+    report(ajukan.status === 200 && (ajukan.payload?.data?.approvers ?? 0) > 0, "POST /submit", `${ajukan.payload?.data?.approvers ?? 0} approver`);
+
+    const ulang = await call(`/work-permits/${permitId}/submit`, { method: "POST", token });
+    report(ulang.status === 409, "pengajuan kedua ditolak", `HTTP ${ulang.status}`);
+
+    const panel = await call(`/work-permits/${permitId}/approval`, { token });
+    const tahap = panel.payload?.data?.stages?.length ?? 0;
+    report(panel.status === 200 && tahap >= 2, "panel persetujuan memuat tahapnya", `${tahap} tahap`);
+    report(
+      panel.payload?.data?.instance?.status === "IN_PROGRESS",
+      "instance workflow berjalan",
+      panel.payload?.data?.instance?.currentStageName,
+    );
+
+    // Menyetujui sebagai SUPERVISOR, bukan sebagai pengaju. Kalau penugasan
+    // approver lewat user_roles rusak, tugasnya tidak akan pernah muncul di
+    // sini — dan itulah kegagalan yang paling mungkin terjadi setelah seed
+    // dijalankan ulang.
+    const supervisorToken = await tokenFor("hendra.kusuma@petro-ns.demo");
+    const inbox = await call("/approvals", { token: supervisorToken });
+    const tugas = (inbox.payload?.data ?? []).find((t) => t.entityId === permitId);
+    report(Boolean(tugas), "tugas muncul di kotak persetujuan Supervisor", `${inbox.payload?.data?.length ?? 0} tugas`);
+
+    if (tugas) {
+      const salahOrang = await call(`/approvals/${tugas.taskId}/act`, { method: "POST", token, body: { action: "APPROVE" } });
+      report(salahOrang.status === 403, "orang lain tidak bisa menyetujui tugas itu", `HTTP ${salahOrang.status}`);
+
+      const setuju = await call(`/approvals/${tugas.taskId}/act`, {
+        method: "POST",
+        token: supervisorToken,
+        body: { action: "APPROVE", comment: "Pemeriksaan otomatis." },
+      });
+      report(setuju.status === 200, "Supervisor menyetujui", `HTTP ${setuju.status}`);
+      report(setuju.payload?.data?.completed === null, "risiko HIGH lanjut ke tahap HSE, belum selesai");
+
+      const klikGanda = await call(`/approvals/${tugas.taskId}/act`, { method: "POST", token: supervisorToken, body: { action: "APPROVE" } });
+      report(klikGanda.status === 409, "klik ganda tidak menyetujui dua kali", `HTTP ${klikGanda.status}`);
+
+      const hseToken = await tokenFor("andi.wijaya@petro-ns.demo");
+      const inboxHse = await call("/approvals", { token: hseToken });
+      const tugasHse = (inboxHse.payload?.data ?? []).find((t) => t.entityId === permitId);
+      report(Boolean(tugasHse), "tahap HSE muncul di kotak HSE Manager", tugasHse?.stageName);
+
+      if (tugasHse) {
+        const setujuHse = await call(`/approvals/${tugasHse.taskId}/act`, {
+          method: "POST",
+          token: hseToken,
+          body: { action: "APPROVE", comment: "Pemeriksaan otomatis." },
+        });
+        report(setujuHse.payload?.data?.completed?.status === "APPROVED", "instance selesai APPROVED");
+        report(setujuHse.payload?.data?.domainStatus === "APPROVED", "status izin kerja ikut jadi APPROVED");
+      }
+    }
+
+    const dihapus = await call(`/work-permits/${permitId}`, { method: "DELETE", token });
+    report(dihapus.status === 200, "baris uji dihapus lunak kembali", `HTTP ${dihapus.status}`);
+  }
 
   console.log("\n--- notifikasi ---");
   const inbox = await call("/notifications?page=1&limit=20", { token });

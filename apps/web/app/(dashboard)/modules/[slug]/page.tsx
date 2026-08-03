@@ -2,18 +2,23 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button, DataTable, StatusBadge } from "@qhse/ui-components";
 import { ApiError, apiFetchWithMeta } from "../../../../lib/api-client";
 import { displayValue } from "../../../../lib/format";
 import { findModule, type ModuleDefinition } from "../../../../lib/modules";
 import { statusTone } from "../../../../lib/status-tone";
+import { RecordForm } from "./RecordForm";
+import "../../records.css";
 
 // SATU halaman daftar untuk KELIMA BELAS modul, digerakkan lib/modules.ts —
-// lihat banner comment di sana untuk alasannya. Endpoint yang dipanggil
-// semuanya read-only (GET list + GET detail); tidak ada aksi tulis di UI ini
-// karena memang belum ada endpoint tulisnya (semua mutasi domain masih lewat
-// service layer + test integrasi, lihat komentar di *.controller.ts).
+// lihat banner comment di sana untuk alasannya.
+//
+// Tombol "Tambah" memakai formulir yang dibangun dari skema server
+// (RecordForm), jadi halaman ini tidak tahu apa-apa tentang kolom modul mana
+// pun. Status TIDAK ada di formulir itu: baris baru selalu lahir di status
+// awal alur modulnya, dan perpindahan berikutnya dilakukan dari halaman
+// detail lewat pengajuan persetujuan atau perpindahan status.
 
 const PAGE_SIZE = 20;
 
@@ -50,16 +55,19 @@ export default function ModuleListPage() {
 }
 
 function ModuleList({ module }: { module: ModuleDefinition }) {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   // Kembali ke halaman 1 saat berpindah modul — komponen ini dipakai ulang
   // oleh React saat slug berubah, jadi state paginasinya ikut terbawa.
   useEffect(() => {
     setPage(1);
     setRows(null);
+    setCreating(false);
   }, [module.slug]);
 
   const load = useCallback(async () => {
@@ -94,7 +102,19 @@ function ModuleList({ module }: { module: ModuleDefinition }) {
                 : `${total} data · menampilkan halaman ${page} dari ${totalPages}`}
           </p>
         </div>
+        <Button variant="accent" onClick={() => setCreating((value) => !value)}>
+          {creating ? "Tutup formulir" : `Tambah ${module.title}`}
+        </Button>
       </header>
+
+      {creating && (
+        <RecordForm
+          slug={module.slug}
+          title={module.title}
+          onSaved={(id) => router.push(`/modules/${module.slug}/${id}`)}
+          onCancel={() => setCreating(false)}
+        />
+      )}
 
       {error && (
         <p role="alert" className="qhse-page__error">
