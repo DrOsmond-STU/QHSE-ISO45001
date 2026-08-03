@@ -237,6 +237,12 @@ async function main() {
   const lokasi = pilihan("site_id")[0];
   const pemohon = pilihan("requester_id")[0];
 
+  // Jumlah SEBELUM baris uji dibuat, untuk dibandingkan setelah dihapus.
+  // Ini pemeriksaan yang seharusnya ada sejak awal: penghapusan lunak sempat
+  // menjawab HTTP 200 sementara barisnya tetap terhitung dan tetap terbuka,
+  // dan satu-satunya gejalanya adalah angka yang naik satu tiap putaran.
+  const totalSebelum = (await call("/work-permits?page=1&limit=1", { token })).payload?.meta?.total ?? -1;
+
   const dibuat = await call("/work-permits", {
     method: "POST",
     token,
@@ -320,6 +326,12 @@ async function main() {
 
     const dihapus = await call(`/work-permits/${permitId}`, { method: "DELETE", token });
     report(dihapus.status === 200, "baris uji dihapus lunak kembali", `HTTP ${dihapus.status}`);
+
+    const dibukaLagi = await call(`/work-permits/${permitId}`, { token });
+    report(dibukaLagi.status === 404, "baris terhapus tidak bisa dibuka lewat URL-nya", `HTTP ${dibukaLagi.status}`);
+
+    const totalSesudah = (await call("/work-permits?page=1&limit=1", { token })).payload?.meta?.total ?? -2;
+    report(totalSesudah === totalSebelum, "jumlah record kembali seperti semula", `${totalSebelum} -> ${totalSesudah}`);
   }
 
   console.log("\n--- berkas: dokumen terkendali & register peraturan ---");
@@ -371,14 +383,58 @@ async function main() {
     report(tokenPalsu.status === 403, "token berkas cacat ditolak", `HTTP ${tokenPalsu.status}`);
   }
 
-  if (docId) {
+  // --------------------------------------------------------------------------
+  //  Unggahan diuji pada dokumen SEKALI PAKAI, bukan pada dokumen demo.
+  //
+  //  Mengunggah berkas ke dokumen terkendali berarti MELAHIRKAN REVISI BARU,
+  //  dan revisi dokumen terkendali memang tidak boleh bisa dihapus lagi — itu
+  //  justru inti gunanya. Akibatnya, pemeriksaan yang menumpang pada dokumen
+  //  demo menumpuk revisi permanen padanya, satu setiap putaran cron:
+  //
+  //      05:16  3 versi    05:36  4 versi    05:46  5 versi
+  //
+  //  Tiga putaran sudah menambah dua revisi palsu pada dokumen yang dipakai
+  //  saat presentasi. Yang benar bukan membuat revisi bisa dihapus, melainkan
+  //  tidak menyentuh dokumen sungguhan sama sekali: dokumen sekali pakai
+  //  dibuat di sini dan dihapus lunak di akhir, sama seperti izin kerja uji.
+  //
+  //  Penandatanganan dan pengunduhan di atas tetap memakai dokumen demo —
+  //  keduanya hanya MEMBACA, dan berkas hasil seed-lah yang justru ingin
+  //  dipastikan masih bisa dibuka.
+  // --------------------------------------------------------------------------
+  const docSchema = await call("/documents/schema", { token });
+  const docFields = docSchema.payload?.data?.fields ?? [];
+  const pilihanDok = (kolom) => docFields.find((f) => f.column === kolom)?.options ?? [];
+  const kategori = pilihanDok("document_category_id")[0];
+  const pemilik = pilihanDok("owner_user_id")[0];
+  const jenisDok = pilihanDok("document_type").find((o) => /PROCEDURE/i.test(o.value)) ?? pilihanDok("document_type")[0];
+
+  const dokUji = await call("/documents", {
+    method: "POST",
+    token,
+    body: {
+      title: "Dokumen uji pemeriksaan otomatis",
+      description: "Dibuat qhse-live-check lalu dihapus lunak di akhir pemeriksaan.",
+      documentType: jenisDok?.value,
+      documentCategoryId: kategori?.value,
+      ownerUserId: pemilik?.value,
+    },
+  });
+  const dokUjiId = dokUji.payload?.data?.id;
+  report(
+    dokUji.status === 200 && Boolean(dokUjiId),
+    "POST /documents — dokumen sekali pakai untuk uji unggah",
+    dokUji.payload?.data?.documentNumber || `HTTP ${dokUji.status}`,
+  );
+
+  if (dokUjiId) {
     // PDF minimum yang sah, dirakit di sini supaya pemeriksaan tidak
     // bergantung pada berkas di disk.
     const pdfKecil = Buffer.from(
       "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n",
       "latin1",
     );
-    const unggah = await call(`/documents/${docId}/files`, {
+    const unggah = await call(`/documents/${dokUjiId}/files`, {
       method: "POST",
       token,
       body: {
@@ -394,19 +450,22 @@ async function main() {
       unggah.status === 200 ? `revisi ${unggah.payload?.data?.majorVersion}.${unggah.payload?.data?.minorVersion}` : `HTTP ${unggah.status}`,
     );
 
-    const isiPalsu = await call(`/documents/${docId}/files`, {
+    const isiPalsu = await call(`/documents/${dokUjiId}/files`, {
       method: "POST",
       token,
       body: { fileName: "palsu.pdf", mimeType: "application/pdf", contentBase64: Buffer.from("bukan pdf").toString("base64") },
     });
     report(isiPalsu.status === 415, "berkas yang isinya tidak cocok tipenya ditolak", `HTTP ${isiPalsu.status}`);
 
-    const tipeTerlarang = await call(`/documents/${docId}/files`, {
+    const tipeTerlarang = await call(`/documents/${dokUjiId}/files`, {
       method: "POST",
       token,
       body: { fileName: "x.exe", mimeType: "application/x-msdownload", contentBase64: Buffer.from("MZ").toString("base64") },
     });
     report(tipeTerlarang.status === 415, "tipe di luar daftar putih ditolak", `HTTP ${tipeTerlarang.status}`);
+
+    const dokDihapus = await call(`/documents/${dokUjiId}`, { method: "DELETE", token });
+    report(dokDihapus.status === 200, "dokumen sekali pakai dihapus lunak kembali", `HTTP ${dokDihapus.status}`);
   }
 
   const regList = await call("/regulatory-registers?page=1&limit=10", { token });

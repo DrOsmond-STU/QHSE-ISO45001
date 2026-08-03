@@ -230,6 +230,20 @@ async function columnsOf(client, table) {
   return rows;
 }
 
+/**
+ * Apakah tabel ini punya penghapusan lunak?
+ *
+ * Ditanyakan ke skema, BUKAN didaftarkan tangan, karena tidak semua tabel
+ * punya deleted_at (maintenance_records, misalnya, tidak) dan menempelkan
+ * `AND deleted_at IS NULL` pada tabel yang tidak punya kolom itu menghasilkan
+ * galat Postgres mentah, bukan daftar kosong. Hasilnya ikut cache columnsOf,
+ * jadi ini bukan kueri tambahan setelah panggilan pertama.
+ */
+async function hasSoftDelete(client, table) {
+  const columns = await columnsOf(client, table);
+  return columns.some((c) => c.column_name === "deleted_at");
+}
+
 async function enumValues(client, udtName) {
   if (enumCache.has(udtName)) return enumCache.get(udtName);
   const { rows } = await client.query(
@@ -495,4 +509,4 @@ async function alignSequence(client, tenantId, moduleDef, actorId) {
   );
 }
 
-module.exports = { describeFields, coerceAndValidate, nextNumber, alignSequence, labelFor, NEVER_WRITABLE };
+module.exports = { describeFields, coerceAndValidate, nextNumber, alignSequence, labelFor, hasSoftDelete, NEVER_WRITABLE };

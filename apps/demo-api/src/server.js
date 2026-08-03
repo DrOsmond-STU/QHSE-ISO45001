@@ -40,6 +40,7 @@ const { MODULES, findModuleByEndpoint, findChild } = require("./modules");
 const writes = require("./writes");
 const files = require("./files");
 const { attachLabels } = require("./labels");
+const { hasSoftDelete } = require("./fields");
 const { findMetric, catalog } = require("./analytics");
 const { loadScorecard } = require("./scorecard");
 const { login, exchangeAuthorizationCode, exchangeRefreshToken, revokeRefreshToken, AuthError } = require("./auth");
@@ -87,19 +88,42 @@ function requireClaims(req, res) {
 
 // --- Modul domain ------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+//  PENGHAPUSAN LUNAK DISARING DI SINI, DAN INI BUKAN KERAPIAN.
+//
+//  Menghapus di aplikasi ini berarti mengisi deleted_at, bukan menghapus
+//  barisnya (writes.js handleDelete) — jejak audit ISO 45001 menuntut baris
+//  yang pernah ada tetap bisa ditelusuri. Tapi selama pembacaannya tidak ikut
+//  menyaring, "dihapus" tidak berarti apa-apa bagi yang memakainya: barisnya
+//  tetap terhitung di dashboard, tetap muncul di daftar, dan tetap terbuka
+//  lewat URL-nya. Yang lebih buruk, hapusnya menjawab HTTP 200 — jadi orang
+//  yakin sudah menghapus sesuatu yang sebenarnya masih ada di layar.
+//
+//  Ketahuan dari jumlah record yang naik satu setiap putaran pemeriksaan
+//  otomatis (izin kerja 56 -> 57 -> 58) padahal baris ujinya selalu dihapus
+//  di akhir. Angka yang menaik pelan-pelan itu satu-satunya gejalanya.
+// ---------------------------------------------------------------------------
+async function softDeleteClause(client, table, alias = "t") {
+  return (await hasSoftDelete(client, table)) ? ` AND ${alias}.deleted_at IS NULL` : "";
+}
+
 async function handleModuleList(res, claims, moduleDef, searchParams) {
   const { page, limit, offset } = readPagination(searchParams);
   const result = await withRls(claims.tenant_id, async (client) => {
+    const hidup = await softDeleteClause(client, moduleDef.table);
     const [rows, count] = await Promise.all([
       client.query(
         `SELECT t.*, t.${moduleDef.pk} AS id
            FROM ${moduleDef.table} t
-          WHERE t.tenant_id = $1
+          WHERE t.tenant_id = $1${hidup}
           ORDER BY ${moduleDef.orderBy}
           LIMIT $2 OFFSET $3`,
         [claims.tenant_id, limit, offset],
       ),
-      client.query(`SELECT count(*)::int AS total FROM ${moduleDef.table} WHERE tenant_id = $1`, [claims.tenant_id]),
+      client.query(
+        `SELECT count(*)::int AS total FROM ${moduleDef.table} t WHERE t.tenant_id = $1${hidup}`,
+        [claims.tenant_id],
+      ),
     ]);
     return { rows: await attachLabels(client, rows.rows), total: count.rows[0].total };
   });
@@ -108,8 +132,10 @@ async function handleModuleList(res, claims, moduleDef, searchParams) {
 
 async function handleModuleDetail(res, claims, moduleDef, id) {
   const row = await withRls(claims.tenant_id, async (client) => {
+    const hidup = await softDeleteClause(client, moduleDef.table);
     const { rows } = await client.query(
-      `SELECT t.*, t.${moduleDef.pk} AS id FROM ${moduleDef.table} t WHERE t.${moduleDef.pk} = $1 AND t.tenant_id = $2`,
+      `SELECT t.*, t.${moduleDef.pk} AS id FROM ${moduleDef.table} t
+        WHERE t.${moduleDef.pk} = $1 AND t.tenant_id = $2${hidup}`,
       [id, claims.tenant_id],
     );
     if (!rows[0]) return null;
@@ -133,10 +159,11 @@ async function handleModuleChildren(res, claims, child, parentId) {
   const where = child.where ? `${base} AND ${child.where}` : base;
 
   const rows = await withRls(claims.tenant_id, async (client) => {
+    const hidup = await softDeleteClause(client, child.table);
     const { rows: found } = await client.query(
       `SELECT t.*, t.${child.pk} AS id
          FROM ${child.table} t
-        WHERE ${where} AND t.tenant_id = $2
+        WHERE ${where} AND t.tenant_id = $2${hidup}
         ORDER BY ${child.orderBy}`,
       [parentId, claims.tenant_id],
     );
