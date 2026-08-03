@@ -22,6 +22,8 @@ const { withRls } = require("./db");
 const { verifyAccessToken } = require("./jwt");
 const { findModuleByEndpoint, findChild } = require("./modules");
 const { attachLabels } = require("./labels");
+const { findMetric, catalog } = require("./analytics");
+const { loadScorecard } = require("./scorecard");
 const { login, exchangeAuthorizationCode, exchangeRefreshToken, revokeRefreshToken, AuthError } = require("./auth");
 const { sendData, sendProblem, readJsonBody, parseCookies, readPagination, rowToCamel } = require("./http");
 const { EVENT_CATEGORIES, getCategoryLabel } = require("./event-category");
@@ -236,6 +238,104 @@ async function handleUpsertPreference(res, claims, body) {
   sendData(res, cell);
 }
 
+// --- Analitik ----------------------------------------------------------------
+
+/** Bawaan: 12 bulan terakhir sampai hari ini, termasuk bulan berjalan. */
+function readPeriod(searchParams) {
+  const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+  const raw = { from: searchParams.get("from"), to: searchParams.get("to") };
+  const today = new Date();
+  const defaultTo = today.toISOString().slice(0, 10);
+  const defaultFrom = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 11, 1)).toISOString().slice(0, 10);
+
+  // Nilai yang tidak berbentuk tanggal DIABAIKAN dan diganti bawaan, bukan
+  // diteruskan ke Postgres. Diteruskan, ia jadi galat 500 yang di layar hanya
+  // terbaca "gagal memuat" — padahal yang salah cuma isi kotak tanggal.
+  const from = raw.from && ISO_DATE.test(raw.from) ? raw.from : defaultFrom;
+  const to = raw.to && ISO_DATE.test(raw.to) ? raw.to : defaultTo;
+  return from <= to ? { from, to } : { from: to, to: from };
+}
+
+async function handleMetric(res, claims, key, searchParams) {
+  const metric = findMetric(key);
+  if (!metric) return sendProblem(res, 404, "Metrik tidak dikenal.", key);
+
+  const { from, to } = readPeriod(searchParams);
+  const { text, values } = metric.build({ tenantId: claims.tenant_id, from, to });
+  const rows = await withRls(claims.tenant_id, (client) => client.query(text, values).then((r) => r.rows));
+
+  const shape =
+    metric.kind === "scalar"
+      ? { value: rows[0] ? Number(rows[0].value) : 0 }
+      : metric.kind === "series"
+        ? { points: rows.map((row) => ({ label: row.label, value: Number(row.value) })) }
+        : { slices: rows.map((row) => ({ code: row.code, value: Number(row.value) })) };
+
+  sendData(res, {
+    key: metric.key,
+    title: metric.title,
+    caption: metric.caption,
+    kind: metric.kind,
+    unit: metric.unit,
+    format: metric.format || null,
+    tone: metric.tone || null,
+    // Dikirim SETIAP kali, bukan hanya saat false: widget menampilkan periode
+    // yang berlaku baginya, dan yang tidak terpengaruh menyatakannya sendiri.
+    periodApplies: Boolean(metric.dateColumn),
+    period: { from, to },
+    ...shape,
+  });
+}
+
+async function handleScorecard(res, claims) {
+  const result = await withRls(claims.tenant_id, (client) => loadScorecard(client, claims.tenant_id));
+  sendData(res, result);
+}
+
+// --- Tata letak dashboard ----------------------------------------------------
+
+const LAYOUT_KEYS = new Set(["analytics", "scorecard"]);
+// Batas ukuran ditegakkan di sini, bukan diserahkan ke kolom jsonb: kolom itu
+// akan menerima berapa pun besarnya, dan satu klien yang keliru sudah cukup
+// untuk menumbuhkan tabel preferensi tanpa batas.
+const LAYOUT_MAX_BYTES = 32 * 1024;
+
+async function handleGetLayout(res, claims, key) {
+  if (!LAYOUT_KEYS.has(key)) return sendProblem(res, 404, "Dashboard tidak dikenal.", key);
+  const layout = await withRls(claims.tenant_id, async (client) => {
+    const { rows } = await client.query(
+      `SELECT layout FROM dashboard_layouts WHERE tenant_id = $1 AND user_id = $2 AND dashboard_key = $3`,
+      [claims.tenant_id, claims.sub, key],
+    );
+    return rows[0]?.layout ?? null;
+  });
+  // layout null = pengguna belum pernah menyusun sendiri. Klien memakai
+  // susunan bawaannya, dan itu BUKAN kondisi galat.
+  sendData(res, { key, layout });
+}
+
+async function handlePutLayout(res, claims, key, body) {
+  if (!LAYOUT_KEYS.has(key)) return sendProblem(res, 404, "Dashboard tidak dikenal.", key);
+  const layout = body?.layout;
+  if (!layout || typeof layout !== "object" || Array.isArray(layout)) {
+    return sendProblem(res, 400, "Susunan tidak sah.", "Field `layout` harus berupa objek.");
+  }
+  if (Buffer.byteLength(JSON.stringify(layout), "utf8") > LAYOUT_MAX_BYTES) {
+    return sendProblem(res, 413, "Susunan terlalu besar.", `Batasnya ${LAYOUT_MAX_BYTES} byte.`);
+  }
+
+  await withRls(claims.tenant_id, (client) =>
+    client.query(
+      `INSERT INTO dashboard_layouts (tenant_id, user_id, dashboard_key, layout, updated_at)
+       VALUES ($1, $2, $3, $4::jsonb, now())
+       ON CONFLICT (user_id, dashboard_key)
+       DO UPDATE SET layout = EXCLUDED.layout, updated_at = now()`,
+      [claims.tenant_id, claims.sub, key, JSON.stringify(layout)],
+    ),
+  );
+  sendData(res, { key, layout });
+}
+
 // --- Router ------------------------------------------------------------------
 
 async function route(req, res, url) {
@@ -281,6 +381,29 @@ async function route(req, res, url) {
     if (segments[1] === "preferences" && method === "PUT") return handleUpsertPreference(res, claims, await readJsonBody(req));
     if (segments.length === 3 && segments[2] === "read" && method === "POST") return handleMarkRead(res, claims, segments[1]);
     return sendProblem(res, 404, "Rute tidak dikenal.", pathname);
+  }
+
+  // --- analitik & scorecard (dicek sebelum registri modul) ---
+  if (segments[0] === "analytics") {
+    const claims = requireClaims(req, res);
+    if (!claims) return;
+    if (segments[1] === "catalog" && method === "GET") return sendData(res, catalog());
+    if (segments.length === 2 && method === "GET") return handleMetric(res, claims, segments[1], searchParams);
+    return sendProblem(res, 404, "Rute tidak dikenal.", pathname);
+  }
+
+  if (segments[0] === "scorecard" && segments.length === 1 && method === "GET") {
+    const claims = requireClaims(req, res);
+    if (!claims) return;
+    return handleScorecard(res, claims);
+  }
+
+  if (segments[0] === "dashboard-layouts" && segments.length === 2) {
+    const claims = requireClaims(req, res);
+    if (!claims) return;
+    if (method === "GET") return handleGetLayout(res, claims, segments[1]);
+    if (method === "PUT") return handlePutLayout(res, claims, segments[1], await readJsonBody(req));
+    return sendProblem(res, 405, "Metode tidak didukung.", method);
   }
 
   // --- modul domain ---

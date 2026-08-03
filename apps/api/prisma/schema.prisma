@@ -437,6 +437,7 @@ model User {
   qualityObjectiveProgressLogsRecorded QualityObjectiveProgressLog[] @relation("QualityObjectiveProgressLogRecordedBy")
   qualityObjectiveProgressLogsCreated  QualityObjectiveProgressLog[] @relation("QualityObjectiveProgressLogCreatedBy")
   qualityObjectiveProgressLogsUpdated  QualityObjectiveProgressLog[] @relation("QualityObjectiveProgressLogUpdatedBy")
+  dashboardLayouts                     DashboardLayout[]
 
   // Task 5.2 — Environmental Management
   environmentalAspectsImpactsReviewed       EnvironmentalAspectImpact[]         @relation("EnvironmentalAspectImpactReviewedBy")
@@ -1429,6 +1430,36 @@ model NotificationPreference {
   @@map("notification_preferences")
 }
 
+/// Susunan widget dashboard milik SETIAP PENGGUNA (analitik, scorecard).
+///
+/// `layout` sengaja Json dan bukan tabel widget tersendiri: katalog widget
+/// hidup di dalam kode dan berubah setiap kali metrik baru ditambahkan.
+/// Menormalkannya berarti setiap penambahan widget menuntut migrasi basis
+/// data, padahal isinya semata preferensi tampilan.
+///
+/// TIDAK dilekati audit_log_trigger — lihat alasannya di banner migrasi
+/// 20260803120000.
+model DashboardLayout {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @map("dashboard_layout_id") @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// 'analytics' | 'scorecard'. VARCHAR, bukan enum: menambah jenis dashboard
+  /// baru tidak boleh menuntut migrasi.
+  dashboardKey String @map("dashboard_key") @db.VarChar(50)
+  layout       Json   @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([userId, dashboardKey])
+  @@index([tenantId])
+  @@map("dashboard_layouts")
+}
+
 model NotificationLog {
   id                String                  @id @default(dbgenerated("gen_random_uuid()")) @map("notification_log_id") @db.Uuid
   // BEYOND PRD literal (lihat banner comment poin 1 di atas).
@@ -1787,6 +1818,9 @@ model Tenant {
   supplierQualityRecords       SupplierQualityRecord[]
   qualityObjectives            QualityObjective[]
   qualityObjectiveProgressLogs QualityObjectiveProgressLog[]
+
+  // Task 0.14 — susunan widget dashboard per pengguna
+  dashboardLayouts             DashboardLayout[]
 
   // Task 5.2 — Environmental Management
   environmentalAspectsImpacts        EnvironmentalAspectImpact[]
@@ -7018,6 +7052,16 @@ enum QualityObjectiveStatus {
   DISCONTINUED
 }
 
+/// Empat perspektif Balanced Scorecard. Dipakai untuk MENGELOMPOKKAN sasaran
+/// mutu ISO 9001 klausul 6.2 yang sudah ada, bukan sebagai jenis data baru —
+/// lihat banner migrasi 20260803120000.
+enum BalancedScorecardPerspective {
+  FINANCIAL
+  CUSTOMER
+  INTERNAL_PROCESS
+  LEARNING_GROWTH
+}
+
 model NcrRecord {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @map("ncr_id") @db.Uuid
   tenantId String @map("tenant_id") @db.Uuid
@@ -7366,6 +7410,14 @@ model QualityObjective {
   atRiskThresholdPercentage Decimal                              @default(10) @map("at_risk_threshold_percentage") @db.Decimal(5, 2)
   measurementFrequency      QualityObjectiveMeasurementFrequency @map("measurement_frequency")
 
+  /// Perspektif Balanced Scorecard. NULLABLE dengan sengaja: sasaran yang
+  /// belum dipetakan ditampilkan terpisah, bukan diam-diam dimasukkan ke
+  /// salah satu kuadran.
+  bscPerspective BalancedScorecardPerspective? @map("bsc_perspective")
+  /// Bobot KPI ini DI DALAM perspektifnya (persen). Tanpa bobot, skor
+  /// perspektif hanya rata-rata polos dan setiap KPI menimbang sama berat.
+  bscWeightPercentage Decimal? @map("bsc_weight_percentage") @db.Decimal(5, 2)
+
   ownerUserId String? @map("owner_user_id") @db.Uuid
   ownerUser   User?   @relation("QualityObjectiveOwner", fields: [ownerUserId], references: [id])
 
@@ -7387,6 +7439,9 @@ model QualityObjective {
 
   @@unique([tenantId, objectiveCode])
   @@index([tenantId, status])
+  /// Halaman scorecard membaca seluruh sasaran satu tenant lalu
+  /// mengelompokkannya per perspektif.
+  @@index([tenantId, bscPerspective])
   @@map("quality_objectives")
 }
 

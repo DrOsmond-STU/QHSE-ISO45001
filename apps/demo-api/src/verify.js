@@ -132,6 +132,78 @@ async function main() {
     }
   }
 
+  console.log("\n--- analitik ---");
+  const catalogRes = await call("/analytics/catalog", { token });
+  const entries = Array.isArray(catalogRes.payload?.data) ? catalogRes.payload.data : [];
+  report(catalogRes.status === 200 && entries.length > 0, "GET /analytics/catalog", `${entries.length} metrik`);
+
+  // SETIAP metrik dipanggil, bukan sekadar contoh. Metrik adalah SQL agregat
+  // yang menyebut nama kolom dan nilai enum secara harfiah, dan satu nama yang
+  // meleset hanya terlihat saat metrik ITU dibuka — persis kegagalan sunyi
+  // yang jadi alasan berkas ini ada. Ke-32 panggilan ini selesai dalam
+  // hitungan detik.
+  let kosong = 0;
+  for (const entry of entries) {
+    const result = await call(`/analytics/${entry.key}`, { token });
+    const data = result.payload?.data;
+    let ringkas = "";
+    let ok = result.status === 200 && Boolean(data);
+    if (ok && data.kind === "scalar") {
+      ok = typeof data.value === "number";
+      ringkas = String(data.value);
+      if (data.value === 0) kosong += 1;
+    } else if (ok && data.kind === "series") {
+      ok = Array.isArray(data.points) && data.points.length > 0;
+      ringkas = `${data.points?.length ?? 0} titik`;
+    } else if (ok) {
+      ok = Array.isArray(data.slices);
+      ringkas = `${data.slices?.length ?? 0} irisan`;
+      if ((data.slices?.length ?? 0) === 0) kosong += 1;
+    }
+    report(ok, `/analytics/${entry.key}`.padEnd(46), ok ? ringkas : `HTTP ${result.status}`);
+  }
+  // Metrik yang hasilnya kosong tidak dihitung gagal — nol CAPA lewat tenggat
+  // adalah jawaban yang sah. Tapi kalau SEBAGIAN BESAR kosong, yang salah
+  // hampir pasti datanya, bukan metriknya, dan itu perlu terlihat.
+  console.log(`  catatan: ${kosong} dari ${entries.length} metrik menghasilkan nol/kosong`);
+
+  console.log("\n--- Balanced Scorecard ---");
+  const scorecard = await call("/scorecard", { token });
+  const sc = scorecard.payload?.data;
+  report(scorecard.status === 200 && (sc?.objectiveCount ?? 0) > 0, "GET /scorecard", `${sc?.objectiveCount ?? 0} sasaran`);
+  report(typeof sc?.totalScore === "number", "skor total terhitung", sc?.totalScore?.toFixed?.(1));
+  for (const perspective of sc?.perspectives ?? []) {
+    const punyaTren = perspective.objectives.every((objective) => Array.isArray(objective.trend) && objective.trend.length > 0);
+    report(
+      perspective.objectives.length > 0 && perspective.score !== null && punyaTren,
+      `perspektif ${perspective.code}`.padEnd(46),
+      `${perspective.objectives.length} KPI, skor ${perspective.score?.toFixed?.(1) ?? "-"}`,
+    );
+  }
+  report(Array.isArray(sc?.unmapped), "sasaran belum dipetakan terdaftar terpisah", `${sc?.unmapped?.length ?? 0} sasaran`);
+
+  console.log("\n--- tata letak dashboard ---");
+  for (const key of ["analytics", "scorecard"]) {
+    const before = await call(`/dashboard-layouts/${key}`, { token });
+    report(before.status === 200 && "layout" in (before.payload?.data ?? {}), `GET /dashboard-layouts/${key}`, `HTTP ${before.status}`);
+  }
+  // Ditulis lalu dibaca kembali: yang perlu dibuktikan bukan bahwa PUT
+  // menjawab 200, melainkan bahwa isinya benar-benar tersimpan dan kembali
+  // apa adanya. Nilai ujinya kemudian DIPULIHKAN ke keadaan semula agar
+  // pemeriksaan ini tidak mengubah susunan milik akun demo.
+  const original = (await call("/dashboard-layouts/analytics", { token })).payload?.data?.layout ?? null;
+  const probe = { widgets: [{ key: "incident-trend", width: 2 }], period: { from: "2026-01-01", to: "2026-12-31" } };
+  const written = await call("/dashboard-layouts/analytics", { method: "PUT", token, body: { layout: probe } });
+  const readBack = await call("/dashboard-layouts/analytics", { token });
+  report(
+    written.status === 200 && readBack.payload?.data?.layout?.widgets?.[0]?.key === "incident-trend",
+    "PUT lalu GET /dashboard-layouts/analytics",
+    `HTTP ${written.status}`,
+  );
+  const rejected = await call("/dashboard-layouts/analytics", { method: "PUT", token, body: { layout: "bukan objek" } });
+  report(rejected.status === 400, "susunan tidak sah ditolak", `HTTP ${rejected.status}`);
+  if (original) await call("/dashboard-layouts/analytics", { method: "PUT", token, body: { layout: original } });
+
   console.log("\n--- notifikasi ---");
   const inbox = await call("/notifications?page=1&limit=20", { token });
   report(inbox.status === 200 && (inbox.payload?.meta?.total ?? 0) > 0, "GET /notifications", `${inbox.payload?.meta?.total ?? 0} notifikasi`);

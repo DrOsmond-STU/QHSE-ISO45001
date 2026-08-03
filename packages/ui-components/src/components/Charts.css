@@ -1,0 +1,218 @@
+/* Grafik SVG. Semua warna dari token — teks sumbu dan legenda ikut berganti
+   di mode gelap tanpa satu pun aturan tambahan. */
+
+.qhse-chart-wrap {
+  width: 100%;
+}
+
+.qhse-chart {
+  display: block;
+  width: 100%;
+  height: 114px;
+  overflow: visible;
+}
+
+/* Label sumbu berada DI LUAR svg (lihat catatan di LineChart): svg-nya
+   memakai preserveAspectRatio="none" agar garisnya memenuhi lebar kartu,
+   dan peregangan itu akan ikut memelarkan huruf kalau labelnya ditaruh di
+   dalam. Posisinya ditentukan persen, jadi tetap sejajar dengan titik
+   datanya pada lebar berapa pun. */
+.qhse-chart-axis {
+  position: relative;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.qhse-chart-axis span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+  white-space: nowrap;
+}
+
+.qhse-chart__empty {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-text-muted);
+  margin: 0;
+  padding: var(--qhse-space-5) 0;
+  text-align: center;
+}
+
+/* --- Daftar batang horizontal --- */
+
+.qhse-barlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-2);
+  font-family: var(--qhse-font-ui);
+}
+
+.qhse-barlist__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(60px, 1.1fr) auto;
+  align-items: center;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-barlist__label {
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qhse-barlist__track {
+  position: relative;
+  height: 10px;
+  border-radius: var(--qhse-radius-full);
+  background: var(--qhse-gridline);
+  overflow: hidden;
+}
+
+.qhse-barlist__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--qhse-radius-full);
+  min-width: 3px;
+}
+
+.qhse-barlist__value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--qhse-space-2);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.qhse-barlist__share {
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 600;
+  color: var(--qhse-text-muted);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* --- Donat --- */
+
+.qhse-donut {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-4);
+  flex-wrap: wrap;
+}
+
+.qhse-donut__svg {
+  width: 132px;
+  height: 132px;
+  flex: 0 0 auto;
+}
+
+.qhse-donut__total {
+  font-family: var(--qhse-font-display);
+  font-size: 20px;
+  font-weight: 800;
+  fill: var(--qhse-text-primary);
+}
+
+.qhse-donut__caption {
+  font-family: var(--qhse-font-ui);
+  font-size: 9px;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  fill: var(--qhse-text-muted);
+}
+
+.qhse-donut__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 150px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-2);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+}
+
+.qhse-donut__legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-2);
+  min-width: 0;
+}
+
+.qhse-donut__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.qhse-donut__name {
+  color: var(--qhse-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.qhse-donut__count {
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Bullet chart --- */
+
+.qhse-bullet {
+  width: 100%;
+}
+
+.qhse-bullet__track {
+  position: relative;
+  height: 14px;
+  border-radius: var(--qhse-radius-full);
+  background: var(--qhse-gridline);
+}
+
+.qhse-bullet__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--qhse-radius-full);
+  min-width: 3px;
+}
+
+/* Garis target sengaja gelap dan setinggi penuh, bukan sekadar titik: ia
+   adalah patokan yang dibandingkan pembaca, jadi ia harus terbaca lebih dulu
+   daripada batang capaiannya. */
+.qhse-bullet__target {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: var(--qhse-radius-full);
+  background: var(--qhse-text-primary);
+}
+
+.qhse-bullet__baseline {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--qhse-text-muted);
+  opacity: 0.7;
+}

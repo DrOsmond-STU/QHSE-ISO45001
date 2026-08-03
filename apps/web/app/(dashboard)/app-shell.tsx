@@ -18,7 +18,14 @@ interface NavItem {
 
 function navGroups(): Array<{ group: string; items: NavItem[] }> {
   return [
-    { group: "Ringkasan", items: [{ href: "/dashboard", label: "Dashboard" }] },
+    {
+      group: "Ringkasan",
+      items: [
+        { href: "/dashboard", label: "Dashboard" },
+        { href: "/analytics", label: "Analitik" },
+        { href: "/scorecard", label: "Balanced Scorecard" },
+      ],
+    },
     ...modulesByGroup().map(({ group, modules }) => ({
       group,
       items: modules.map((module) => ({ href: `/modules/${module.slug}`, label: module.title })),

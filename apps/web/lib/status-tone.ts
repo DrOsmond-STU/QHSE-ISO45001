@@ -27,6 +27,13 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   GOOD: "good",
   NOT_SIGNIFICANT: "good",
   LOW: "good",
+  // Tingkat risiko HIRA. Kolomnya varchar, BUKAN enum: nilainya berasal dari
+  // konfigurasi matriks risiko tenant, dan tenant Indonesia mengisinya dalam
+  // bahasa Indonesia. Tanpa baris ini, sebaran risiko HIRA tampil dengan
+  // gradasi biru netral — benar secara aturan (nilai tak dikenal tidak
+  // ditebak tone-nya), tapi menyia-nyiakan satu-satunya tempat di mana warna
+  // severity justru paling berarti.
+  RENDAH: "good",
   MINOR: "good",
   USE_AS_IS: "good",
   VERIFIED: "good",
@@ -63,6 +70,7 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   IN_CALIBRATION: "warning",
   STANDBY: "warning",
   MEDIUM: "warning",
+  SEDANG: "warning",
   FAIR: "warning",
   NA: "warning",
   REWORK: "warning",
@@ -83,6 +91,7 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   ESCALATED_NON_COMPLIANT: "serious",
   SIGNIFICANT: "serious",
   HIGH: "serious",
+  TINGGI: "serious",
   MAJOR: "serious",
   POOR: "serious",
   RETURN_TO_SUPPLIER: "serious",
@@ -94,6 +103,7 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   REVOKED: "critical",
   BLACKLISTED: "critical",
   CRITICAL: "critical",
+  EKSTREM: "critical",
   FAIL: "critical",
   OUT_OF_SERVICE: "critical",
   SCRAP: "critical",
