@@ -64,12 +64,30 @@ Options -Indexes -MultiViews
   # Tanpa header ini aplikasi mengira permintaan datang lewat HTTP polos.
   RequestHeader set X-Forwarded-Proto "https" env=HTTPS
 
-  # setifempty, BUKAN set: demo-api sudah memasang nosniff sendiri pada
-  # unduhan berkas, dan `set` di sini akan menambahkan yang kedua sehingga
-  # nilainya terkirim sebagai "nosniff, nosniff". Fungsinya tetap benar, tapi
-  # header ganda membingungkan siapa pun yang memeriksanya — dan pemeriksaan
-  # otomatis kita sendiri sempat gagal karenanya.
-  Header always setifempty X-Content-Type-Options "nosniff"
+  # ---------------------------------------------------------------------------
+  #  TANPA `always`, dan itu justru intinya.
+  #
+  #  demo-api memasang nosniff sendiri pada unduhan berkas, jadi Apache hanya
+  #  boleh menambahkan bila belum ada — karena itu `setifempty`.
+  #
+  #  Tapi `setifempty` saja tidak cukup: `always` membuat mod_headers bekerja
+  #  pada tabel err_headers_out, sedangkan header yang datang dari proses Node
+  #  mendarat di headers_out. Dua tabel yang berbeda — jadi `always setifempty`
+  #  memeriksa tabel yang SELALU kosong, menyimpulkan headernya belum ada, dan
+  #  menambahkan yang kedua. Hasilnya "nosniff, nosniff" persis seperti dengan
+  #  `set` biasa; perbaikan pertama tidak memperbaiki apa pun.
+  #
+  #  Tanpa `always`, mod_headers bekerja pada headers_out — tabel yang sama
+  #  dengan tempat header dari Node berada — sehingga `setifempty` benar-benar
+  #  melihatnya dan diam. Yang hilang cuma pemasangan pada respons galat yang
+  #  DIBUAT Apache sendiri (bukan yang di-proxy), dan nosniff pada halaman
+  #  galat Apache tidak melindungi apa pun.
+  #
+  #  Terlihat setelah pemeriksaan live mencetak nilai headernya mentah-mentah;
+  #  dua tebakan sebelumnya keliru karena masing-masing lapis tampak benar bila
+  #  diperiksa sendiri-sendiri.
+  # ---------------------------------------------------------------------------
+  Header setifempty X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
 
   # ---------------------------------------------------------------------------
