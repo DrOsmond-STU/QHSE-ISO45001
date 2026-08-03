@@ -567,7 +567,14 @@ async function handleAct(res, claims, modules, taskId, body) {
   });
 }
 
+/** Pembungkus tipis supaya server.js tidak perlu tahu bentuk argumen handler
+ *  unggah — satu-satunya alasannya adalah menjaga router tetap terbaca. */
+function wrapUpload(handler, res, claims, moduleDef, id, body) {
+  return handler(res, claims, moduleDef, id, body);
+}
+
 module.exports = {
+  wrapUpload,
   handleSchema,
   handleCreate,
   handleUpdate,

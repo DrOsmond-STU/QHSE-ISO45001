@@ -38,6 +38,7 @@ const { withRls } = require("./db");
 const { verifyAccessToken } = require("./jwt");
 const { MODULES, findModuleByEndpoint, findChild } = require("./modules");
 const writes = require("./writes");
+const files = require("./files");
 const { attachLabels } = require("./labels");
 const { findMetric, catalog } = require("./analytics");
 const { loadScorecard } = require("./scorecard");
@@ -123,10 +124,13 @@ async function handleModuleChildren(res, claims, child, parentId) {
   // (mis. akar masalah -> investigasi -> laporan insiden). Dinyatakan sebagai
   // subquery, bukan JOIN, supaya `t.*` tetap berisi kolom anaknya saja dan
   // tidak ada nama kolom yang bertabrakan diam-diam antara kedua tabel.
-  const where = child.through
+  const base = child.through
     ? `t.${child.foreignKey} IN (SELECT p.${child.through.pk} FROM ${child.through.table} p
          WHERE p.${child.through.foreignKey} = $1 AND p.tenant_id = $2)`
     : `t.${child.foreignKey} = $1`;
+  // `where` tambahan untuk tabel polimorfik (attachments), ditulis di registri
+  // modul dan bukan dirakit dari masukan pengguna.
+  const where = child.where ? `${base} AND ${child.where}` : base;
 
   const rows = await withRls(claims.tenant_id, async (client) => {
     const { rows: found } = await client.query(
@@ -423,6 +427,21 @@ async function route(req, res, url) {
     return sendProblem(res, 405, "Metode tidak didukung.", method);
   }
 
+  // --- berkas ---
+  //
+  // /files/download SENGAJA tidak memeriksa Bearer token: ia dipanggil oleh
+  // <iframe>/<img> peramban, yang tidak bisa mengirim header. Izinnya sudah
+  // diperiksa saat token dibuat lewat POST /files/sign, dan tokennya berlaku
+  // lima menit untuk satu berkas.
+  if (pathname === "/files/download" && method === "GET") {
+    return files.handleDownload(req, res, url);
+  }
+  if (pathname === "/files/sign" && method === "POST") {
+    const claims = requireClaims(req, res);
+    if (!claims) return;
+    return files.handleSignFile(res, claims, await readJsonBody(req));
+  }
+
   // --- kotak persetujuan (lintas modul) ---
   if (segments[0] === "approvals") {
     const claims = requireClaims(req, res);
@@ -471,6 +490,10 @@ async function route(req, res, url) {
         return writes.handleTransition(res, claims, moduleDef, segments[1], await readJsonBody(req));
       }
       if (segments[2] === "submit") return writes.handleSubmit(res, claims, moduleDef, segments[1]);
+      if (segments[2] === "files") {
+        // Batas badan permintaan dinaikkan HANYA untuk rute ini.
+        return writes.wrapUpload(files.handleUpload, res, claims, moduleDef, segments[1], await readJsonBody(req, 12 * 1024 * 1024));
+      }
     }
   }
 

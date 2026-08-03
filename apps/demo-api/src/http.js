@@ -35,12 +35,19 @@ function sendProblem(res, status, title, detail, instance) {
   });
 }
 
-async function readJsonBody(req) {
+/**
+ * @param maxBytes batas khusus untuk rute yang memang menerima muatan besar
+ *        (unggahan berkas). Batas bawaan sengaja kecil dan TETAP berlaku untuk
+ *        seluruh rute lain: menaikkan satu angka global agar unggahan muat
+ *        berarti setiap endpoint lain ikut menerima muatan 11 MB, dan tidak
+ *        satu pun dari mereka membutuhkannya.
+ */
+async function readJsonBody(req, maxBytes = MAX_BODY_BYTES) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) throw new Error("Badan permintaan terlalu besar.");
+    if (size > maxBytes) throw new Error("Badan permintaan terlalu besar.");
     chunks.push(chunk);
   }
   if (chunks.length === 0) return {};

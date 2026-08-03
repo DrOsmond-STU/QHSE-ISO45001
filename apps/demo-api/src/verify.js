@@ -322,6 +322,94 @@ async function main() {
     report(dihapus.status === 200, "baris uji dihapus lunak kembali", `HTTP ${dihapus.status}`);
   }
 
+  console.log("\n--- berkas: dokumen terkendali & register peraturan ---");
+  const docList = await call("/documents?page=1&limit=1", { token });
+  const docId = docList.payload?.data?.[0]?.id;
+  const versions = await call(`/documents/${docId}/versions`, { token });
+  const versionId = versions.payload?.data?.[0]?.id;
+  report(Boolean(versionId), "dokumen punya versi", `${versions.payload?.data?.length ?? 0} versi`);
+
+  if (versionId) {
+    const signed = await call("/files/sign", { method: "POST", token, body: { kind: "version", id: versionId } });
+    report(signed.status === 200 && Boolean(signed.payload?.data?.url), "POST /files/sign", signed.payload?.data?.fileName);
+
+    if (signed.payload?.data?.url) {
+      // Diambil TANPA header Authorization, persis seperti <iframe> peramban
+      // melakukannya. Kalau rute unduh diam-diam menuntut Bearer token,
+      // penampilnya akan kosong di layar sementara seluruh pemeriksaan API
+      // lain tetap hijau.
+      const unduh = await fetch(`${BASE}${signed.payload.data.url}`);
+      const bytes = Buffer.from(await unduh.arrayBuffer());
+      report(
+        unduh.status === 200 && bytes.subarray(0, 5).toString() === "%PDF-",
+        "berkas terunduh tanpa header auth dan benar PDF",
+        `${bytes.length} byte`,
+      );
+      report(
+        (unduh.headers.get("content-disposition") || "").startsWith("inline"),
+        "disajikan inline supaya bisa ditampilkan penampil",
+      );
+      report(unduh.headers.get("x-content-type-options") === "nosniff", "nosniff dipasang pada unduhan");
+    }
+
+    const tokenPalsu = await fetch(`${BASE}/files/download?token=ngawur.deadbeef`);
+    report(tokenPalsu.status === 403, "token berkas cacat ditolak", `HTTP ${tokenPalsu.status}`);
+  }
+
+  if (docId) {
+    // PDF minimum yang sah, dirakit di sini supaya pemeriksaan tidak
+    // bergantung pada berkas di disk.
+    const pdfKecil = Buffer.from(
+      "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n",
+      "latin1",
+    );
+    const unggah = await call(`/documents/${docId}/files`, {
+      method: "POST",
+      token,
+      body: {
+        fileName: "pemeriksaan-otomatis.pdf",
+        mimeType: "application/pdf",
+        contentBase64: pdfKecil.toString("base64"),
+        changeSummary: "Diunggah pemeriksa otomatis pascapemasangan.",
+      },
+    });
+    report(
+      unggah.status === 200,
+      "POST /documents/:id/files membuat revisi baru",
+      unggah.status === 200 ? `revisi ${unggah.payload?.data?.majorVersion}.${unggah.payload?.data?.minorVersion}` : `HTTP ${unggah.status}`,
+    );
+
+    const isiPalsu = await call(`/documents/${docId}/files`, {
+      method: "POST",
+      token,
+      body: { fileName: "palsu.pdf", mimeType: "application/pdf", contentBase64: Buffer.from("bukan pdf").toString("base64") },
+    });
+    report(isiPalsu.status === 415, "berkas yang isinya tidak cocok tipenya ditolak", `HTTP ${isiPalsu.status}`);
+
+    const tipeTerlarang = await call(`/documents/${docId}/files`, {
+      method: "POST",
+      token,
+      body: { fileName: "x.exe", mimeType: "application/x-msdownload", contentBase64: Buffer.from("MZ").toString("base64") },
+    });
+    report(tipeTerlarang.status === 415, "tipe di luar daftar putih ditolak", `HTTP ${tipeTerlarang.status}`);
+  }
+
+  const regList = await call("/regulatory-registers?page=1&limit=10", { token });
+  const regAktif = (regList.payload?.data ?? []).find((r) => r.status === "ACTIVE");
+  if (regAktif) {
+    const lampiran = await call(`/regulatory-registers/${regAktif.id}/attachments`, { token });
+    const jumlah = lampiran.payload?.data?.length ?? 0;
+    report(lampiran.status === 200 && jumlah > 0, "register peraturan punya salinan terlampir", `${jumlah} lampiran`);
+    if (jumlah > 0) {
+      const signedReg = await call("/files/sign", {
+        method: "POST",
+        token,
+        body: { kind: "attachment", id: lampiran.payload.data[0].id },
+      });
+      report(signedReg.status === 200, "lampiran peraturan bisa ditandatangani", signedReg.payload?.data?.fileName);
+    }
+  }
+
   console.log("\n--- notifikasi ---");
   const inbox = await call("/notifications?page=1&limit=20", { token });
   report(inbox.status === 200 && (inbox.payload?.meta?.total ?? 0) > 0, "GET /notifications", `${inbox.payload?.meta?.total ?? 0} notifikasi`);

@@ -9,6 +9,8 @@ import { displayValue, EMPTY_PLACEHOLDER, formatCell } from "../../../../../lib/
 import { findModule, type DetailField, type ModuleChild, type ModuleColumn, type ModuleDefinition } from "../../../../../lib/modules";
 import { statusTone } from "../../../../../lib/status-tone";
 import { RecordActions } from "./RecordActions";
+import { FileUpload } from "./FileUpload";
+import { UPLOADABLE, viewerHref } from "../../../../../lib/files";
 import { RecordForm } from "../RecordForm";
 import "../../../records.css";
 
@@ -147,8 +149,20 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
         <DetailCard key={section.title} title={section.title} fields={section.fields} record={record} />
       ))}
 
+      {UPLOADABLE[module.slug] && <FileUpload slug={module.slug} id={id} onUploaded={() => void load()} />}
+
       {(module.children ?? []).map((child) => (
-        <ChildTable key={child.pathSuffix} child={child} rows={childRows[child.pathSuffix]} />
+        <ChildTable
+          key={child.pathSuffix}
+          child={child}
+          rows={childRows[child.pathSuffix]}
+          // Tabel anak yang berisi BERKAS mendapat kolom tambahan "Lihat"
+          // yang membuka penampil ber-watermark. Hanya untuk anak yang
+          // memang berkas — daftar temuan audit tidak punya berkas untuk
+          // dilihat, dan kolom kosong di sana hanya menambah bingung.
+          viewerKind={UPLOADABLE[module.slug]?.childPath === child.pathSuffix ? UPLOADABLE[module.slug].kind : null}
+          backTo={`/modules/${module.slug}/${id}`}
+        />
       ))}
     </section>
   );
@@ -196,7 +210,18 @@ function DetailCard({ title, fields, record }: { title: string; fields: DetailFi
   );
 }
 
-function ChildTable({ child, rows }: { child: ModuleChild; rows: Record_[] | undefined }) {
+function ChildTable({
+  child,
+  rows,
+  viewerKind,
+  backTo,
+}: {
+  child: ModuleChild;
+  rows: Record_[] | undefined;
+  viewerKind?: "version" | "attachment" | null;
+  backTo?: string;
+}) {
+  const columns = child.columns.map((column: ModuleColumn) => column);
   return (
     <section style={{ marginTop: "var(--qhse-space-6)" }}>
       <h2 className="qhse-page__section-title">{child.title}</h2>
@@ -207,7 +232,19 @@ function ChildTable({ child, rows }: { child: ModuleChild; rows: Record_[] | und
         rows={rows ?? []}
         getRowId={(row) => String(row.id)}
         emptyMessage={rows === undefined ? "Memuat…" : child.emptyMessage}
-        columns={child.columns.map((column: ModuleColumn) => ({
+        columns={[
+          ...(viewerKind
+            ? [
+                {
+                  key: "__lihat",
+                  header: "Berkas",
+                  render: (row: Record_) => (
+                    <Link href={viewerHref(viewerKind, String(row.id), backTo ?? "/dashboard")}>Lihat</Link>
+                  ),
+                },
+              ]
+            : []),
+          ...columns.map((column: ModuleColumn) => ({
           key: column.key,
           header: column.header,
           numeric: column.type === "number" || column.type === "currency",
@@ -219,7 +256,8 @@ function ChildTable({ child, rows }: { child: ModuleChild; rows: Record_[] | und
             }
             return <span>{text}</span>;
           },
-        }))}
+          })),
+        ]}
       />
     </section>
   );

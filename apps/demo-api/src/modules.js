@@ -99,6 +99,18 @@ const MODULES = [
     orderBy: "effective_date DESC NULLS LAST",
     children: [
       { pathSuffix: "/obligations", table: "compliance_obligations", pk: "obligation_id", foreignKey: "regulatory_register_id", orderBy: "created_at ASC" },
+      // attachments bersifat polimorfik (entity_type + entity_id), jadi butuh
+      // saringan tambahan — tanpa itu, halaman register peraturan akan
+      // menampilkan lampiran milik SELURUH modul yang id induknya kebetulan
+      // sama panjang.
+      {
+        pathSuffix: "/attachments",
+        table: "attachments",
+        pk: "attachment_id",
+        foreignKey: "entity_id",
+        where: "t.entity_type = 'regulatory_register'",
+        orderBy: "uploaded_at DESC",
+      },
     ],
   },
   {

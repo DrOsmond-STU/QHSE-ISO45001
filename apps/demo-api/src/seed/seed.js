@@ -32,6 +32,7 @@ const { seedOperations } = require("./domain-operations");
 const { seedChildren } = require("./domain-children");
 const { seedScorecard } = require("./scorecard");
 const { seedWorkflows } = require("./workflows");
+const { seedFiles } = require("./files");
 const { seedNotifications } = require("./notifications");
 
 async function main() {
@@ -49,19 +50,19 @@ async function main() {
   }
 
   const summary = await withRls(TENANT_ID, async (client) => {
-    console.log("[1/9] fondasi — tenant, organisasi, pengguna");
+    console.log("[1/10] fondasi — tenant, organisasi, pengguna");
     const ctx = await seedFoundation(client);
 
-    console.log("[2/9] data referensi — kategori, jenis, template");
+    console.log("[2/10] data referensi — kategori, jenis, template");
     const ref = await seedReference(client, ctx);
 
-    console.log("[3/9] dokumen, peraturan, HIRA, izin kerja, tanggap darurat");
+    console.log("[3/10] dokumen, peraturan, HIRA, izin kerja, tanggap darurat");
     const compliance = await seedCompliance(client, ctx, ref);
 
-    console.log("[4/9] insiden, CAPA, inspeksi, audit, NCR mutu");
+    console.log("[4/10] insiden, CAPA, inspeksi, audit, NCR mutu");
     const events = await seedEvents(client, ctx, ref);
 
-    console.log("[5/9] lingkungan, kerja terbatas, aset, kalibrasi, kontraktor");
+    console.log("[5/10] lingkungan, kerja terbatas, aset, kalibrasi, kontraktor");
     const operations = await seedOperations(client, ctx, ref);
 
     // Baris anak disemai TERAKHIR dan membaca ulang induknya dari basis
@@ -69,26 +70,31 @@ async function main() {
     // ini bisa dijalankan ulang sendirian setelah data induk berubah, dan
     // menghilangkan satu jalur di mana anak menunjuk induk yang sudah tidak
     // ada lagi.
-    console.log("[6/9] isi detail — versi dokumen, temuan, akar masalah, rencana tindakan");
+    console.log("[6/10] isi detail — versi dokumen, temuan, akar masalah, rencana tindakan");
     const children = await seedChildren(client, ctx);
 
     // Sasaran mutu disemai setelah data domain: angka capaian yang ditulis di
     // sana mengacu pada isi modul lain (13 CAPA lewat tenggat, satu insiden
     // hilang hari kerja), jadi urutannya membuat keterkaitan itu terbaca saat
     // membaca log penyemaian dari atas ke bawah.
-    console.log("[7/9] sasaran mutu & Balanced Scorecard");
+    console.log("[7/10] sasaran mutu & Balanced Scorecard");
     const scorecard = await seedScorecard(client, ctx);
 
     // Definisi workflow disemai SETELAH fondasi (butuh role_id) dan sebelum
     // notifikasi. Ia tidak bergantung pada data domain mana pun: yang dibuat
     // hanya kerangka tahap dan transisinya, bukan instance-nya.
-    console.log("[8/9] definisi workflow persetujuan");
+    console.log("[8/10] definisi workflow persetujuan");
     const workflows = await seedWorkflows(client, ctx);
 
-    console.log("[9/9] notifikasi");
+    // Berkas dibuat SETELAH versi dokumennya ada, dan membaca ulang barisnya
+    // dari basis data — sama seperti langkah isi detail.
+    console.log("[9/10] berkas contoh — PDF versi dokumen & lampiran peraturan");
+    const berkas = await seedFiles(client, ctx);
+
+    console.log("[10/10] notifikasi");
     const notifications = await seedNotifications(client, ctx);
 
-    return { ...compliance, ...events, ...operations, ...children, ...scorecard, ...workflows, ...notifications, users: ctx.users.length };
+    return { ...compliance, ...events, ...operations, ...children, ...scorecard, ...workflows, ...berkas, ...notifications, users: ctx.users.length };
   });
 
   console.log("\n=== selesai dalam %d detik ===", Math.round((Date.now() - started) / 1000));

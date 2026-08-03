@@ -32,7 +32,23 @@
 // setiap kunci asing supaya yang tampil adalah nama, bukan pengenal.
 // ---------------------------------------------------------------------------
 
-export type ColumnType = "text" | "enum" | "status" | "date" | "datetime" | "number" | "bool" | "currency" | "longtext";
+export type ColumnType =
+  | "text"
+  | "enum"
+  | "status"
+  | "date"
+  | "datetime"
+  | "number"
+  | "bool"
+  | "currency"
+  | "longtext"
+  /** Nomor revisi gabungan mayor.minor — dibaca dari DUA kolom sekaligus.
+   *  Ditampilkan sebagai satu angka saja, revisi 2.0 dan 2.1 sama-sama
+   *  terbaca "2", dan riwayat versi jadi tampak memuat baris kembar. */
+  | "revision"
+  /** Ukuran berkas dalam byte. Ditampilkan apa adanya, "1.567" terbaca
+   *  seperti 1,567 sesuatu — pemisah ribuan Indonesia adalah titik. */
+  | "filesize";
 
 export interface ModuleColumn {
   key: string;
@@ -150,7 +166,7 @@ export const MODULES: ModuleDefinition[] = [
         title: "Riwayat versi",
         emptyMessage: "Dokumen ini belum punya versi yang tercatat.",
         columns: [
-          { key: "majorVersion", header: "Versi", type: "number" },
+          { key: "majorVersion", header: "Revisi", type: "revision" },
           { key: "fileName", header: "Nama berkas" },
           { key: "status", header: "Status", type: "status" },
           { key: "changeSummary", header: "Ringkasan perubahan" },
@@ -212,6 +228,18 @@ export const MODULES: ModuleDefinition[] = [
           { key: "frequency", header: "Frekuensi", type: "enum" },
           { key: "responsibleUserId", header: "Penanggung jawab" },
           { key: "nextDueDate", header: "Jatuh tempo", type: "date" },
+        ],
+      },
+      {
+        pathSuffix: "/attachments",
+        title: "Salinan peraturan",
+        emptyMessage: "Belum ada salinan peraturan yang diunggah.",
+        columns: [
+          { key: "fileName", header: "Nama berkas" },
+          { key: "mimeType", header: "Tipe" },
+          { key: "fileSize", header: "Ukuran", type: "filesize" },
+          { key: "uploadedByLabel", header: "Diunggah oleh" },
+          { key: "uploadedAt", header: "Waktu unggah", type: "datetime" },
         ],
       },
     ],

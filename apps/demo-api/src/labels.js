@@ -42,6 +42,7 @@ const BY_COLUMN = {
   linked_by: ["users", "user_id", "full_name"],
   tested_by: ["users", "user_id", "full_name"],
   performed_by: ["users", "user_id", "full_name"],
+  uploaded_by: ["users", "user_id", "full_name"],
   pic_user_id: ["users", "user_id", "full_name"],
   user_id: ["users", "user_id", "full_name"],
   employee_user_id: ["users", "user_id", "full_name"],

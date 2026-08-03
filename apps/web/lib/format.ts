@@ -15,6 +15,14 @@ const CURRENCY = new Intl.NumberFormat("id-ID", { style: "currency", currency: "
 export const EMPTY_PLACEHOLDER = "—";
 
 export function formatCell(value: unknown, type: ColumnType = "text"): string {
+  if (type === "filesize") {
+    const bytes = Number(value);
+    if (!Number.isFinite(bytes)) return EMPTY_PLACEHOLDER;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1).replace(".", ",")} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+  }
+
   if (value === null || value === undefined || value === "") return EMPTY_PLACEHOLDER;
 
   switch (type) {
@@ -81,6 +89,15 @@ export function inferType(key: string, value: unknown): ColumnType {
  * terbaca seperti dump basis data.
  */
 export function displayValue(row: Record<string, unknown>, key: string, type: ColumnType = "text"): string {
+  // Satu-satunya tipe yang membaca lebih dari satu kolom. Ditangani di sini
+  // dan bukan di formatCell() karena formatCell hanya menerima nilainya, bukan
+  // barisnya — dan nomor revisi memang butuh keduanya.
+  if (type === "revision") {
+    const major = row.majorVersion;
+    const minor = row.minorVersion;
+    if (major === null || major === undefined) return EMPTY_PLACEHOLDER;
+    return `${major}.${minor ?? 0}`;
+  }
   const label = row[`${key}Label`];
   if (typeof label === "string" && label.length > 0) return label;
   const value = row[key];

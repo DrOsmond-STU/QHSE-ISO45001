@@ -393,3 +393,262 @@
   color: var(--qhse-brand);
   white-space: nowrap;
 }
+
+/* --- Unggah berkas --- */
+
+.qhse-upload {
+  margin-top: var(--qhse-space-6);
+  padding: var(--qhse-space-4) var(--qhse-space-5);
+  background: var(--qhse-surface-1);
+  border: 1px solid color-mix(in srgb, var(--qhse-brand) 22%, transparent);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm);
+}
+
+.qhse-upload__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qhse-space-4);
+}
+
+.qhse-upload__intro {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.qhse-upload__title {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-body-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+.qhse-upload__hint {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-text-secondary);
+  margin: var(--qhse-space-1) 0 0;
+  max-width: 78ch;
+}
+
+.qhse-upload__summary {
+  flex: 1 1 240px;
+  min-height: var(--qhse-tap-target-min);
+  padding: var(--qhse-space-2) var(--qhse-space-4);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-2);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+}
+
+.qhse-upload__summary:focus {
+  outline: none;
+  border-color: var(--qhse-brand);
+  box-shadow: 0 0 0 3px var(--qhse-brand-wash);
+}
+
+/* Input berkas bawaan disembunyikan dan dipicu lewat tombol: tombol bawaan
+   peramban tidak bisa digayakan dan tampil berbeda di setiap sistem operasi,
+   yang pada satu halaman berisi tombol bergaya seragam terbaca seperti
+   kelalaian. Elemennya tetap ada di DOM (bukan display:none pada wadahnya)
+   supaya tetap bisa dijangkau alat bantu. */
+.qhse-upload__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Penampil dokumen --- */
+
+.qhse-viewer__header {
+  align-items: flex-start;
+}
+
+.qhse-viewer__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  flex-wrap: wrap;
+}
+
+.qhse-viewer__disclaimer {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-status-serious);
+  background: var(--qhse-status-serious-wash);
+  border: 1px solid color-mix(in srgb, var(--qhse-status-serious) 24%, transparent);
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  margin: 0 0 var(--qhse-space-4);
+  max-width: 100%;
+}
+
+.qhse-viewer__frame {
+  position: relative;
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border-hairline);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm);
+  overflow: hidden;
+}
+
+.qhse-viewer__pdf {
+  display: block;
+  width: 100%;
+  height: 78vh;
+  min-height: 460px;
+  border: 0;
+}
+
+.qhse-viewer__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 78vh;
+  object-fit: contain;
+  background: var(--qhse-surface-2);
+}
+
+.qhse-viewer__unsupported {
+  padding: var(--qhse-space-7) var(--qhse-space-5);
+  text-align: center;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  line-height: var(--qhse-text-body-lh);
+  color: var(--qhse-text-secondary);
+}
+
+/* --- Watermark --- */
+
+/* Lapisan di ATAS berkasnya. pointer-events:none supaya PDF di bawahnya tetap
+   bisa digulir dan diperbesar — watermark yang menghalangi interaksi membuat
+   orang mencari cara membukanya di luar aplikasi, yang justru menghasilkan
+   salinan tanpa watermark. */
+.qhse-watermark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-content: space-around;
+  justify-items: center;
+  overflow: hidden;
+  transform: rotate(-28deg) scale(1.35);
+  transform-origin: center;
+}
+
+.qhse-watermark span {
+  font-family: var(--qhse-font-display);
+  font-size: clamp(18px, 2.6vw, 34px);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  /* Cukup terbaca untuk menandai, cukup tipis untuk tidak menghalangi
+     pembacaan dokumennya. Warna merek, bukan merah: ini penanda kendali
+     dokumen, bukan peringatan bahaya. */
+  color: color-mix(in srgb, var(--qhse-brand) 17%, transparent);
+  user-select: none;
+}
+
+/* --- Stempel salinan terkendali --- */
+
+.qhse-stamp {
+  margin-top: var(--qhse-space-4);
+  padding: var(--qhse-space-4) var(--qhse-space-5);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border-hairline);
+  border-left: 3px solid var(--qhse-brand);
+  border-radius: var(--qhse-radius-md);
+}
+
+.qhse-stamp__badge {
+  display: inline-block;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  color: var(--qhse-brand);
+  background: var(--qhse-brand-wash);
+  border-radius: var(--qhse-radius-full);
+  padding: var(--qhse-space-1) var(--qhse-space-3);
+  margin-bottom: var(--qhse-space-3);
+}
+
+.qhse-stamp__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--qhse-space-3) var(--qhse-space-5);
+  margin: 0;
+}
+
+.qhse-stamp__grid dt {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+}
+
+.qhse-stamp__grid dd {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-text-primary);
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* --- Cetak ---
+   Yang dicetak hanyalah berkasnya, watermark, dan stempelnya. Navigasi dan
+   tombol dibuang: halaman cetak yang memuat sidebar bukan salinan dokumen,
+   melainkan tangkapan layar aplikasi. */
+@media print {
+  .qhse-shell__topbar,
+  .qhse-shell__sidebar,
+  .qhse-viewer__actions,
+  .qhse-viewer__disclaimer {
+    display: none !important;
+  }
+
+  .qhse-shell__main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  .qhse-viewer__frame {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .qhse-viewer__pdf {
+    height: 92vh;
+  }
+
+  /* Warna watermark dan stempel HARUS ikut tercetak. Tanpa ini, peramban
+     membuang latar dan warna demi menghemat tinta, dan yang keluar dari
+     printer adalah dokumen tanpa satu pun tanda kendali — persis kebalikan
+     dari maksudnya. */
+  .qhse-watermark span,
+  .qhse-stamp,
+  .qhse-stamp__badge {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .qhse-watermark span {
+    color: color-mix(in srgb, var(--qhse-brand) 26%, transparent);
+  }
+}
