@@ -31,12 +31,46 @@ export PATH="$HOME_DIR/.local/share/mise/installs/node/22/bin:$PATH"
 
 kode() { curl -s -o /dev/null -w '%{http_code}' -m 30 "$1"; }
 
+# ----------------------------------------------------------------------------
+#  Header keamanan, dicetak apa adanya.
+#
+#  Ada di sini karena header adalah SATU-SATUNYA bagian aplikasi yang dipasang
+#  dua lapis: demo-api memasang sebagian sendiri di dalam respons, .htaccess
+#  memasang sebagian lagi lewat mod_headers. Yang keliru pada GABUNGAN keduanya
+#  tidak terlihat dari dalam proses Node (ia cuma tahu apa yang ia tulis
+#  sendiri) dan tidak terlihat dari berkas .htaccess (ia cuma tahu apa yang ia
+#  tambahkan) — hanya terlihat pada respons jadi, seperti yang diterima
+#  peramban. Mencetaknya mentah lebih berguna daripada menyimpulkannya:
+#  pemeriksaan "nosniff terpasang" pernah gagal berulang kali sementara dua
+#  lapisnya masing-masing tampak benar.
+#
+#  Tiga URL yang dipilih menjawab tiga pertanyaan berbeda:
+#    /                              apa yang dipasang pada HALAMAN
+#    /api/health                    apa yang ditambahkan Apache pada respons
+#                                   yang di-proxy, tanpa campur tangan aplikasi
+#    /api/files/download?token=...  apakah aturan khusus jalur unduhan kena.
+#                                   Tokennya sengaja cacat: yang diperiksa
+#                                   aturan JALURnya, bukan isi berkasnya, dan
+#                                   403 pun sudah melewati mod_headers.
+# ----------------------------------------------------------------------------
+header_dump() {
+  echo "  $1"
+  curl -sS -D- -o /dev/null -m 30 "$2" \
+    | grep -iE '^(HTTP/|x-content-type-options|x-frame-options|referrer-policy|content-disposition):' \
+    | sed 's/^/    /'
+}
+
 {
   echo "=== $(date) memeriksa $SITE ==="
   echo "halaman depan : $(kode "$SITE/")"
   echo "halaman masuk : $(kode "$SITE/login")"
   echo "dashboard     : $(kode "$SITE/dashboard")"
   echo "api health    : $(curl -s -m 30 "$SITE/api/health")"
+  echo
+  echo "--- header keamanan apa adanya ---"
+  header_dump "halaman"       "$SITE/"
+  header_dump "api di-proxy"  "$SITE/api/health"
+  header_dump "jalur unduhan" "$SITE/api/files/download?token=ngawur.deadbeef"
   echo
   cd "$HOME_DIR/qhse-app/apps/demo-api" && node src/verify.js "$SITE/api"
   echo
