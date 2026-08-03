@@ -6,6 +6,37 @@
 
 All 16 backend modules are populated with realistic, interconnected data spanning every lifecycle state (draft, pending approval, approved, rejected, closed, overdue) — not just happy-path examples.
 
+## Two demo paths — pick the one your environment can run
+
+This guide describes the **full** path: `apps/api` (NestJS) plus
+`apps/api/prisma/seed-demo-data.ts`, which seeds by calling the real service
+layer. That is the honest representation, and it is what you want on any
+machine that can run it.
+
+It does **not** run on the shared-hosting deployment
+(`qhse.semestateknologiutama.com`). Measured on that server: `apps/api` peaks
+at 814 MB RSS during boot against a hard 1024 MB account limit and is
+SIGKILLed after 7-8 seconds; roughly 620 MB of that is the Prisma engine's
+native memory loading a 162-model schema, so no Node heap flag helps. The
+seed script boots the same `AppModule`, so it fails for the same reason.
+
+For that environment there is a second path: **`apps/demo-api`** — a
+dependency-light read-only API (65 MB RSS, `pg` directly, no Prisma, no
+NestJS) plus its own SQL-level seeder carrying ~360 records across the 15
+modules the web UI shows. It runs the same login flow and serves the same
+endpoint shapes, so the browser walkthrough below is identical. What it does
+*not* do — RBAC enforcement, module entitlements, any domain write, workflow,
+MFA — is listed in full in `apps/demo-api/README.md`. Read that before
+treating it as a substitute for `apps/api`.
+
+| | full path | `apps/demo-api` |
+|---|---|---|
+| Seeds by | Real NestJS services | Direct SQL |
+| Numbering, workflow, audit trail | Genuine | Written as-is |
+| Records | ~4-6 per module | ~360 across 15 modules |
+| Memory to run | Hundreds of MB | Tens of MB |
+| Runs on shared hosting | No | Yes |
+
 ## 1. Start the API
 
 ```bash
