@@ -137,4 +137,4 @@ async function attachLabels(client, rows) {
   return rows;
 }
 
-module.exports = { attachLabels };
+module.exports = { attachLabels, BY_COLUMN };

@@ -12,7 +12,7 @@
 // NEXT_PUBLIC_DEFAULT_TENANT_ID saat build, jadi tenant yang berganti id
 // setiap kali disemai berarti web harus dibangun ulang setiap kali juga —
 // dan kolom Tenant ID di halaman masuk akan terisi nilai yang sudah basi.
-const { uuidFor, upsert, dateOnly } = require("./lib");
+const { uuidFor, upsert, dateOnly, daysAgo } = require("./lib");
 const { hashPassword } = require("../password");
 
 const DEMO_PASSWORD = "Demo!QHSE2026";
@@ -37,12 +37,47 @@ const DEPARTMENTS = [
   { key: "mtc", code: "DEPT-MTC", name: "Maintenance & Reliability", type: "MAINTENANCE", siteKey: "bpn" },
 ];
 
-// Peran di kolom `roleCode` TIDAK ditulis ke tabel user_roles di sini —
-// demo-api tidak menegakkan RBAC (lihat banner comment server.js), jadi
-// baris peran tanpa mesin izin yang membacanya hanya akan menyesatkan
-// pembaca basis data. Kolomnya tetap ada karena berkas penyemai modul
-// memakainya untuk memilih pelaku yang masuk akal: yang menandatangani izin
-// kerja panas adalah supervisor, bukan dokter perusahaan.
+// `roleCode` SEKARANG ditulis ke tabel roles + user_roles.
+//
+// Sebelumnya tidak, dan alasannya waktu itu benar: baris peran tanpa mesin
+// yang membacanya hanya menyesatkan pembaca basis data. Yang berubah adalah
+// sekarang ADA yang membacanya — mesin workflow menyelesaikan approver sebuah
+// tahap lewat approverType=ROLE_IN_SCOPE, yaitu seluruh pemegang peran itu di
+// user_roles. Tanpa baris ini, setiap pengajuan persetujuan berhenti dengan
+// "tidak ada approver ditemukan".
+//
+// PERANNYA BERTENANT, BUKAN PERAN SISTEM (tenant_id NULL). Itu bukan pilihan
+// gaya melainkan batas yang ditegakkan basis data: kebijakan RLS pada tabel
+// roles membolehkan MEMBACA peran sistem (`USING tenant_id IS NULL OR ...`)
+// tapi WITH CHECK-nya menuntut tenant_id sama dengan tenant yang sedang aktif,
+// sehingga INSERT peran sistem dari koneksi bertenant ditolak — diuji langsung
+// terhadap peran non-superuser, bukan disimpulkan dari membaca kebijakannya.
+// Peran sistem lahir dari bootstrap platform (apps/api seed-rbac-baseline.ts)
+// yang berjalan di luar konteks tenant; jalur demo ini tidak bisa dan tidak
+// boleh menirunya. Kode perannya sengaja sama persis supaya kalau bootstrap
+// platform itu kelak dijalankan, keduanya bicara tentang peran yang sama.
+// Nama tampilan peran, DISALIN dari apps/api/prisma/seed-rbac-baseline.ts
+// supaya kedua jalur menyebut peran yang sama dengan kata yang sama.
+const ROLE_NAMES = {
+  TENANT_ADMIN: "Tenant Admin",
+  COMPANY_ADMIN: "Company Admin",
+  HSE_MANAGER: "HSE Manager",
+  HSE_OFFICER: "HSE Officer",
+  DEPARTMENT_HEAD: "Department Head",
+  SUPERVISOR: "Supervisor",
+  AUDITOR_INTERNAL: "Auditor Internal",
+  AUDITOR_EXTERNAL: "Auditor Eksternal (Read-only)",
+  WORKER_EMPLOYEE: "Worker/Employee",
+  CONTRACTOR_USER: "Contractor User",
+  OCCUPATIONAL_HEALTH_STAFF: "Occupational Health Staff",
+  DOCUMENT_CONTROLLER: "Document Controller",
+  COMPLIANCE_OFFICER: "Compliance Officer",
+  QUALITY_MANAGER: "Quality Manager/QA Head",
+  QC_INSPECTOR: "QC Inspector",
+  ENVIRONMENTAL_OFFICER: "Environmental Officer",
+  TPS_LB3_OFFICER: "TPS LB3 Officer/Waste Handler",
+};
+
 const USERS = [
   { key: "budi", email: "budi.santoso@petro-ns.demo", fullName: "Budi Santoso", jobTitle: "Tenant Administrator", roleCode: "TENANT_ADMIN", siteKey: "hq", deptKey: "hse", employeeId: "PNS-0001" },
   { key: "siti", email: "siti.rahayu@petro-ns.demo", fullName: "Siti Rahayu", jobTitle: "Company Administrator", roleCode: "COMPANY_ADMIN", siteKey: "hq", deptKey: "hse", employeeId: "PNS-0002" },
@@ -191,6 +226,59 @@ async function seedFoundation(client) {
     });
   }
 
+  // --- Peran dan penugasannya ---------------------------------------------
+  //
+  // Hanya peran yang BENAR-BENAR dipegang salah satu pengguna demo yang
+  // dibuat. Menyemai seluruh 19 peran baseline akan menghasilkan peran kosong
+  // yang, kalau kelak dipakai sebagai approver sebuah tahap workflow,
+  // menghentikan pengajuan dengan "tidak ada approver" — kegagalan yang
+  // penyebabnya jauh dari gejalanya.
+  const roleIds = {};
+  const roleCodes = [...new Set(USERS.map((user) => user.roleCode))];
+  for (const roleCode of roleCodes) {
+    roleIds[roleCode] = uuidFor("role", roleCode);
+    await upsert(
+      client,
+      "roles",
+      "role_id",
+      {
+        role_id: roleIds[roleCode],
+        role_code: roleCode,
+        name: ROLE_NAMES[roleCode] || roleCode,
+        description: `Peran ${ROLE_NAMES[roleCode] || roleCode} pada tenant demo.`,
+        // false, dan itu jujur: peran sistem yang sebenarnya punya tenant_id
+        // NULL dan dibuat bootstrap platform. Ini salinan bertenant.
+        is_system_role: false,
+        status: "ACTIVE",
+      },
+      audit,
+    );
+  }
+
+  for (const user of USERS) {
+    await upsert(
+      client,
+      "user_roles",
+      "user_role_id",
+      {
+        user_role_id: uuidFor("user_role", `${user.key}:${user.roleCode}`),
+        user_id: userIds[user.key],
+        role_id: roleIds[user.roleCode],
+        // Lingkup TENANT untuk semuanya. ApproverResolutionService di apps/api
+        // sendiri masih menyelesaikan ROLE_IN_SCOPE secara tenant-wide (lihat
+        // banner comment method-nya: mempersempit ke scope entity menunggu
+        // parameter yang belum ada), jadi mengisi scope site/department di
+        // sini akan menjanjikan penyempitan yang tidak dilakukan siapa pun.
+        scope_type: "TENANT",
+        scope_id: null,
+        valid_from: dateOnly(daysAgo(365)),
+        valid_to: null,
+        status: "ACTIVE",
+      },
+      audit,
+    );
+  }
+
   await upsert(client, "tenant_branding_configs", "tenant_branding_config_id", {
     tenant_branding_config_id: uuidFor("branding", TENANT_CODE),
     tenant_id: TENANT_ID,
@@ -208,6 +296,7 @@ async function seedFoundation(client) {
     deptIds,
     userIds,
     users: USERS.map((user) => ({ ...user, id: userIds[user.key] })),
+    roleIds,
     audit,
     demoPassword: DEMO_PASSWORD,
     startDate: dateOnly(new Date("2010-03-15")),

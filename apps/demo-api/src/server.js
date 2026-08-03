@@ -1,8 +1,8 @@
-// demo-api — server HTTP baca-saja untuk demo/presentasi.
+// demo-api — server HTTP untuk demo/presentasi.
 //
-// Melayani persis rute yang dipanggil apps/web dan tidak lebih: alur masuk
-// PKCE, daftar+detail 15 modul, temuan audit, dan notifikasi. Semua tulis
-// domain tetap hanya ada di apps/api.
+// Melayani persis rute yang dipanggil apps/web: alur masuk PKCE, daftar dan
+// detail 15 modul beserta anaknya, analitik, Balanced Scorecard, notifikasi,
+// operasi tulis (buat/ubah/hapus), dan persetujuan.
 //
 // TANPA framework dan tanpa langkah build. Keduanya bukan soal selera:
 // server tujuan sudah terbukti membunuh `tsc` dan `prisma generate` karena
@@ -10,17 +10,34 @@
 // satu titik gagal yang sudah pernah terjadi. Berkas ini dijalankan `node`
 // apa adanya.
 //
-// Yang TIDAK dilakukan berkas ini, supaya tidak disalahpahami sebagai
-// pengganti apps/api:
-//   - Tidak ada RBAC per izin, tidak ada EntitlementGuard. Siapa pun yang
-//     berhasil masuk melihat seluruh modul. Isolasi antar tenant TETAP
-//     ditegakkan, tapi oleh basis data lewat RLS (lihat db.js), bukan oleh
-//     kode di sini.
-//   - Tidak ada audit log, tidak ada workflow, tidak ada notifikasi keluar.
+// SUDAH TIDAK BACA-SAJA lagi sejak lapisan tulis ditambahkan. Yang perlu
+// diketahui pembaca tentang batas-batasnya sekarang:
+//
+//   ADA — persetujuan sungguhan. Mesin workflow-nya (workflow.js) cerminan
+//     apps/api dan menulis ke tabel workflow_* yang sama: tahap, penerima
+//     tugas, percabangan bersyarat, dan kunci baris terhadap klik ganda.
+//     Status domain hanya berpindah lewat state machine tiap modul.
+//
+//   ADA — jejak audit. Trigger audit_log_capture sudah terpasang pada
+//     tabel-tabelnya di basis data, jadi setiap INSERT/UPDATE/DELETE di sini
+//     tercatat tanpa kode tambahan apa pun.
+//
+//   TIDAK ADA — RBAC per izin dan EntitlementGuard. Siapa pun yang berhasil
+//     masuk BISA MEMBUAT dan MENGUBAH data di seluruh modul. Yang tetap
+//     ditegakkan: isolasi antar tenant (oleh RLS di basis data, lihat db.js)
+//     dan penugasan persetujuan — tombol Setuju hanya berfungsi bagi orang
+//     yang memang jadi assignee tugasnya, diperiksa di sisi server.
+//     Perbedaan ini penting untuk dinyatakan: pemisahan tugas pada level
+//     "siapa boleh membuat izin kerja" belum ada di sini, hanya pada level
+//     "siapa boleh menyetujuinya".
+//
+//   TIDAK ADA — notifikasi keluar (surel/WhatsApp). Notifikasi dalam aplikasi
+//     ditulis ke tabel notifications dan muncul di kotak masuk.
 const http = require("node:http");
 const { withRls } = require("./db");
 const { verifyAccessToken } = require("./jwt");
-const { findModuleByEndpoint, findChild } = require("./modules");
+const { MODULES, findModuleByEndpoint, findChild } = require("./modules");
+const writes = require("./writes");
 const { attachLabels } = require("./labels");
 const { findMetric, catalog } = require("./analytics");
 const { loadScorecard } = require("./scorecard");
@@ -54,7 +71,7 @@ function applyCors(req, res) {
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-tenant-id");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
 }
 
 function requireClaims(req, res) {
@@ -406,16 +423,54 @@ async function route(req, res, url) {
     return sendProblem(res, 405, "Metode tidak didukung.", method);
   }
 
-  // --- modul domain ---
-  const moduleDef = findModuleByEndpoint(`/${segments[0] || ""}`);
-  if (moduleDef && method === "GET") {
+  // --- kotak persetujuan (lintas modul) ---
+  if (segments[0] === "approvals") {
     const claims = requireClaims(req, res);
     if (!claims) return;
-    if (segments.length === 1) return handleModuleList(res, claims, moduleDef, searchParams);
-    if (segments.length === 2) return handleModuleDetail(res, claims, moduleDef, segments[1]);
-    if (segments.length === 3) {
-      const child = findChild(moduleDef, `/${segments[2]}`);
-      if (child) return handleModuleChildren(res, claims, child, segments[1]);
+    if (segments.length === 1 && method === "GET") return writes.handleMyApprovals(res, claims);
+    if (segments.length === 3 && segments[2] === "act" && method === "POST") {
+      return writes.handleAct(res, claims, MODULES, segments[1], await readJsonBody(req));
+    }
+    return sendProblem(res, 404, "Rute tidak dikenal.", pathname);
+  }
+
+  // --- modul domain ---
+  const moduleDef = findModuleByEndpoint(`/${segments[0] || ""}`);
+  if (moduleDef) {
+    const claims = requireClaims(req, res);
+    if (!claims) return;
+
+    // `/schema` dicek SEBELUM `/:id` karena keduanya sama-sama dua segmen —
+    // tanpa urutan ini, "schema" akan diperlakukan sebagai UUID dan
+    // menghasilkan 404 yang membingungkan.
+    if (segments.length === 2 && segments[1] === "schema" && method === "GET") {
+      return writes.handleSchema(res, claims, moduleDef);
+    }
+
+    if (method === "GET") {
+      if (segments.length === 1) return handleModuleList(res, claims, moduleDef, searchParams);
+      if (segments.length === 2) return handleModuleDetail(res, claims, moduleDef, segments[1]);
+      if (segments.length === 3) {
+        if (segments[2] === "approval") return writes.handleApprovalPanel(res, claims, moduleDef, segments[1]);
+        const child = findChild(moduleDef, `/${segments[2]}`);
+        if (child) return handleModuleChildren(res, claims, child, segments[1]);
+      }
+    }
+
+    if (segments.length === 1 && method === "POST") {
+      return writes.handleCreate(res, claims, moduleDef, await readJsonBody(req));
+    }
+    if (segments.length === 2 && method === "PUT") {
+      return writes.handleUpdate(res, claims, moduleDef, segments[1], await readJsonBody(req));
+    }
+    if (segments.length === 2 && method === "DELETE") {
+      return writes.handleDelete(res, claims, moduleDef, segments[1]);
+    }
+    if (segments.length === 3 && method === "POST") {
+      if (segments[2] === "transition") {
+        return writes.handleTransition(res, claims, moduleDef, segments[1], await readJsonBody(req));
+      }
+      if (segments[2] === "submit") return writes.handleSubmit(res, claims, moduleDef, segments[1]);
     }
   }
 
