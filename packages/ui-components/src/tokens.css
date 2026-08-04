@@ -28,6 +28,24 @@
  * netral: itulah yang membuat biru mereknya terlihat menyatu dengan
  * halamannya, bukan seperti stiker yang ditempel di atas kertas abu-abu.
  * =========================================================================
+ * BENTUKNYA (bukan warnanya) MENGIKUTI SOFT UI DASHBOARD
+ *
+ * 4 Agustus 2026 pemilik produk memilih tampilan Soft UI Dashboard
+ * (themewagon.github.io/Soft-UI-Dashboard-Tailwind). Yang diambil dari sana
+ * hanya BENTUK: bayangan lebar-pucat, sudut 16px, bidang halaman nyaris
+ * seputih kartunya, permukaan yang mengambang alih-alih dikotaki garis.
+ *
+ * Yang TIDAK diambil adalah paletnya, dan itu keputusan yang diminta serta
+ * disetujui pemilik produk — bukan kelalaian. Aksen aslinya pink #cb0c9f
+ * dengan gradien #7928ca→#ff0080, tidak berhubungan dengan merek klien.
+ * Lebih penting lagi, warna statusnya tidak bisa dipakai apa adanya di sini:
+ * diukur di atas latarnya sendiri, success #17ad37 hanya 2,82:1,
+ * warning #f53939 3,60:1, danger #ea0606 4,40:1 — ketiganya di bawah 4,5:1.
+ * Di tema aslinya itu tidak menimbulkan masalah karena warna status di sana
+ * hanya menjadi latar ikon; di aplikasi ini status muncul sebagai TEKS di
+ * dalam tabel dan lencana. Ditambah lagi `warning` mereka dimulai dari MERAH,
+ * yang pada konteks K3 menghapus beda antara waspada dan bahaya.
+ * =========================================================================
  *
  * Light = default; dark lewat prefers-color-scheme DAN data-theme override
  * (toggle eksplisit menang atas preferensi OS di kedua arah).
@@ -60,31 +78,91 @@
      arahnya berbeda-beda terbaca sebagai kumpulan komponen dari tempat
      berlainan, bukan sebagai satu produk. */
   --qhse-brand-gradient: linear-gradient(135deg, #1189c1 0%, #29abe2 55%, #4bcbfb 100%);
+  /* GRADIEN YANG BOLEH DIBERI TEKS/IKON PUTIH DI ATASNYA.
+     --qhse-brand-gradient di atas berakhir di #4bcbfb, dan putih di atas
+     warna itu hanya 1,87:1 — di bawah 3:1 sekalipun untuk ikon, apalagi 4,5:1
+     untuk teks. Selama ini gradien itu dipakai sebagai bidang di tiga tempat
+     yang isinya PUTIH: kotak inisial di bilah atas, kotak inisial di halaman
+     masuk, dan — yang paling penting — TOMBOL UTAMA (.qhse-btn--accent),
+     yang labelnya putih dan merupakan aksi utama di hampir setiap layar.
+     Pada ketiganya separuh kanan tulisannya praktis hilang.
+     Sebagai garis 3px atau pita hias, gradien penuh itu tidak bermasalah dan
+     tetap dipakai; yang bermasalah hanya kalau ada sesuatu yang harus dibaca
+     di atasnya.
+     Versi ini berhenti di #1189c1 (3,91:1 untuk ikon) dan dimulai dari
+     #0b6d9b (5,71:1), jadi aman di seluruh panjangnya. */
+  --qhse-brand-gradient-ink: linear-gradient(135deg, #0b6d9b 0%, #1189c1 100%);
 
-  /* --- Netral (bersemu navy) --- */
+  /* --- Netral (bersemu navy) ---
+     Bidang halaman SANGAT dekat dengan putih (#f7fafd vs #ffffff, beda 3%).
+     Itu disengaja dan merupakan inti gaya "soft UI": pemisahan kartu dari
+     halaman TIDAK dikerjakan oleh beda warna, melainkan oleh bayangan lebar
+     di bawahnya. Bidang halaman yang jauh lebih tua membuat kartu terlihat
+     ditempel di dalam nampan; bidang yang nyaris seputih kartunya membuat
+     kartu terlihat MENGAMBANG di atas halaman.
+
+     Konsekuensinya: --qhse-surface-2 harus turun lebih dalam (#f1f5f9), bukan
+     ikut naik. Ia dipakai sebagai pita kepala kartu dan latar hover menu —
+     dua hal yang harus tetap terbaca sebagai bidang berbeda DI DALAM kartu
+     putih, bukan di atas halaman. */
   --qhse-surface-1: #ffffff;
-  --qhse-surface-2: #f8fafc;
-  --qhse-page-plane: #f4f7fb;
+  --qhse-surface-2: #f1f5f9;
+  --qhse-page-plane: #f7fafd;
   --qhse-text-primary: #0f2233;
   --qhse-text-secondary: #51697f;
-  /* 4,76:1 di atas putih. Nilai sebelumnya (#90a5b9) hanya 2,54:1 —
-     keterangan kartu dan sub-judul tabel praktis tidak terbaca oleh
-     mata yang tidak muda lagi, dan itu justru teks yang menjelaskan
-     arti angkanya. */
-  --qhse-text-muted: #64748b;
+  /* 5,33:1 di atas putih, 4,87:1 di atas --qhse-surface-2.
+     Dua kali diturunkan. Nilai pertama (#90a5b9) hanya 2,54:1 — keterangan
+     kartu dan sub-judul tabel praktis tidak terbaca. Nilai kedua (#64748b)
+     lulus di atas putih (4,76:1) tetapi jatuh menjadi 4,34:1 begitu
+     --qhse-surface-2 diperdalam ke #f1f5f9 untuk gaya soft UI; itulah latar
+     pita kepala kartu eksekutif dan baris hover menu, jadi kegagalannya
+     nyata, bukan teoretis. Nilai ini lulus di ketiga bidang terang. */
+  --qhse-text-muted: #5e6c81;
   --qhse-gridline: #eaf0f6;
   --qhse-border: #dbe5ee;
   --qhse-border-hairline: rgba(11, 39, 64, 0.08);
   --qhse-text-on-accent: #ffffff;
 
+  /* CINCIN KARTU — garis tepi permukaan yang MENGAMBANG, dipisahkan dari
+     --qhse-border-hairline.
+     Keduanya dulu satu nilai, dan itu keliru karena keduanya menjawab
+     pertanyaan yang berbeda. border-hairline dipakai sebagai PEMISAH di dalam
+     satu bidang (garis bawah kepala tabel, sekat baris) — di sana garisnya
+     memang harus terlihat. Cincin kartu dipakai sebagai TEPI LUAR kartu, dan
+     di sana tugasnya sudah diambil alih oleh bayangan: garis 8% yang masih
+     ikut tergambar membuat kartu terlihat digambar dua kali, sekali dengan
+     garis dan sekali dengan bayangan.
+     Di mode gelap nilainya berbalik menjadi garis penuh — bayangan tidak
+     memisahkan apa pun di atas bidang gelap, jadi di sana garis itulah
+     satu-satunya yang menandai tepi kartu. */
+  --qhse-card-ring: rgba(11, 39, 64, 0.035);
+
   /* --- Bayangan: SELALU bersemu navy, tidak pernah hitam murni ---
-     Bayangan hitam di atas bidang bersemu biru terlihat kotor. Nilai alfa
-     mengikuti yang dipakai situs rujukan. */
-  --qhse-shadow-xs: 0 1px 2px rgba(11, 39, 64, 0.04);
-  --qhse-shadow-sm: 0 1px 3px rgba(11, 39, 64, 0.06), 0 1px 2px rgba(11, 39, 64, 0.04);
-  --qhse-shadow-md: 0 4px 16px rgba(11, 39, 64, 0.07), 0 1px 3px rgba(11, 39, 64, 0.04);
-  --qhse-shadow-lg: 0 12px 32px rgba(11, 39, 64, 0.1), 0 2px 8px rgba(11, 39, 64, 0.05);
+     Bayangan hitam di atas bidang bersemu biru terlihat kotor.
+
+     BENTUKNYA diambil dari Soft UI Dashboard (nilai asli diukur dari
+     assets/css/soft-ui-dashboard-tailwind.css, 4 Agustus 2026):
+     blur yang jauh lebih lebar daripada offset-nya, dengan alfa sangat
+     rendah — `0 20px 27px 0 rgba(0,0,0,.05)` untuk kartu diam,
+     `0 8px 26px -4px hsla(0,0%,8%,.15)` saat diangkat.
+
+     Inilah — bukan warnanya — yang membuat tema itu terlihat "lembut":
+     bayangan sempit dan gelap (nilai kita sebelumnya, 1px 3px @6%) membaca
+     sebagai kartu yang MENEMPEL di halaman; bayangan lebar dan pucat membaca
+     sebagai kartu yang MENGAMBANG di atasnya. Alfanya dinaikkan sedikit dari
+     aslinya (0,07 vs 0,05) karena warna dasar kita navy, bukan hitam — navy
+     lebih terang, jadi pada alfa yang sama bayangannya terlihat lebih tipis. */
+  --qhse-shadow-xs: 0 4px 7px -1px rgba(11, 39, 64, 0.07), 0 2px 4px -1px rgba(11, 39, 64, 0.05);
+  --qhse-shadow-sm: 0 20px 27px 0 rgba(11, 39, 64, 0.07);
+  --qhse-shadow-md: 0 8px 26px -4px rgba(11, 39, 64, 0.16), 0 8px 9px -5px rgba(11, 39, 64, 0.07);
+  --qhse-shadow-lg: 0 23px 45px -11px rgba(11, 39, 64, 0.26);
   --qhse-shadow-brand: 0 6px 18px rgba(17, 137, 193, 0.28);
+  /* Garis putih setebal 1px DI DALAM tepi kartu. Ditumpuk di depan bayangan
+     luar, ia membuat tepi atas kartu tampak menangkap cahaya — efek yang di
+     Soft UI ditulis `inset 0 0 1px 1px hsla(0,0%,100%,.9)`. Nyaris tak
+     terlihat kalau dicari satu per satu, tapi inilah yang membedakan kartu
+     yang terasa punya ketebalan dari kotak putih datar. */
+  --qhse-shadow-inset: inset 0 0 1px 1px rgba(255, 255, 255, 0.9);
 
   /* --- Status/Severity (TIDAK ditematisasi tenant) ---
      Disetel ulang agar setara terang dengan palet baru; hijau dan merah lama
@@ -114,6 +192,16 @@
   --qhse-trend-improving: #1189c1;
   --qhse-trend-worsening: #d13438;
   --qhse-trend-neutral: #8ba1b6;
+  /* TINTA TREN — pemisahan yang sama seperti tinta merek dan tinta lencana,
+     dan karena alasan yang sama. Tiga token di atas dipakai sebagai BIDANG
+     (sakelar aktif, garis fokus) dan tetap. Sebagai TEKS pada baris delta di
+     kartu KPI, dua dari tiga gagal: biru 3,91:1 dan abu 2,67:1 di atas putih.
+     Baris itulah satu-satunya tempat kartu KPI mengatakan angkanya membaik
+     atau memburuk — kalau ia tidak terbaca, kartunya tinggal sebuah angka
+     tanpa arah. */
+  --qhse-trend-improving-ink: #0b6d9b;
+  --qhse-trend-worsening-ink: #d13438;
+  --qhse-trend-neutral-ink: #5e6c81;
 
   /* --- Tipografi ---
      Plus Jakarta Sans dipakai KEDUA situs rujukan. Dimuat lewat <link> ke
@@ -202,10 +290,23 @@
     --qhse-status-warning-wash: rgba(224, 162, 7, 0.16);
     --qhse-status-serious-wash: rgba(232, 113, 42, 0.16);
     --qhse-status-critical-wash: rgba(209, 52, 56, 0.16);
-    --qhse-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --qhse-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-    --qhse-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-    --qhse-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+    --qhse-shadow-xs: 0 4px 7px -1px rgba(0, 0, 0, 0.35), 0 2px 4px -1px rgba(0, 0, 0, 0.25);
+    --qhse-shadow-sm: 0 20px 27px 0 rgba(0, 0, 0, 0.28);
+    --qhse-shadow-md: 0 8px 26px -4px rgba(0, 0, 0, 0.5), 0 8px 9px -5px rgba(0, 0, 0, 0.3);
+    --qhse-shadow-lg: 0 23px 45px -11px rgba(0, 0, 0, 0.6);
+    /* Di bidang gelap, cincin kartu kembali menjadi GARIS PENUH. Bayangan
+       tidak memisahkan apa pun di atas latar gelap — mata tidak bisa melihat
+       gelap di atas gelap — jadi di sini garis itulah satu-satunya penanda
+       tepi kartu, kebalikan persis dari mode terang. */
+    --qhse-card-ring: #234362;
+    /* Sorot dalam ikut berbalik: putih 90% di bidang gelap akan tampak
+       seperti bingkai neon. Yang tersisa hanya sedikit terang di tepi atas. */
+    --qhse-shadow-inset: inset 0 0 1px 1px rgba(234, 242, 248, 0.05);
+    /* Di bidang gelap ketiganya harus lebih terang, bukan lebih tua:
+       5,68 / 5,94 / 5,57 terhadap #12293e. */
+    --qhse-trend-improving-ink: #29abe2;
+    --qhse-trend-worsening-ink: #ff7b7f;
+    --qhse-trend-neutral-ink: #8ba1b6;
   }
 }
 
@@ -233,23 +334,33 @@
   --qhse-status-warning-wash: rgba(224, 162, 7, 0.16);
   --qhse-status-serious-wash: rgba(232, 113, 42, 0.16);
   --qhse-status-critical-wash: rgba(209, 52, 56, 0.16);
-  --qhse-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --qhse-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --qhse-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --qhse-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --qhse-shadow-xs: 0 4px 7px -1px rgba(0, 0, 0, 0.35), 0 2px 4px -1px rgba(0, 0, 0, 0.25);
+  --qhse-shadow-sm: 0 20px 27px 0 rgba(0, 0, 0, 0.28);
+  --qhse-shadow-md: 0 8px 26px -4px rgba(0, 0, 0, 0.5), 0 8px 9px -5px rgba(0, 0, 0, 0.3);
+  --qhse-shadow-lg: 0 23px 45px -11px rgba(0, 0, 0, 0.6);
+  /* Lihat catatan di blok @media di atas: di bidang gelap cincin kartu
+     kembali menjadi garis penuh, dan sorot dalamnya nyaris padam. */
+  --qhse-card-ring: #234362;
+  --qhse-shadow-inset: inset 0 0 1px 1px rgba(234, 242, 248, 0.05);
+  --qhse-trend-improving-ink: #29abe2;
+  --qhse-trend-worsening-ink: #ff7b7f;
+  --qhse-trend-neutral-ink: #8ba1b6;
 }
 
 :root[data-theme="light"] {
   --qhse-surface-1: #ffffff;
-  --qhse-surface-2: #f8fafc;
-  --qhse-page-plane: #f4f7fb;
+  --qhse-surface-2: #f1f5f9;
+  --qhse-page-plane: #f7fafd;
   --qhse-text-primary: #0f2233;
   --qhse-text-secondary: #51697f;
-  /* 4,76:1 di atas putih. Nilai sebelumnya (#90a5b9) hanya 2,54:1 —
-     keterangan kartu dan sub-judul tabel praktis tidak terbaca oleh
-     mata yang tidak muda lagi, dan itu justru teks yang menjelaskan
-     arti angkanya. */
-  --qhse-text-muted: #64748b;
+  /* 5,33:1 di atas putih, 4,87:1 di atas --qhse-surface-2.
+     Dua kali diturunkan. Nilai pertama (#90a5b9) hanya 2,54:1 — keterangan
+     kartu dan sub-judul tabel praktis tidak terbaca. Nilai kedua (#64748b)
+     lulus di atas putih (4,76:1) tetapi jatuh menjadi 4,34:1 begitu
+     --qhse-surface-2 diperdalam ke #f1f5f9 untuk gaya soft UI; itulah latar
+     pita kepala kartu eksekutif dan baris hover menu, jadi kegagalannya
+     nyata, bukan teoretis. Nilai ini lulus di ketiga bidang terang. */
+  --qhse-text-muted: #5e6c81;
   --qhse-gridline: #eaf0f6;
   --qhse-border: #dbe5ee;
   --qhse-border-hairline: rgba(11, 39, 64, 0.08);
@@ -270,8 +381,13 @@
   --qhse-status-warning-wash: #fdf4e0;
   --qhse-status-serious-wash: #fdeee3;
   --qhse-status-critical-wash: #fdeaea;
-  --qhse-shadow-xs: 0 1px 2px rgba(11, 39, 64, 0.04);
-  --qhse-shadow-sm: 0 1px 3px rgba(11, 39, 64, 0.06), 0 1px 2px rgba(11, 39, 64, 0.04);
-  --qhse-shadow-md: 0 4px 16px rgba(11, 39, 64, 0.07), 0 1px 3px rgba(11, 39, 64, 0.04);
-  --qhse-shadow-lg: 0 12px 32px rgba(11, 39, 64, 0.1), 0 2px 8px rgba(11, 39, 64, 0.05);
+  --qhse-card-ring: rgba(11, 39, 64, 0.035);
+  --qhse-shadow-xs: 0 4px 7px -1px rgba(11, 39, 64, 0.07), 0 2px 4px -1px rgba(11, 39, 64, 0.05);
+  --qhse-shadow-sm: 0 20px 27px 0 rgba(11, 39, 64, 0.07);
+  --qhse-shadow-md: 0 8px 26px -4px rgba(11, 39, 64, 0.16), 0 8px 9px -5px rgba(11, 39, 64, 0.07);
+  --qhse-shadow-lg: 0 23px 45px -11px rgba(11, 39, 64, 0.26);
+  --qhse-shadow-inset: inset 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  --qhse-trend-improving-ink: #0b6d9b;
+  --qhse-trend-worsening-ink: #d13438;
+  --qhse-trend-neutral-ink: #5e6c81;
 }

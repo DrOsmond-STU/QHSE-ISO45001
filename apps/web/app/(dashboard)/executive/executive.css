@@ -91,9 +91,13 @@
   flex-direction: column;
   min-width: 0;
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border);
+  /* Cincin kartu, bukan --qhse-border: tepi luar kartu yang mengambang sudah
+     ditandai bayangannya. Garis penuh di atas bayangan lebar membuat kartunya
+     terlihat digambar dua kali. Pita kepala di bawah TETAP memakai
+     --qhse-border — itu sekat di DALAM kartu, dan sekat memang harus terlihat. */
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
   /* Pita kepala berlatar harus ikut lengkung sudut kartunya; tanpa ini
      sudutnya tampak persegi di atas dan bulat di bawah. */
   overflow: hidden;
@@ -215,7 +219,7 @@
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-sm-size);
   font-weight: 600;
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   text-align: center;
 }
 

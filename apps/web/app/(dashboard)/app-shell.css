@@ -33,9 +33,23 @@
   gap: var(--qhse-space-3);
   padding: var(--qhse-space-3) var(--qhse-space-5);
   min-height: 64px;
+  /* Bilah atas TIDAK berbidang penuh dan tidak bergaris bawah: ia setengah
+     tembus dan mengaburkan apa pun yang lewat di belakangnya. Ini bagian dari
+     gaya Soft UI (`backdrop-filter: blur(30px)` di berkas aslinya), dan
+     tujuannya bukan hiasan — bilah yang berbidang penuh memotong halaman
+     menjadi dua kotak bertumpuk, sementara bilah yang mengaburkan membuat
+     halaman terbaca sebagai satu bidang yang menerus ke bawahnya.
+
+     Deklarasi bidang ditulis DUA KALI dengan sengaja: baris pertama bidang
+     penuh sebagai cadangan, baris kedua color-mix yang menggantikannya di
+     peramban yang mengerti. Peramban yang tidak mengerti color-mix akan
+     mengabaikan baris kedua dan tetap mendapat bilah yang terbaca — bukan
+     bilah tembus pandang tanpa blur, yang isinya akan bertabrakan dengan
+     teks halaman di belakangnya. */
   background: var(--qhse-surface-1);
-  border-bottom: 1px solid var(--qhse-border-hairline);
-  box-shadow: var(--qhse-shadow-xs);
+  background: color-mix(in srgb, var(--qhse-surface-1) 82%, transparent);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  backdrop-filter: blur(30px) saturate(140%);
 }
 
 /* Garis merek setebal 3px di sisi paling atas jendela. Satu-satunya tempat
@@ -74,7 +88,7 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: var(--qhse-brand-gradient);
+  background: var(--qhse-brand-gradient-ink);
   color: #ffffff;
   font-size: 13px;
   font-weight: 800;
@@ -214,17 +228,32 @@
   min-height: 0;
 }
 
+/* Sidebar berupa KARTU YANG MENGAMBANG, bukan kolom yang menempel di tepi
+   jendela dan dipisahkan garis. Ini unsur paling khas Soft UI dan sekaligus
+   yang paling terasa: kolom bergaris membuat menu terbaca sebagai bagian dari
+   bingkai jendela, sedangkan kartu mengambang membuatnya terbaca sebagai satu
+   benda di atas halaman — setara dengan kartu isi di sebelahnya.
+
+   `align-self` sengaja TIDAK diisi (mewarisi flex-start dari .qhse-shell__body)
+   supaya tinggi kartunya mengikuti isinya. Nilai `stretch` sebelumnya
+   memanjangkannya sampai dasar halaman, dan kartu yang ujung bawahnya tidak
+   pernah terlihat tidak terbaca sebagai kartu. */
 .qhse-shell__sidebar {
   flex: 0 0 268px;
   width: 268px;
-  align-self: stretch;
-  padding: var(--qhse-space-5) var(--qhse-space-3);
+  margin: var(--qhse-space-5) 0 var(--qhse-space-5) var(--qhse-space-5);
+  padding: var(--qhse-space-4) var(--qhse-space-3);
   background: var(--qhse-surface-1);
-  border-right: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
   box-sizing: border-box;
   position: sticky;
-  top: 64px;
-  max-height: calc(100vh - 64px);
+  /* 64px tinggi bilah atas + jarak yang sama dengan margin atasnya, supaya
+     saat digulir kartunya berhenti pada jarak yang sama dari bilah atas
+     seperti saat halaman berada di puncak. */
+  top: calc(64px + var(--qhse-space-5));
+  max-height: calc(100vh - 64px - var(--qhse-space-5) * 2);
   overflow-y: auto;
   /* Bilah gulir tipis: sidebar ini memuat 17 menu dan hampir selalu bisa
      digulir, jadi bilah gulir bawaan yang tebal akan selalu terlihat. */
@@ -278,17 +307,27 @@
 
 /* Menu aktif ditandai bidang berwarna merek, bukan garis tipis di sisi kiri.
    Bidangnya terbaca dari sudut mata; garis 3px tidak. */
+/* Menu aktif TETAP memakai bidang berwarna merek, bukan sekadar kartu putih
+   berbayang seperti di Soft UI. Di sana sidebar-nya putih dan butir aktifnya
+   juga putih — yang membedakan hanya bayangan, dan bayangan saja tidak cukup
+   bagi mata yang menyapu 19 butir menu untuk menemukan mana yang sedang
+   dibuka. Bayangannya diambil, warnanya dipertahankan: butirnya terangkat
+   DAN berwarna. */
 .qhse-shell__nav-link[aria-current="page"] {
   background: var(--qhse-brand-wash);
   color: var(--qhse-brand-ink);
   font-weight: 700;
-  box-shadow: none;
+  box-shadow: var(--qhse-shadow-xs);
 }
 
 .qhse-shell__main {
   flex: 1;
   min-width: 0;
-  padding: var(--qhse-space-6) var(--qhse-space-6) var(--qhse-space-8);
+  /* Jarak atas disamakan dengan margin atas kartu sidebar (space-5), bukan
+     space-6 seperti sebelumnya: keduanya kini benda yang sejajar di atas
+     halaman yang sama, dan tepi atas yang berselisih 8px terlihat seperti
+     salah satunya melorot. */
+  padding: var(--qhse-space-5) var(--qhse-space-6) var(--qhse-space-8);
   box-sizing: border-box;
   /* Baris teks yang melebar tanpa batas pada layar lebar sulit dibaca, tapi
      tabel butuh lebar. Batasnya longgar: membatasi kolom bacaan, bukan
@@ -319,12 +358,21 @@
      kalau `transform` gagal diterapkan karena alasan apa pun, menu tidak
      berakhir menutupi konten. Transisi `visibility` ditunda selama durasi
      geseran supaya menu tidak lenyap seketika saat sedang menutup. */
+  /* Di layar sempit sidebar berhenti menjadi kartu mengambang dan kembali
+     menjadi laci yang menempel penuh ke tepi kiri: margin, sudut, dan cincin
+     kartunya dibatalkan. Laci setinggi layar yang masih punya margin akan
+     memperlihatkan sepotong halaman di atas dan di bawahnya — celah yang
+     terbaca sebagai kesalahan render, bukan sebagai rancangan. */
   .qhse-shell__sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
     z-index: 30;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: var(--qhse-shadow-lg);
     max-height: none;
     transform: translateX(-100%);
     visibility: hidden;
@@ -429,7 +477,7 @@
   font-size: var(--qhse-text-body-sm-size);
   line-height: var(--qhse-text-body-sm-lh);
   font-weight: 600;
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   background: var(--qhse-status-critical-wash);
   border: 1px solid color-mix(in srgb, var(--qhse-status-critical) 24%, transparent);
   border-radius: var(--qhse-radius-sm);
@@ -504,10 +552,10 @@
 
 .qhse-detail-card {
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
   padding: var(--qhse-space-5) var(--qhse-space-6);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
 }
 
 /* Judul bagian di dalam kartu detail. Halaman detail dipecah menjadi

@@ -41,11 +41,16 @@
   width: 100%;
   max-width: 440px;
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-lg);
   padding: var(--qhse-space-7) var(--qhse-space-6) var(--qhse-space-6);
   box-sizing: border-box;
-  box-shadow: 0 24px 60px rgba(11, 39, 64, 0.4);
+  /* Bayangannya ditulis langsung, bukan token: kartu ini berdiri di atas
+     bidang NAVY, bukan di atas halaman terang, jadi ia butuh bayangan yang
+     jauh lebih pekat daripada kartu mana pun di dalam aplikasi. Sorot dalam
+     tetap dipakai supaya tepi atasnya tetap menangkap cahaya seperti kartu
+     lainnya. */
+  box-shadow: 0 24px 60px rgba(11, 39, 64, 0.4), var(--qhse-shadow-inset);
 }
 
 /* Kotak inisial yang sama dengan yang ada di topbar, supaya layar masuk dan
@@ -57,7 +62,7 @@
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: var(--qhse-brand-gradient);
+  background: var(--qhse-brand-gradient-ink);
   color: #ffffff;
   font-family: var(--qhse-font-display);
   font-size: 17px;
@@ -132,7 +137,7 @@
   font-size: var(--qhse-text-body-sm-size);
   line-height: var(--qhse-text-body-sm-lh);
   font-weight: 600;
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   background: var(--qhse-status-critical-wash);
   border: 1px solid color-mix(in srgb, var(--qhse-status-critical) 24%, transparent);
   border-radius: var(--qhse-radius-sm);

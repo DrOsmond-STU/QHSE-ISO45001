@@ -61,13 +61,13 @@
 
 .qhse-stepper__step--approved .qhse-stepper__dot {
   background: var(--qhse-status-good);
-  border-color: var(--qhse-status-good);
+  border-color: var(--qhse-status-good-ink);
   color: var(--qhse-text-on-accent);
 }
 
 .qhse-stepper__step--rejected .qhse-stepper__dot {
   background: var(--qhse-status-critical);
-  border-color: var(--qhse-status-critical);
+  border-color: var(--qhse-status-critical-ink);
   color: var(--qhse-text-on-accent);
 }
 
@@ -82,8 +82,8 @@
    itulah yang harus terlihat lebih dulu, bukan posisi antreannya. */
 .qhse-stepper__dot--sla-breached,
 .qhse-stepper__step--current .qhse-stepper__dot--sla-breached {
-  border-color: var(--qhse-status-warning);
-  color: var(--qhse-status-warning);
+  border-color: var(--qhse-status-warning-ink);
+  color: var(--qhse-status-warning-ink);
   box-shadow: 0 0 0 4px var(--qhse-status-warning-wash);
 }
 

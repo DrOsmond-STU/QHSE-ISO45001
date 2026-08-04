@@ -42,9 +42,9 @@
 .qhse-set__blok {
   padding: var(--qhse-space-5);
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-lg);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
 }
 
 .qhse-set__judulBaris {
@@ -165,7 +165,7 @@
 }
 
 .qhse-set__hapus {
-  color: var(--qhse-status-critical) !important;
+  color: var(--qhse-status-critical-ink) !important;
 }
 
 /* --- daftar pilihan metrik -------------------------------------------- */
@@ -227,13 +227,13 @@
 }
 
 .qhse-set__ok {
-  color: var(--qhse-status-good);
+  color: var(--qhse-status-good-ink);
   font-size: var(--qhse-text-body-sm-size);
   font-weight: 600;
 }
 
 .qhse-set__bad {
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   font-size: var(--qhse-text-body-sm-size);
 }
 

@@ -7,7 +7,7 @@
   background: var(--qhse-surface-1);
   border: 1px solid color-mix(in srgb, var(--qhse-brand) 22%, transparent);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
   padding: var(--qhse-space-5);
   margin-bottom: var(--qhse-space-5);
 }
@@ -40,7 +40,7 @@
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-sm-size);
   font-weight: 600;
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   background: var(--qhse-status-critical-wash);
   border: 1px solid color-mix(in srgb, var(--qhse-status-critical) 24%, transparent);
   border-radius: var(--qhse-radius-sm);
@@ -81,9 +81,9 @@
   gap: var(--qhse-space-3);
   padding: var(--qhse-space-4);
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
 }
 
 .qhse-actions__status {
@@ -111,13 +111,13 @@
 }
 
 .qhse-actions__ok {
-  color: var(--qhse-status-good);
+  color: var(--qhse-status-good-ink);
   background: var(--qhse-status-good-wash);
   font-weight: 600;
 }
 
 .qhse-actions__bad {
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   background: var(--qhse-status-critical-wash);
   font-weight: 600;
 }
@@ -132,9 +132,9 @@
 .qhse-approval {
   margin-top: var(--qhse-space-4);
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
   padding: var(--qhse-space-5);
 }
 
@@ -187,7 +187,7 @@
 }
 
 .qhse-approval__stage--done {
-  border-left-color: var(--qhse-status-good);
+  border-left-color: var(--qhse-status-good-ink);
 }
 
 /* Tahap yang sedang berjalan diberi warna merek, bukan warna status: ia bukan
@@ -336,9 +336,9 @@
   gap: var(--qhse-space-4);
   padding: var(--qhse-space-4) var(--qhse-space-5);
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
 }
 
 .qhse-inbox__main {
@@ -402,7 +402,7 @@
   background: var(--qhse-surface-1);
   border: 1px solid color-mix(in srgb, var(--qhse-brand) 22%, transparent);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
 }
 
 .qhse-upload__row {
@@ -486,7 +486,7 @@
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-sm-size);
   line-height: var(--qhse-text-body-sm-lh);
-  color: var(--qhse-status-serious);
+  color: var(--qhse-status-serious-ink);
   background: var(--qhse-status-serious-wash);
   border: 1px solid color-mix(in srgb, var(--qhse-status-serious) 24%, transparent);
   border-radius: var(--qhse-radius-sm);
@@ -498,9 +498,9 @@
 .qhse-viewer__frame {
   position: relative;
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
   overflow: hidden;
 }
 

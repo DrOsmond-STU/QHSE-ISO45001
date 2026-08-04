@@ -4,10 +4,10 @@
    lembar sebar lama alih-alih daftar kerja. */
 .qhse-data-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
   background: var(--qhse-surface-1);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
 }
 
 .qhse-data-table {

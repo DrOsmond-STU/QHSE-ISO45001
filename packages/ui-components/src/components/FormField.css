@@ -95,7 +95,7 @@
 .qhse-form-field:has(.qhse-form-field__error) input,
 .qhse-form-field:has(.qhse-form-field__error) select,
 .qhse-form-field:has(.qhse-form-field__error) textarea {
-  border-color: var(--qhse-status-critical);
+  border-color: var(--qhse-status-critical-ink);
   background: var(--qhse-status-critical-wash);
 }
 
@@ -115,7 +115,7 @@
 .qhse-form-field__error {
   font-size: var(--qhse-text-body-sm-size);
   line-height: var(--qhse-text-body-sm-lh);
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   font-weight: 600;
   margin: 0;
 }

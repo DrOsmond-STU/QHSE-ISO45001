@@ -11,9 +11,9 @@
   padding: var(--qhse-space-4);
   margin-bottom: var(--qhse-space-5);
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
 }
 
 .qhse-dash__spacer {
@@ -71,12 +71,12 @@
 }
 
 .qhse-dash__save--saved {
-  color: var(--qhse-status-good);
+  color: var(--qhse-status-good-ink);
   background: var(--qhse-status-good-wash);
 }
 
 .qhse-dash__save--error {
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   background: var(--qhse-status-critical-wash);
 }
 
@@ -157,7 +157,7 @@
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-size);
   font-weight: 600;
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   background: var(--qhse-status-critical-wash);
   border: 1px solid color-mix(in srgb, var(--qhse-status-critical) 24%, transparent);
   border-radius: var(--qhse-radius-sm);
@@ -173,9 +173,9 @@
   padding: var(--qhse-space-5);
   margin-bottom: var(--qhse-space-5);
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
 }
 
 .qhse-picker__heading {
@@ -251,9 +251,9 @@
   flex-direction: column;
   min-width: 0;
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
   padding: var(--qhse-space-4);
   /* Kartu angka tunggal jauh lebih pendek daripada kartu bergrafik, dan
      kisi dengan tinggi yang berbeda-beda meninggalkan lubang di antaranya.
@@ -401,7 +401,7 @@
 }
 
 .qhse-widget__placeholder--error {
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
 }
 
 .qhse-widget__foot {
@@ -449,9 +449,9 @@
 
 .qhse-perspective {
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border-hairline);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  box-shadow: var(--qhse-shadow-sm);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
   padding: var(--qhse-space-5);
   margin-bottom: var(--qhse-space-4);
 }

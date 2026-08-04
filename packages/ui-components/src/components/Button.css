@@ -49,7 +49,7 @@
 /* Tombol utama memakai gradien merek yang sama dengan elemen merek lain,
    supaya aksi utama di satu layar tidak pernah ambigu. */
 .qhse-btn--accent {
-  background: var(--qhse-brand-gradient);
+  background: var(--qhse-brand-gradient-ink);
   border-color: transparent;
   color: var(--qhse-text-on-accent);
   box-shadow: var(--qhse-shadow-brand);

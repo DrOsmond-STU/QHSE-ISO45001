@@ -136,7 +136,7 @@
 
 .qhse-ai__bad {
   margin: var(--qhse-space-2) 0 0;
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
 }
 
 /* Peringatan yang HARUS terbaca sebelum hasilnya, bukan sesudah — karena

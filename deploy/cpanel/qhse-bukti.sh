@@ -34,15 +34,31 @@ html=$(curl -s -m 30 "$SITE/executive")
 daftar=$(printf '%s' "$html" | grep -oE '/_next/static/css/[^"]+\.css' | sort -u)
 kartu=0
 bahasa=0
+# Tiga penanda gaya Soft UI (dipasang 4 Agustus 2026). Dipisah bertiga, bukan
+# satu, karena ketiganya berasal dari berkas sumber yang berbeda — token,
+# app-shell, dan komponen kartu KPI — jadi kalau salah satu build gagal
+# separuh jalan, yang gagal itu langsung kelihatan yang mana.
+cincin=0
+blur=0
+ubin=0
 for css in $daftar; do
   isi=$(curl -s -m 30 "$SITE$css")
   printf '%s' "$isi" | grep -q 'qhse-exec__card' && kartu=1
   printf '%s' "$isi" | grep -q 'qhse-shell__lang-option' && bahasa=1
+  printf '%s' "$isi" | grep -q 'card-ring' && cincin=1
+  printf '%s' "$isi" | grep -q 'blur(30px)' && blur=1
+  printf '%s' "$isi" | grep -q 'qhse-kpi-card__tile' && ubin=1
 done
 [ "$kartu" = 1 ] && echo "  ok   kelas kartu eksekutif ada di CSS yang disajikan" \
                  || echo "  GAGAL kelas kartu eksekutif TIDAK ada di CSS mana pun"
 [ "$bahasa" = 1 ] && echo "  ok   kelas pemilih bahasa ada di CSS yang disajikan" \
                   || echo "  GAGAL kelas pemilih bahasa TIDAK ada di CSS mana pun"
+[ "$cincin" = 1 ] && echo "  ok   token cincin kartu (soft UI) ada di CSS yang disajikan" \
+                  || echo "  GAGAL token --qhse-card-ring TIDAK ada di CSS mana pun"
+[ "$blur" = 1 ] && echo "  ok   bilah atas berblur 30px ada di CSS yang disajikan" \
+                || echo "  GAGAL backdrop blur(30px) TIDAK ada di CSS mana pun"
+[ "$ubin" = 1 ] && echo "  ok   ubin gradien kartu KPI ada di CSS yang disajikan" \
+               || echo "  GAGAL kelas qhse-kpi-card__tile TIDAK ada di CSS mana pun"
 
 # 3. Teks Inggris di bundel JavaScript. Menu diterjemahkan di sisi klien, jadi
 #    kalimatnya harus ada di dalam berkas JS — bukan di HTML.
