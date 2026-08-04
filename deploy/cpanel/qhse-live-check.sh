@@ -61,32 +61,17 @@ header_dump() {
 }
 
 # ----------------------------------------------------------------------------
-#  Apakah LEMBAR GAYA yang disajikan itu lembar gaya build yang baru.
+#  Bukti bahwa BUNDEL YANG DISAJIKAN memuat perubahan terakhir.
 #
-#  Pemeriksaan API tidak bisa menjawab ini. demo-api dan Next adalah dua proses
-#  terpisah: demo-api boleh saja baru, sementara Next masih menyajikan bundel
-#  lama dari .next yang gagal ditimpa — dan semua pemeriksaan di atas tetap
-#  lulus, karena tidak satu pun menyentuh berkas yang dikirim ke peramban.
+#  Kode 200 hanya membuktikan ADA yang menjawab, bukan bahwa yang menjawab itu
+#  versi yang baru dipasang. demo-api dan Next adalah dua proses terpisah, dan
+#  Next menyajikan bundel dari direktori .next: kalau build gagal separuh
+#  jalan dan bundel lama tertinggal, SELURUH pemeriksaan HTTP di atas tetap
+#  lulus sementara yang dilihat pengguna adalah aplikasi kemarin.
 #
-#  Yang dicari: nama kelas kartu Dashboard Eksekutif. Nama kelas ada di CSS
-#  hanya kalau berkas CSS-nya benar-benar ikut terbangun ulang, jadi ia
-#  sekaligus menjawab "apakah build-nya baru" dan "apakah kartunya bergaya".
-#  Halaman ini dirender di sisi klien, jadi yang diambil bukan HTML-nya
-#  melainkan berkas CSS yang ditautkan HTML itu.
+#  Isinya ada di berkas terpisah (qhse-bukti.sh) karena polanya berubah tiap
+#  kali ada fitur baru, sedangkan berkas ini jarang berubah.
 # ----------------------------------------------------------------------------
-gaya_terpasang() {
-  local html css ada=0
-  html=$(curl -s -m 30 "$SITE/executive")
-  for css in $(printf '%s' "$html" | grep -oE '/_next/static/css/[^"]+\.css' | sort -u); do
-    if curl -s -m 30 "$SITE$css" | grep -q 'qhse-exec__card'; then ada=1; break; fi
-  done
-  if [ "$ada" = 1 ]; then
-    echo "  ok   kelas kartu eksekutif ada di CSS yang disajikan — $css"
-  else
-    echo "  GAGAL kelas kartu eksekutif TIDAK ada di CSS mana pun yang ditautkan"
-    echo "        (kartunya akan tampil tanpa kotak; bundel Next kemungkinan basi)"
-  fi
-}
 
 {
   echo "=== $(date) memeriksa $SITE ==="
@@ -109,8 +94,8 @@ gaya_terpasang() {
   header_dump "api di-proxy"  "$SITE/api/health"
   header_dump "jalur unduhan" "$SITE/api/files/download?token=ngawur.deadbeef"
   echo
-  echo "--- gaya halaman yang benar-benar disajikan ---"
-  gaya_terpasang
+  echo "--- bukti bundel yang disajikan ---"
+  bash "$HOME_DIR/qhse-bukti.sh" "$SITE"
   echo
   cd "$HOME_DIR/qhse-app/apps/demo-api" && node src/verify.js "$SITE/api"
   echo
