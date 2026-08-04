@@ -1,4 +1,5 @@
 import type { ColumnType } from "./modules";
+import type { Locale } from "./locale";
 import { humanizeEnum } from "./status-tone";
 
 // Field @db.Date di Prisma diserialisasi jadi ISO tengah malam UTC
@@ -9,12 +10,35 @@ import { humanizeEnum } from "./status-tone";
 // menandai satu titik waktu nyata) tetap dirender di zona waktu pembaca.
 const DATE_ONLY = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "UTC" });
 const DATE_TIME = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" });
-const NUMBER = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
-const CURRENCY = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
+// Pemisah ribuan ikut bahasa. Titik dan koma bertukar arti antara Indonesia
+// dan Inggris, jadi "961.833" yang benar di satu bahasa salah seribu kali
+// lipat di bahasa lain — bukan sekadar terlihat asing.
+const ANGKA = new Map<string, { number: Intl.NumberFormat; currency: Intl.NumberFormat }>();
+
+function pemformat(locale: Locale) {
+  const tag = locale === "en" ? "en-GB" : "id-ID";
+  let found = ANGKA.get(tag);
+  if (!found) {
+    found = {
+      number: new Intl.NumberFormat(tag, { maximumFractionDigits: 2 }),
+      currency: new Intl.NumberFormat(tag, { style: "currency", currency: "IDR", maximumFractionDigits: 0 }),
+    };
+    ANGKA.set(tag, found);
+  }
+  return found;
+}
 
 export const EMPTY_PLACEHOLDER = "—";
 
-export function formatCell(value: unknown, type: ColumnType = "text"): string {
+/** Boolean di tabel dan kartu detail. Diterjemahkan karena ia teks
+ *  antarmuka, bukan data: nilainya di basis data adalah true/false. */
+function yaTidak(value: boolean, locale: Locale): string {
+  if (locale === "en") return value ? "Yes" : "No";
+  return value ? "Ya" : "Tidak";
+}
+
+export function formatCell(value: unknown, type: ColumnType = "text", locale: Locale = "id"): string {
+  const { number: NUMBER, currency: CURRENCY } = pemformat(locale);
   if (type === "filesize") {
     const bytes = Number(value);
     if (!Number.isFinite(bytes)) return EMPTY_PLACEHOLDER;
@@ -43,12 +67,12 @@ export function formatCell(value: unknown, type: ColumnType = "text"): string {
     case "longtext":
       return String(value);
     case "bool":
-      return value ? "Ya" : "Tidak";
+      return yaTidak(Boolean(value), locale);
     case "enum":
     case "status":
       return typeof value === "string" ? humanizeEnum(value) : String(value);
     default:
-      if (typeof value === "boolean") return value ? "Ya" : "Tidak";
+      if (typeof value === "boolean") return yaTidak(value, locale);
       if (typeof value === "object") return JSON.stringify(value);
       return String(value);
   }
@@ -88,7 +112,12 @@ export function inferType(key: string, value: unknown): ColumnType {
  * memberi tahu pembaca apa pun, dan kehadirannya justru membuat halaman
  * terbaca seperti dump basis data.
  */
-export function displayValue(row: Record<string, unknown>, key: string, type: ColumnType = "text"): string {
+export function displayValue(
+  row: Record<string, unknown>,
+  key: string,
+  type: ColumnType = "text",
+  locale: Locale = "id",
+): string {
   // Satu-satunya tipe yang membaca lebih dari satu kolom. Ditangani di sini
   // dan bukan di formatCell() karena formatCell hanya menerima nilainya, bukan
   // barisnya — dan nomor revisi memang butuh keduanya.
@@ -102,7 +131,7 @@ export function displayValue(row: Record<string, unknown>, key: string, type: Co
   if (typeof label === "string" && label.length > 0) return label;
   const value = row[key];
   if (typeof value === "string" && UUID_PATTERN.test(value)) return EMPTY_PLACEHOLDER;
-  return formatCell(value, type);
+  return formatCell(value, type, locale);
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

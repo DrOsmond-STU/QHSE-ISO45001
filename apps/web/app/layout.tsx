@@ -1,6 +1,7 @@
 import "./globals.css";
 import "@qhse/ui-components/styles.css";
 import type { Metadata } from "next";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "QHSE Platform — Petro Nusantara Sejahtera",
@@ -9,6 +10,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+    // lang="id" adalah nilai AWAL, bukan nilai tetap: LocaleProvider
+    // memperbaruinya begitu pilihan bahasa pengguna dibaca. Dirender server
+    // sebagai "id" karena pilihan itu tersimpan di peramban dan server tidak
+    // bisa mengetahuinya tanpa cookie — dan menambah cookie hanya untuk
+    // atribut ini bukan pertukaran yang sepadan.
     <html lang="id">
       <head>
         {/*
@@ -31,7 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

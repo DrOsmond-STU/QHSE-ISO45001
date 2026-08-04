@@ -7,6 +7,7 @@ import { DataTable, StatusBadge } from "@qhse/ui-components";
 import { ApiError, apiFetch } from "../../../../../lib/api-client";
 import { displayValue, EMPTY_PLACEHOLDER, formatCell } from "../../../../../lib/format";
 import { findModule, type DetailField, type ModuleChild, type ModuleColumn, type ModuleDefinition } from "../../../../../lib/modules";
+import { useLocale } from "../../../../../lib/locale";
 import { statusTone } from "../../../../../lib/status-tone";
 import { RecordActions } from "./RecordActions";
 import { FileUpload } from "./FileUpload";
@@ -29,26 +30,30 @@ import "../../../records.css";
 
 type Record_ = Record<string, unknown>;
 
-function describeError(error: unknown): string {
+type T = (id: string, en: string) => string;
+
+function describeError(error: unknown, t: T): string {
   if (error instanceof ApiError) {
-    if (error.status === 401) return "Sesi Anda sudah berakhir. Silakan keluar lalu masuk kembali.";
-    if (error.status === 403) return "Anda tidak punya izin untuk melihat data ini.";
-    if (error.status === 404) return "Data tidak ditemukan.";
+    if (error.status === 401)
+      return t("Sesi Anda sudah berakhir. Silakan keluar lalu masuk kembali.", "Your session has ended. Please sign out and sign in again.");
+    if (error.status === 403) return t("Anda tidak punya izin untuk melihat data ini.", "You do not have permission to view this record.");
+    if (error.status === 404) return t("Data tidak ditemukan.", "Record not found.");
     return error.message;
   }
-  return "Tidak bisa menghubungi server API.";
+  return t("Tidak bisa menghubungi server API.", "Cannot reach the API server.");
 }
 
 export default function ModuleDetailPage() {
   const params = useParams<{ slug: string; id: string }>();
-  const module = findModule(params.slug);
+  const { locale, t } = useLocale();
+  const module = findModule(params.slug, locale);
 
   if (!module) {
     return (
       <section>
-        <h1 className="qhse-page__title">Modul tidak dikenal</h1>
+        <h1 className="qhse-page__title">{t("Modul tidak dikenal", "Unknown module")}</h1>
         <p className="qhse-page__message">
-          Tidak ada modul dengan alamat <code>{params.slug}</code>.
+          {t("Tidak ada modul dengan alamat", "There is no module at")} <code>{params.slug}</code>.
         </p>
       </section>
     );
@@ -58,6 +63,7 @@ export default function ModuleDetailPage() {
 }
 
 function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) {
+  const { locale, t } = useLocale();
   const [record, setRecord] = useState<Record_ | null>(null);
   const [childRows, setChildRows] = useState<Record<string, Record_[]>>({});
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +77,7 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
       setRecord(loaded);
     } catch (err) {
       setRecord(null);
-      setError(describeError(err));
+      setError(describeError(err, t));
       return;
     }
 
@@ -87,7 +93,7 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
         setChildRows((previous) => ({ ...previous, [child.pathSuffix]: [] }));
       }
     }
-  }, [module, id]);
+  }, [module, id, t]);
 
   useEffect(() => {
     setRecord(null);
@@ -101,14 +107,14 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
         <p role="alert" className="qhse-page__error">
           {error}
         </p>
-        <Link href={`/modules/${module.slug}`}>← Kembali ke {module.title}</Link>
+        <Link href={`/modules/${module.slug}`}>← {t("Kembali ke", "Back to")} {module.title}</Link>
       </section>
     );
   }
 
-  if (!record) return <p className="qhse-page__message">Memuat…</p>;
+  if (!record) return <p className="qhse-page__message">{t("Memuat…", "Loading…")}</p>;
 
-  const subtitle = module.subtitleField ? formatCell(record[module.subtitleField]) : null;
+  const subtitle = module.subtitleField ? formatCell(record[module.subtitleField], "text", locale) : null;
 
   return (
     <section>
@@ -117,7 +123,7 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
           <p className="qhse-page__eyebrow">
             {module.moduleNumber} · <Link href={`/modules/${module.slug}`}>{module.title}</Link>
           </p>
-          <h1 className="qhse-page__title">{displayValue(record, module.labelField)}</h1>
+          <h1 className="qhse-page__title">{displayValue(record, module.labelField, "text", locale)}</h1>
           {subtitle && subtitle !== EMPTY_PLACEHOLDER && <p className="qhse-page__subtitle">{subtitle}</p>}
         </div>
       </header>
@@ -169,7 +175,8 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
 }
 
 function DetailCard({ title, fields, record }: { title: string; fields: DetailField[]; record: Record_ }) {
-  const rendered = fields.map((field) => ({ field, text: displayValue(record, field.key, field.type) }));
+  const { locale } = useLocale();
+  const rendered = fields.map((field) => ({ field, text: displayValue(record, field.key, field.type, locale) }));
   if (rendered.every((entry) => entry.text === EMPTY_PLACEHOLDER)) return null;
 
   const narrow = rendered.filter((entry) => !entry.field.wide);
@@ -221,25 +228,26 @@ function ChildTable({
   viewerKind?: "version" | "attachment" | null;
   backTo?: string;
 }) {
+  const { locale, t } = useLocale();
   const columns = child.columns.map((column: ModuleColumn) => column);
   return (
     <section style={{ marginTop: "var(--qhse-space-6)" }}>
       <h2 className="qhse-page__section-title">{child.title}</h2>
       <p className="qhse-page__subtitle" style={{ marginBottom: "var(--qhse-space-4)" }}>
-        {rows === undefined ? "Memuat…" : `${rows.length} data`}
+        {rows === undefined ? t("Memuat…", "Loading…") : t(`${rows.length} data`, `${rows.length} records`)}
       </p>
       <DataTable
         rows={rows ?? []}
         getRowId={(row) => String(row.id)}
-        emptyMessage={rows === undefined ? "Memuat…" : child.emptyMessage}
+        emptyMessage={rows === undefined ? t("Memuat…", "Loading…") : child.emptyMessage}
         columns={[
           ...(viewerKind
             ? [
                 {
                   key: "__lihat",
-                  header: "Berkas",
+                  header: t("Berkas", "File"),
                   render: (row: Record_) => (
-                    <Link href={viewerHref(viewerKind, String(row.id), backTo ?? "/dashboard")}>Lihat</Link>
+                    <Link href={viewerHref(viewerKind, String(row.id), backTo ?? "/dashboard")}>{t("Lihat", "View")}</Link>
                   ),
                 },
               ]
@@ -249,7 +257,7 @@ function ChildTable({
           header: column.header,
           numeric: column.type === "number" || column.type === "currency",
           render: (row: Record_) => {
-            const text = displayValue(row, column.key, column.type);
+            const text = displayValue(row, column.key, column.type, locale);
             if (column.type === "status") {
               const tone = statusTone(row[column.key]);
               return tone ? <StatusBadge tone={tone} label={text} /> : <span>{text}</span>;

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, StatusBadge } from "@qhse/ui-components";
 import { ApiError, getApiBaseUrl } from "../../../lib/api-client";
+import { useLocale } from "../../../lib/locale";
 import { readSession } from "../../../lib/auth-session";
 import { signFile, type SignedFile } from "../../../lib/files";
 import { humanizeEnum, statusTone } from "../../../lib/status-tone";
@@ -42,6 +43,7 @@ export default function ViewerPage() {
 }
 
 function Viewer() {
+  const { t } = useLocale();
   const params = useSearchParams();
   const kind = params.get("kind") === "attachment" ? "attachment" : "version";
   const id = params.get("id") ?? "";
@@ -54,7 +56,7 @@ function Viewer() {
 
   useEffect(() => {
     if (!id) {
-      setError({ title: "Tidak ada berkas yang diminta." });
+      setError({ title: t("Tidak ada berkas yang diminta.", "No file was requested.") });
       return;
     }
     let cancelled = false;
@@ -92,7 +94,7 @@ function Viewer() {
           )}
           {backTo && (
             <Link href={backTo}>
-              <Button variant="default">Kembali</Button>
+              <Button variant="default">{t("Kembali", "Back")}</Button>
             </Link>
           )}
           <Button variant="default" onClick={() => window.print()}>
@@ -100,7 +102,7 @@ function Viewer() {
           </Button>
           {unduhUrl && (
             <a href={unduhUrl}>
-              <Button variant="default">Unduh asli</Button>
+              <Button variant="default">{t("Unduh asli", "Download original")}</Button>
             </a>
           )}
         </div>
@@ -160,31 +162,31 @@ function Viewer() {
             <span className="qhse-stamp__badge">SALINAN TERKENDALI</span>
             <dl className="qhse-stamp__grid">
               <div>
-                <dt>Dokumen</dt>
+                <dt>{t("Dokumen", "Document")}</dt>
                 <dd>{file.documentNumber ?? "—"}</dd>
               </div>
               {file.version && (
                 <div>
-                  <dt>Revisi</dt>
+                  <dt>{t("Revisi", "Revision")}</dt>
                   <dd>{file.version}</dd>
                 </div>
               )}
               {file.status && (
                 <div>
-                  <dt>Status</dt>
+                  <dt>{t("Status", "Status")}</dt>
                   <dd>{humanizeEnum(file.status)}</dd>
                 </div>
               )}
               <div>
-                <dt>Dibuka oleh</dt>
+                <dt>{t("Dibuka oleh", "Opened by")}</dt>
                 <dd>{session?.email ?? session?.userId ?? "—"}</dd>
               </div>
               <div>
-                <dt>Waktu</dt>
+                <dt>{t("Waktu", "Time")}</dt>
                 <dd>{openedAt.toLocaleString("id-ID")}</dd>
               </div>
               <div>
-                <dt>Berkas</dt>
+                <dt>{t("Berkas", "File")}</dt>
                 <dd>{file.fileName}</dd>
               </div>
             </dl>

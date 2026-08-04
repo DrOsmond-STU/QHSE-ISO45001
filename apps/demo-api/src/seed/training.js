@@ -38,7 +38,7 @@ const PROGRAM = [
   {
     key: "induksi",
     judul: "Induksi K3 Pekerja Baru, Mutasi, dan Tamu",
-    jenis: "INDUKSI_K3",
+    jenis: "INDUCTION",
     wajib: true,
     dasar: "PP No. 50 Tahun 2012 Lampiran II kriteria 12.1",
     sasaran: "Seluruh pekerja baru, pekerja mutasi, dan tamu proyek",
@@ -57,7 +57,7 @@ const PROGRAM = [
   {
     key: "ak3u",
     judul: "Sertifikasi Ahli K3 Umum (AK3U)",
-    jenis: "SERTIFIKASI_WAJIB",
+    jenis: "MANDATORY_CERTIFICATION",
     wajib: true,
     dasar: "Permenaker No. Per.02/MEN/1992 tentang Tata Cara Penunjukan Ahli K3",
     sasaran: "Calon Ahli K3 Umum dari HSE dan Operasi",
@@ -77,7 +77,7 @@ const PROGRAM = [
   {
     key: "confined",
     judul: "Petugas K3 Ruang Terbatas (Confined Space) Madya",
-    jenis: "SERTIFIKASI_WAJIB",
+    jenis: "MANDATORY_CERTIFICATION",
     wajib: true,
     dasar: "Kepdirjen Binwasnaker No. Kep.113/DJPPK/IX/2006",
     sasaran: "Operator produksi dan teknisi yang masuk bejana/tangki",
@@ -97,7 +97,7 @@ const PROGRAM = [
   {
     key: "p3k",
     judul: "Petugas P3K di Tempat Kerja",
-    jenis: "SERTIFIKASI_WAJIB",
+    jenis: "MANDATORY_CERTIFICATION",
     wajib: true,
     dasar: "Permenakertrans No. Per.15/MEN/VIII/2008",
     sasaran: "Perwakilan tiap regu kerja di seluruh lokasi",
@@ -117,7 +117,7 @@ const PROGRAM = [
   {
     key: "damkar",
     judul: "Petugas Pemadam Kebakaran Kelas D",
-    jenis: "SERTIFIKASI_WAJIB",
+    jenis: "MANDATORY_CERTIFICATION",
     wajib: true,
     dasar: "Kepmenaker No. Kep.186/MEN/1999 tentang Unit Penanggulangan Kebakaran",
     sasaran: "Anggota regu tanggap darurat lokasi Cepu dan Balikpapan",
@@ -137,7 +137,7 @@ const PROGRAM = [
   {
     key: "ketinggian",
     judul: "Tenaga Kerja Bangunan Tinggi Tingkat 1 (Bekerja di Ketinggian)",
-    jenis: "SERTIFIKASI_WAJIB",
+    jenis: "MANDATORY_CERTIFICATION",
     wajib: true,
     dasar: "Permenaker No. 9 Tahun 2016 tentang K3 dalam Pekerjaan pada Ketinggian",
     sasaran: "Teknisi mekanik, instrumentasi, dan scaffolder",
@@ -157,7 +157,7 @@ const PROGRAM = [
   {
     key: "angkat",
     judul: "Operator Pesawat Angkat dan Angkut Kelas II (Mobile Crane)",
-    jenis: "SERTIFIKASI_WAJIB",
+    jenis: "MANDATORY_CERTIFICATION",
     wajib: true,
     dasar: "Permenaker No. 8 Tahun 2020 tentang K3 Pesawat Angkat dan Pesawat Angkut",
     sasaran: "Operator crane dan forklift",
@@ -177,7 +177,7 @@ const PROGRAM = [
   {
     key: "loto",
     judul: "Lock Out Tag Out (LOTO) dan Isolasi Energi Berbahaya",
-    jenis: "KOMPETENSI_TEKNIS",
+    jenis: "TECHNICAL_COMPETENCY",
     wajib: false,
     dasar: null,
     sasaran: "Teknisi maintenance, operator produksi, pengawas",
@@ -196,7 +196,7 @@ const PROGRAM = [
   {
     key: "ptw",
     judul: "Sistem Izin Kerja (PTW) untuk Pengawas dan Penerbit Izin",
-    jenis: "KOMPETENSI_TEKNIS",
+    jenis: "TECHNICAL_COMPETENCY",
     wajib: false,
     dasar: null,
     sasaran: "Supervisor, area authority, dan HSE officer",
@@ -215,7 +215,7 @@ const PROGRAM = [
   {
     key: "lb3",
     judul: "Pengelolaan Limbah Bahan Berbahaya dan Beracun (LB3)",
-    jenis: "SERTIFIKASI_WAJIB",
+    jenis: "MANDATORY_CERTIFICATION",
     wajib: true,
     dasar: "PP No. 22 Tahun 2021 jo. Permen LHK No. 6 Tahun 2021",
     sasaran: "Petugas TPS LB3 dan environmental officer",
@@ -235,7 +235,7 @@ const PROGRAM = [
   {
     key: "auditor",
     judul: "Internal Auditor ISO 9001:2015 dan ISO 45001:2018",
-    jenis: "KOMPETENSI_TEKNIS",
+    jenis: "TECHNICAL_COMPETENCY",
     wajib: false,
     dasar: null,
     sasaran: "Calon auditor internal dari seluruh departemen",
@@ -274,7 +274,7 @@ const PROGRAM = [
   {
     key: "damkarSimulasi",
     judul: "Simulasi Tanggap Darurat Kebakaran dan Evakuasi",
-    jenis: "SIMULASI_TANGGAP_DARURAT",
+    jenis: "EMERGENCY_DRILL",
     wajib: true,
     dasar: "PP No. 50 Tahun 2012 Lampiran II kriteria 6.7",
     sasaran: "Seluruh penghuni area operasi",
@@ -293,7 +293,7 @@ const PROGRAM = [
   {
     key: "tumpahan",
     judul: "Simulasi Penanggulangan Tumpahan Minyak (Oil Spill Response)",
-    jenis: "SIMULASI_TANGGAP_DARURAT",
+    jenis: "EMERGENCY_DRILL",
     wajib: true,
     dasar: "Permen ESDM No. 18 Tahun 2018 tentang Pemeriksaan Keselamatan Migas",
     sasaran: "Regu tanggap darurat terminal Balikpapan",
@@ -314,7 +314,7 @@ const PROGRAM = [
   {
     key: "investigasi",
     judul: "Investigasi Insiden dan Analisis Akar Masalah (RCA)",
-    jenis: "KOMPETENSI_TEKNIS",
+    jenis: "TECHNICAL_COMPETENCY",
     wajib: false,
     dasar: null,
     sasaran: "HSE officer, supervisor, dan kepala departemen",
@@ -333,7 +333,7 @@ const PROGRAM = [
   {
     key: "defensive",
     judul: "Penyegaran Defensive Driving untuk Pengemudi Operasional",
-    jenis: "PENYEGARAN",
+    jenis: "REFRESHER",
     wajib: false,
     dasar: null,
     sasaran: "Pengemudi kendaraan operasional dan light vehicle",
@@ -373,7 +373,7 @@ const PROGRAM = [
   {
     key: "seminar",
     judul: "Seminar Nasional Bulan K3 Nasional",
-    jenis: "SEMINAR_EKSTERNAL",
+    jenis: "EXTERNAL_SEMINAR",
     wajib: false,
     dasar: null,
     sasaran: "Manajemen dan HSE",
@@ -587,12 +587,12 @@ async function seedTraining(client, ctx) {
           // penilaian keefektifan yang tidak berhubungan dengan angkanya
           // sendiri adalah kolom yang paling cepat ketahuan diisi asal.
           effectiveness: !sudahLewat
-            ? "BELUM_DIEVALUASI"
+            ? "NOT_EVALUATED"
             : postTest >= 80 && lulus / hadir >= 0.9
-              ? "EFEKTIF"
+              ? "EFFECTIVE"
               : postTest >= 70
-                ? "SEBAGIAN_EFEKTIF"
-                : "TIDAK_EFEKTIF",
+                ? "PARTIALLY_EFFECTIVE"
+                : "NOT_EFFECTIVE",
           evaluation_method: sudahLewat ? "Uji tulis pra dan pasca pelatihan, ditambah observasi penerapan di tempat kerja setelah 30 hari." : null,
           evaluation_notes: sudahLewat
             ? `Nilai rata-rata naik dari ${preTest.toFixed(1)} menjadi ${postTest.toFixed(1)}. ${lulus} dari ${hadir} peserta memenuhi ambang kelulusan.`
@@ -663,10 +663,10 @@ async function seedTraining(client, ctx) {
             participant_name: orang.nama,
             participant_company: orang.perusahaan,
             participant_position: orang.jabatan,
-            attendance: "HADIR",
+            attendance: "ATTENDED",
             pre_test_score: nilaiPre,
             post_test_score: nilaiPost,
-            result: lulusOrang ? "LULUS" : "TIDAK_LULUS",
+            result: lulusOrang ? "PASSED" : "FAILED",
             // Sertifikat hanya untuk yang lulus. Nomor sertifikat pada
             // peserta yang tidak lulus adalah cacat data yang paling
             // memalukan saat auditor membuka satu baris secara acak.
@@ -697,7 +697,7 @@ async function seedTraining(client, ctx) {
     {
       key: "pasca-insiden",
       judul: "Pelatihan Ulang Penanganan Bahan Kimia Pasca-Insiden Tumpahan Solar",
-      jenis: "KOMPETENSI_TEKNIS",
+      jenis: "TECHNICAL_COMPETENCY",
       hariLalu: 42,
       jam: 4,
       hadir: 26,
@@ -742,7 +742,7 @@ async function seedTraining(client, ctx) {
         actual_cost: null,
         average_pre_test_score: null,
         average_post_test_score: null,
-        effectiveness: "SEBAGIAN_EFEKTIF",
+        effectiveness: "PARTIALLY_EFFECTIVE",
         evaluation_method: "Observasi penerapan di tempat kerja.",
         evaluation_notes: "Belum diuji tulis; penilaian sementara dari pengamatan pengawas area.",
         evaluated_by: ctx.userIds.andi,
@@ -770,7 +770,7 @@ async function seedTraining(client, ctx) {
       department_id: ctx.deptIds.hse,
       realization_number: `REAL/${TAHUN}/${String(realisasiCount + 1).padStart(3, "0")}`,
       title: "Induksi K3 Pekerja Baru, Mutasi, dan Tamu — Angkatan berikutnya",
-      training_type: "INDUKSI_K3",
+      training_type: "INDUCTION",
       session_date: dateOnly(daysFromNow(21)),
       duration_hours: 2,
       delivery_method: "IN_HOUSE",
@@ -780,7 +780,7 @@ async function seedTraining(client, ctx) {
       planned_participants: 20,
       actual_participants: 0,
       passed_participants: 0,
-      effectiveness: "BELUM_DIEVALUASI",
+      effectiveness: "NOT_EVALUATED",
       certificate_issued: false,
       status: "SCHEDULED",
       notes: null,

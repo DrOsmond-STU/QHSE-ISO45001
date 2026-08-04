@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Button } from "@qhse/ui-components";
 import { ApiError } from "../../../../../lib/api-client";
 import { uploadFile, UPLOADABLE } from "../../../../../lib/files";
+import { useLocale } from "../../../../../lib/locale";
 
 // Kontrol unggah berkas untuk dokumen terkendali dan register peraturan.
 //
@@ -24,7 +25,7 @@ export function FileUpload({
   onUploaded: () => void;
 }) {
   const target = UPLOADABLE[slug];
-  const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLocale();  const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState("");
   const [message, setMessage] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
@@ -38,8 +39,13 @@ export function FileUpload({
     try {
       const result = await uploadFile(slug, id, file, summary);
       const revisi =
-        result.majorVersion !== undefined ? ` sebagai revisi ${result.majorVersion}.${result.minorVersion}` : "";
-      setMessage({ tone: "ok", text: `“${result.fileName}” terunggah${revisi}.` });
+        result.majorVersion !== undefined
+          ? t(` sebagai revisi ${result.majorVersion}.${result.minorVersion}`, ` as revision ${result.majorVersion}.${result.minorVersion}`)
+          : "";
+      setMessage({
+        tone: "ok",
+        text: t(`“${result.fileName}” terunggah${revisi}.`, `“${result.fileName}” uploaded${revisi}.`),
+      });
       setSummary("");
       if (inputRef.current) inputRef.current.value = "";
       onUploaded();
@@ -47,7 +53,7 @@ export function FileUpload({
       const text =
         error instanceof ApiError
           ? [error.problem?.title, error.problem?.detail].filter(Boolean).join(" ")
-          : "Gagal mengunggah — API tidak terjangkau.";
+          : t("Gagal mengunggah — API tidak terjangkau.", "Upload failed — API unreachable.");
       setMessage({ tone: "bad", text });
     } finally {
       setBusy(false);
@@ -58,12 +64,20 @@ export function FileUpload({
     <div className="qhse-upload">
       <div className="qhse-upload__row">
         <div className="qhse-upload__intro">
-          <h3 className="qhse-upload__title">{target.label}</h3>
+          <h3 className="qhse-upload__title">
+            {slug === "documents" ? t("Unggah revisi baru", "Upload new revision") : t("Unggah salinan peraturan", "Upload regulation copy")}
+          </h3>
           <p className="qhse-upload__hint">
             {slug === "documents"
-              ? "Berkas yang diunggah menjadi revisi baru berstatus draf. Revisi sebelumnya tetap tersimpan dan tetap bisa dibuka."
-              : "Lampiran salinan peraturan. Naskah resminya tetap milik instansi penerbit — simpan tautan sumbernya pada kolom Source URL."}{" "}
-            PDF, gambar, Word, atau Excel; maksimum 8 MB.
+              ? t(
+                  "Berkas yang diunggah menjadi revisi baru berstatus draf. Revisi sebelumnya tetap tersimpan dan tetap bisa dibuka.",
+                  "The uploaded file becomes a new revision in draft status. Earlier revisions remain stored and can still be opened.",
+                )
+              : t(
+                  "Lampiran salinan peraturan. Naskah resminya tetap milik instansi penerbit — simpan tautan sumbernya pada kolom Source URL.",
+                  "A copy of the regulation. The official text remains with the issuing authority — keep the source link in the Source URL field.",
+                )}{" "}
+            {t("PDF, gambar, Word, atau Excel; maksimum 8 MB.", "PDF, image, Word, or Excel; 8 MB maximum.")}
           </p>
         </div>
 
@@ -72,7 +86,7 @@ export function FileUpload({
             className="qhse-upload__summary"
             type="text"
             value={summary}
-            placeholder="Ringkasan perubahan (opsional)"
+            placeholder={t("Ringkasan perubahan (opsional)", "Change summary (optional)")}
             disabled={busy}
             onChange={(event) => setSummary(event.target.value)}
           />
@@ -87,7 +101,7 @@ export function FileUpload({
           onChange={(event) => void handleFile(event.target.files?.[0])}
         />
         <Button variant="accent" disabled={busy} onClick={() => inputRef.current?.click()}>
-          {busy ? "Mengunggah…" : "Pilih berkas"}
+          {busy ? t("Mengunggah…", "Uploading…") : t("Pilih berkas", "Choose file")}
         </Button>
       </div>
 

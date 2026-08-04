@@ -15,6 +15,7 @@ import {
 } from "../../../../../lib/records";
 import { humanizeEnum, statusTone } from "../../../../../lib/status-tone";
 import { formatCell } from "../../../../../lib/format";
+import { useLocale } from "../../../../../lib/locale";
 
 // Bilah aksi + panel persetujuan pada halaman detail.
 //
@@ -42,7 +43,7 @@ export function RecordActions({
 }) {
   const [schema, setSchema] = useState<ModuleSchema | null>(null);
   const [panel, setPanel] = useState<ApprovalPanel | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { t } = useLocale();  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [comment, setComment] = useState("");
@@ -113,7 +114,7 @@ export function RecordActions({
     <div className="qhse-actions">
       <div className="qhse-actions__bar">
         <span className="qhse-actions__status">
-          Status saat ini:{" "}
+          {t("Status saat ini:", "Current status:")}{" "}
           {statusTone(current) ? (
             <StatusBadge tone={statusTone(current)!} label={humanizeEnum(current)} />
           ) : (
@@ -124,16 +125,16 @@ export function RecordActions({
         <span className="qhse-actions__spacer" />
 
         <Button variant="default" onClick={onEdit} disabled={busy}>
-          Ubah
+          {t("Ubah", "Edit")}
         </Button>
 
         {canSubmit && (
           <Button
             variant="accent"
             disabled={busy}
-            onClick={() => run(() => submitRecord(slug, id), "Pengajuan terkirim ke penyetuju.")}
+            onClick={() => run(() => submitRecord(slug, id), t("Pengajuan terkirim ke penyetuju.", "Submitted to the approver."))}
           >
-            Ajukan persetujuan
+            {t("Ajukan persetujuan", "Submit for approval")}
           </Button>
         )}
 
@@ -142,7 +143,7 @@ export function RecordActions({
             key={target}
             variant="default"
             disabled={busy}
-            onClick={() => run(() => transitionRecord(slug, id, target), `Status menjadi ${humanizeEnum(target)}.`)}
+            onClick={() => run(() => transitionRecord(slug, id, target), t(`Status menjadi ${humanizeEnum(target)}.`, `Status changed to ${humanizeEnum(target)}.`))}
           >
             {humanizeEnum(target)}
           </Button>
@@ -153,17 +154,17 @@ export function RecordActions({
             <Button
               variant="destructive"
               disabled={busy}
-              onClick={() => run(() => deleteRecord(slug, id), `${title} ditandai terhapus.`)}
+              onClick={() => run(() => deleteRecord(slug, id), t(`${title} ditandai terhapus.`, `${title} marked as deleted.`))}
             >
-              Yakin hapus
+              {t("Yakin hapus", "Confirm delete")}
             </Button>
             <Button variant="default" disabled={busy} onClick={() => setConfirmDelete(false)}>
-              Batal
+              {t("Batal", "Cancel")}
             </Button>
           </>
         ) : (
           <Button variant="default" disabled={busy} onClick={() => setConfirmDelete(true)}>
-            Hapus
+            {t("Hapus", "Delete")}
           </Button>
         )}
       </div>
@@ -176,8 +177,10 @@ export function RecordActions({
 
       {running && (
         <p className="qhse-actions__note">
-          Sedang menunggu persetujuan, jadi statusnya tidak bisa dipindahkan dari sini. Perpindahan berikutnya ditentukan
-          oleh hasil persetujuan di bawah.
+          {t(
+            "Sedang menunggu persetujuan, jadi statusnya tidak bisa dipindahkan dari sini. Perpindahan berikutnya ditentukan oleh hasil persetujuan di bawah.",
+            "An approval is in progress, so the status cannot be moved from here. The next transition is decided by the approval outcome below.",
+          )}
         </p>
       )}
 
@@ -190,7 +193,7 @@ export function RecordActions({
           onAct={(action) =>
             run(
               () => actOnTask(panel.myPendingTaskId!, action, comment),
-              action === "APPROVE" ? "Persetujuan Anda tercatat." : "Penolakan Anda tercatat.",
+              action === "APPROVE" ? t("Persetujuan Anda tercatat.", "Your approval has been recorded.") : t("Penolakan Anda tercatat.", "Your rejection has been recorded."),
             ).then(() => setComment(""))
           }
         />
@@ -212,6 +215,7 @@ function ApprovalTrail({
   onComment: (value: string) => void;
   onAct: (action: "APPROVE" | "REJECT") => void;
 }) {
+  const { t } = useLocale();
   const instanceTone =
     panel.instance.status === "APPROVED" ? "good" : panel.instance.status === "REJECTED" ? "critical" : "warning";
 
@@ -219,7 +223,7 @@ function ApprovalTrail({
     <div className="qhse-approval">
       <header className="qhse-approval__head">
         <div>
-          <h2 className="qhse-approval__title">Jejak persetujuan</h2>
+          <h2 className="qhse-approval__title">{t("Jejak persetujuan", "Approval trail")}</h2>
           <p className="qhse-approval__caption">{panel.instance.definitionName}</p>
         </div>
         <StatusBadge tone={instanceTone} label={humanizeEnum(panel.instance.status)} />
@@ -240,23 +244,23 @@ function ApprovalTrail({
               <div className="qhse-approval__stagehead">
                 <span className="qhse-approval__seq">{stage.sequenceNo}</span>
                 <span className="qhse-approval__stagename">{stage.stageName}</span>
-                <span className="qhse-approval__sla">SLA {stage.slaHours} jam</span>
+                <span className="qhse-approval__sla">SLA {stage.slaHours} {t("jam", "h")}</span>
               </div>
 
               {tasks.length === 0 ? (
-                <p className="qhse-approval__pending">Belum dijalankan.</p>
+                <p className="qhse-approval__pending">{t("Belum dijalankan.", "Not started yet.")}</p>
               ) : (
                 <ul className="qhse-approval__tasks">
                   {tasks.map((task) => (
                     <li key={task.taskId}>
                       <span className="qhse-approval__who">{task.assigneeName ?? "—"}</span>
                       {task.status === "PENDING" ? (
-                        <span className="qhse-approval__waiting">menunggu</span>
+                        <span className="qhse-approval__waiting">{t("menunggu", "waiting")}</span>
                       ) : (
                         <>
                           <StatusBadge
                             tone={task.status === "APPROVED" ? "good" : "critical"}
-                            label={task.status === "APPROVED" ? "Setuju" : "Tolak"}
+                            label={task.status === "APPROVED" ? t("Setuju", "Approved") : t("Tolak", "Rejected")}
                           />
                           <span className="qhse-approval__when">{formatCell(task.actedAt, "datetime")}</span>
                         </>
@@ -277,20 +281,20 @@ function ApprovalTrail({
           orang tidak ditawari tombol yang pasti gagal. */}
       {panel.myPendingTaskId && (
         <div className="qhse-approval__act">
-          <label htmlFor="komentar">Komentar (opsional)</label>
+          <label htmlFor="komentar">{t("Komentar (opsional)", "Comment (optional)")}</label>
           <textarea
             id="komentar"
             rows={2}
             value={comment}
             onChange={(event) => onComment(event.target.value)}
-            placeholder="Catatan pemeriksaan, syarat tambahan, atau alasan penolakan."
+            placeholder={t("Catatan pemeriksaan, syarat tambahan, atau alasan penolakan.", "Review notes, additional conditions, or the reason for rejection.")}
           />
           <div className="qhse-approval__buttons">
             <Button variant="accent" disabled={busy} onClick={() => onAct("APPROVE")}>
-              Setujui
+              {t("Setujui", "Approve")}
             </Button>
             <Button variant="destructive" disabled={busy} onClick={() => onAct("REJECT")}>
-              Tolak
+              {t("Tolak", "Reject")}
             </Button>
           </div>
         </div>

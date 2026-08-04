@@ -1523,13 +1523,13 @@ model HsePeriodStatistic {
 // ============================================================================
 
 enum TrainingType {
-  INDUKSI_K3
-  SERTIFIKASI_WAJIB
-  KOMPETENSI_TEKNIS
-  PENYEGARAN
+  INDUCTION
+  MANDATORY_CERTIFICATION
+  TECHNICAL_COMPETENCY
+  REFRESHER
   AWARENESS
-  SIMULASI_TANGGAP_DARURAT
-  SEMINAR_EKSTERNAL
+  EMERGENCY_DRILL
+  EXTERNAL_SEMINAR
 }
 
 enum TrainingDeliveryMethod {
@@ -1558,22 +1558,22 @@ enum TrainingRealizationStatus {
 }
 
 enum TrainingEffectiveness {
-  BELUM_DIEVALUASI
-  EFEKTIF
-  SEBAGIAN_EFEKTIF
-  TIDAK_EFEKTIF
+  NOT_EVALUATED
+  EFFECTIVE
+  PARTIALLY_EFFECTIVE
+  NOT_EFFECTIVE
 }
 
 enum TrainingAttendance {
-  HADIR
-  SEBAGIAN
-  TIDAK_HADIR
+  ATTENDED
+  PARTIAL
+  ABSENT
 }
 
 enum TrainingParticipantResult {
-  LULUS
-  TIDAK_LULUS
-  BELUM_DINILAI
+  PASSED
+  FAILED
+  NOT_ASSESSED
 }
 
 model TrainingProgram {
@@ -1670,7 +1670,7 @@ model TrainingRealization {
 
   averagePreTestScore  Decimal?              @map("average_pre_test_score") @db.Decimal(5, 2)
   averagePostTestScore Decimal?              @map("average_post_test_score") @db.Decimal(5, 2)
-  effectiveness        TrainingEffectiveness @default(BELUM_DIEVALUASI)
+  effectiveness        TrainingEffectiveness @default(NOT_EVALUATED)
   evaluationMethod     String?               @map("evaluation_method") @db.VarChar(150)
   evaluationNotes      String?               @map("evaluation_notes") @db.Text
   evaluatedBy          String?               @map("evaluated_by") @db.Uuid
@@ -1712,10 +1712,10 @@ model TrainingParticipant {
   participantCompany  String? @map("participant_company") @db.VarChar(150)
   participantPosition String? @map("participant_position") @db.VarChar(100)
 
-  attendance    TrainingAttendance        @default(HADIR)
+  attendance    TrainingAttendance        @default(ATTENDED)
   preTestScore  Decimal?                  @map("pre_test_score") @db.Decimal(5, 2)
   postTestScore Decimal?                  @map("post_test_score") @db.Decimal(5, 2)
-  result        TrainingParticipantResult @default(BELUM_DINILAI)
+  result        TrainingParticipantResult @default(NOT_ASSESSED)
 
   certificateNumber      String?   @map("certificate_number") @db.VarChar(100)
   certificateIssuedDate  DateTime? @map("certificate_issued_date") @db.Date

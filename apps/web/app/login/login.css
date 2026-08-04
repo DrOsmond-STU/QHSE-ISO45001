@@ -146,3 +146,36 @@
   padding-top: var(--qhse-space-4);
   border-top: 1px solid var(--qhse-gridline);
 }
+
+/* --- Pemilih bahasa pada halaman masuk ---
+ *
+ * Ditempatkan di atas kartu, bukan di dalamnya: ia bukan bagian dari
+ * formulir yang diisi, dan menaruhnya di antara kolom isian akan membuat
+ * orang mengira bahasa termasuk hal yang harus dipilih untuk bisa masuk. */
+.qhse-login__lang {
+  display: inline-flex;
+  align-self: center;
+  margin-bottom: var(--qhse-space-4);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+  overflow: hidden;
+  background: var(--qhse-surface-1);
+}
+
+.qhse-login__lang-option {
+  min-width: 44px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  color: var(--qhse-text-muted);
+  cursor: pointer;
+}
+
+.qhse-login__lang-option--on {
+  background: var(--qhse-brand);
+  color: var(--qhse-text-on-accent);
+}

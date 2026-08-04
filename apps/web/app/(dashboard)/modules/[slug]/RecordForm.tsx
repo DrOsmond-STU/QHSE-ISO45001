@@ -12,6 +12,7 @@ import {
   type FormField as Field,
   type ModuleSchema,
 } from "../../../../lib/records";
+import { useLocale } from "../../../../lib/locale";
 import { humanizeEnum } from "../../../../lib/status-tone";
 
 // Formulir buat/ubah, dibangun dari skema yang dikirim server.
@@ -39,6 +40,7 @@ export function RecordForm({
   onSaved: (id: string) => void;
   onCancel: () => void;
 }) {
+  const { t } = useLocale();
   const [schema, setSchema] = useState<ModuleSchema | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -54,7 +56,7 @@ export function RecordForm({
         setValues(initialValues(loaded.fields, initialRow ?? null));
       })
       .catch((error: unknown) => {
-        if (!cancelled) setFormError(error instanceof ApiError ? error.message : "Skema formulir gagal dimuat.");
+        if (!cancelled) setFormError(error instanceof ApiError ? error.message : t("Skema formulir gagal dimuat.", "The form schema could not be loaded."));
       });
     return () => {
       cancelled = true;
@@ -95,12 +97,12 @@ export function RecordForm({
         const parsed = parseFieldErrors(error.problem?.detail);
         if (parsed) {
           setFieldErrors(parsed);
-          setFormError("Ada isian yang belum benar. Periksa tanda merah di bawah.");
+          setFormError(t("Ada isian yang belum benar. Periksa tanda merah di bawah.", "Some fields are not valid. Check the fields marked in red below."));
         } else {
           setFormError(error.message);
         }
       } else {
-        setFormError("Gagal menyimpan — API tidak terjangkau.");
+        setFormError(t("Gagal menyimpan — API tidak terjangkau.", "Could not save — API unreachable."));
       }
     } finally {
       setSaving(false);
@@ -108,16 +110,20 @@ export function RecordForm({
   }
 
   if (formError && !schema) return <p className="qhse-dash__error">{formError}</p>;
-  if (!schema) return <p className="qhse-dash__muted">Memuat formulir…</p>;
+  if (!schema) return <p className="qhse-dash__muted">{t("Memuat formulir…", "Loading form…")}</p>;
 
   return (
     <form className="qhse-form" onSubmit={handleSubmit}>
       <header className="qhse-form__head">
-        <h2 className="qhse-form__title">{recordId ? `Ubah ${title}` : `${title} baru`}</h2>
+        <h2 className="qhse-form__title">{recordId ? t(`Ubah ${title}`, `Edit ${title}`) : t(`${title} baru`, `New ${title}`)}</h2>
         {schema.initialStatus && !recordId && (
           <p className="qhse-form__hint">
-            Baris baru dibuat berstatus <strong>{humanizeEnum(schema.initialStatus)}</strong>. Status berikutnya dicapai
-            lewat pengajuan persetujuan atau perpindahan status di halaman detail — tidak diisi dari formulir ini.
+            {t("Baris baru dibuat berstatus", "New records are created with status")}{" "}
+            <strong>{humanizeEnum(schema.initialStatus)}</strong>.{" "}
+            {t(
+              "Status berikutnya dicapai lewat pengajuan persetujuan atau perpindahan status di halaman detail — tidak diisi dari formulir ini.",
+              "The next status is reached by submitting for approval or moving the status on the detail page — it is not set from this form.",
+            )}
           </p>
         )}
       </header>
@@ -138,10 +144,10 @@ export function RecordForm({
 
       <div className="qhse-form__actions">
         <Button type="submit" variant="accent" disabled={saving}>
-          {saving ? "Menyimpan…" : "Simpan"}
+          {saving ? t("Menyimpan…", "Saving…") : t("Simpan", "Save")}
         </Button>
         <Button type="button" variant="default" onClick={onCancel} disabled={saving}>
-          Batal
+          {t("Batal", "Cancel")}
         </Button>
       </div>
     </form>
@@ -159,6 +165,7 @@ function FieldInput({
   error?: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useLocale();
   const id = `f-${field.key}`;
   const wide = field.type === "longtext";
 
@@ -169,13 +176,13 @@ function FieldInput({
         htmlFor={id}
         required={field.required}
         error={error}
-        hint={field.truncated ? "Menampilkan 200 pilihan pertama." : undefined}
+        hint={field.truncated ? t("Menampilkan 200 pilihan pertama.", "Showing the first 200 options.") : undefined}
       >
         {field.type === "longtext" ? (
           <textarea id={id} value={value} rows={3} onChange={(event) => onChange(event.target.value)} />
         ) : field.type === "enum" || field.type === "ref" ? (
           <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
-            <option value="">— pilih —</option>
+            <option value="">{t("— pilih —", "— select —")}</option>
             {(field.options ?? []).map((option) => (
               <option key={option.value} value={option.value}>
                 {field.type === "enum" ? humanizeEnum(option.label) : option.label}
@@ -184,9 +191,9 @@ function FieldInput({
           </select>
         ) : field.type === "boolean" ? (
           <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
-            <option value="">— pilih —</option>
-            <option value="true">Ya</option>
-            <option value="false">Tidak</option>
+            <option value="">{t("— pilih —", "— select —")}</option>
+            <option value="true">{t("Ya", "Yes")}</option>
+            <option value="false">{t("Tidak", "No")}</option>
           </select>
         ) : (
           <input

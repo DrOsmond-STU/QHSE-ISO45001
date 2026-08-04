@@ -13,6 +13,7 @@ import {
   type ExecutiveLayout,
   type Viz,
 } from "../../../../lib/executive";
+import { useLocale } from "../../../../lib/locale";
 import "./settings.css";
 
 // Penyusun komponen Dashboard Eksekutif.
@@ -33,15 +34,15 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 export default function SettingsDashboardPage() {
   const [catalog, setCatalog] = useState<MetricCatalogEntry[] | null>(null);
   const [layout, setLayout] = useState<ExecutiveLayout | null>(null);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const { locale, t } = useLocale();  const [saveState, setSaveState] = useState<SaveState>("idle");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tambahBuka, setTambahBuka] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchCatalog(), fetchLayout<ExecutiveLayout>("executive")])
+    Promise.all([fetchCatalog(locale), fetchLayout<ExecutiveLayout>("executive")])
       .then(([entries, stored]) => {
         const known = new Set(entries.map((e) => e.key));
-        const bawaan = defaultExecutiveLayout();
+        const bawaan = defaultExecutiveLayout(locale);
         const saved = stored.layout;
         const widgets = (Array.isArray(saved?.widgets) ? saved.widgets : bawaan.widgets).filter((w) =>
           known.has(w.key),
@@ -54,7 +55,7 @@ export default function SettingsDashboardPage() {
         });
       })
       .catch((error: unknown) =>
-        setLoadError(error instanceof ApiError ? error.message : "API tidak terjangkau."),
+        setLoadError(error instanceof ApiError ? error.message : t("API tidak terjangkau.", "API unreachable.")),
       );
   }, []);
 
@@ -112,7 +113,7 @@ export default function SettingsDashboardPage() {
   }
 
   if (loadError) return <p className="qhse-set__bad">{loadError}</p>;
-  if (!layout || !catalog) return <p className="qhse-set__kosong">Memuat…</p>;
+  if (!layout || !catalog) return <p className="qhse-set__kosong">{t("Memuat…", "Loading…")}</p>;
 
   const terpasang = new Set(layout.widgets.map((w) => w.key));
   const tersedia = catalog.filter((entry) => !terpasang.has(entry.key));
@@ -121,22 +122,24 @@ export default function SettingsDashboardPage() {
     <div className="qhse-set">
       <header className="qhse-set__head">
         <div>
-          <h1 className="qhse-set__title">Susunan Dashboard Eksekutif</h1>
+          <h1 className="qhse-set__title">{t("Susunan Dashboard Eksekutif", "Executive Dashboard Layout")}</h1>
           <p className="qhse-set__lead">
-            Pilih komponen yang tampil, urutannya, lebarnya, dan wujud tampilannya. Susunan tersimpan di server,
-            jadi ikut terbawa saat dashboard dibuka dari perangkat lain.
+            {t(
+              "Pilih komponen yang tampil, urutannya, lebarnya, dan wujud tampilannya. Susunan tersimpan di server, jadi ikut terbawa saat dashboard dibuka dari perangkat lain.",
+              "Choose which widgets appear, their order, width, and visual form. The layout is stored on the server, so it follows you when the dashboard is opened from another device.",
+            )}
           </p>
         </div>
         <Link href="/executive" className="qhse-set__tautan">
-          Lihat dashboard
+          {t("Lihat dashboard", "View dashboard")}
         </Link>
       </header>
 
       <section className="qhse-set__blok">
-        <h2 className="qhse-set__judul">Kepala dashboard</h2>
+        <h2 className="qhse-set__judul">{t("Kepala dashboard", "Dashboard header")}</h2>
         <div className="qhse-set__baris">
           <label className="qhse-set__label">
-            Judul
+            {t("Judul", "Title")}
             <input
               className="qhse-set__input"
               value={layout.judul}
@@ -147,7 +150,7 @@ export default function SettingsDashboardPage() {
             />
           </label>
           <label className="qhse-set__label">
-            Dari
+            {t("Dari", "From")}
             <input
               className="qhse-set__input"
               type="date"
@@ -159,7 +162,7 @@ export default function SettingsDashboardPage() {
             />
           </label>
           <label className="qhse-set__label">
-            Sampai
+            {t("Sampai", "To")}
             <input
               className="qhse-set__input"
               type="date"
@@ -175,16 +178,16 @@ export default function SettingsDashboardPage() {
 
       <section className="qhse-set__blok">
         <div className="qhse-set__judulBaris">
-          <h2 className="qhse-set__judul">Komponen · {layout.widgets.length}</h2>
+          <h2 className="qhse-set__judul">{t("Komponen", "Widgets")} · {layout.widgets.length}</h2>
           <Button variant="accent" onClick={() => setTambahBuka((buka) => !buka)}>
-            {tambahBuka ? "Tutup daftar" : "Tambah komponen"}
+            {tambahBuka ? t("Tutup daftar", "Close list") : t("Tambah komponen", "Add widget")}
           </Button>
         </div>
 
         {tambahBuka && (
           <div className="qhse-set__pilihan">
             {tersedia.length === 0 ? (
-              <p className="qhse-set__kosong">Seluruh metrik yang tersedia sudah terpasang.</p>
+              <p className="qhse-set__kosong">{t("Seluruh metrik yang tersedia sudah terpasang.", "Every available metric is already in place.")}</p>
             ) : (
               tersedia.map((entry) => (
                 <button key={entry.key} type="button" className="qhse-set__pilihanItem" onClick={() => tambah(entry)}>
@@ -212,7 +215,7 @@ export default function SettingsDashboardPage() {
                 </div>
 
                 <label className="qhse-set__kecil">
-                  Wujud
+                  {t("Wujud", "Form")}
                   <select
                     className="qhse-set__pilih"
                     value={widget.viz}
@@ -220,38 +223,38 @@ export default function SettingsDashboardPage() {
                   >
                     {pilihanViz.map((viz) => (
                       <option key={viz} value={viz}>
-                        {VIZ_LABEL[viz]}
+                        {VIZ_LABEL[viz][locale]}
                       </option>
                     ))}
                   </select>
                 </label>
 
                 <label className="qhse-set__kecil">
-                  Lebar
+                  {t("Lebar", "Width")}
                   <select
                     className="qhse-set__pilih"
                     value={widget.width}
                     onChange={(event) => ubah(index, { width: Number(event.target.value) as 1 | 2 })}
                   >
-                    <option value={1}>1 kolom</option>
-                    <option value={2}>2 kolom</option>
+                    <option value={1}>{t("1 kolom", "1 column")}</option>
+                    <option value={2}>{t("2 kolom", "2 columns")}</option>
                   </select>
                 </label>
 
                 <div className="qhse-set__aksi">
-                  <button type="button" onClick={() => geser(index, -1)} disabled={index === 0} aria-label="Naikkan">
+                  <button type="button" onClick={() => geser(index, -1)} disabled={index === 0} aria-label={t("Naikkan", "Move up")}>
                     ↑
                   </button>
                   <button
                     type="button"
                     onClick={() => geser(index, 1)}
                     disabled={index === layout.widgets.length - 1}
-                    aria-label="Turunkan"
+                    aria-label={t("Turunkan", "Move down")}
                   >
                     ↓
                   </button>
                   <button type="button" className="qhse-set__hapus" onClick={() => hapus(index)}>
-                    Hapus
+                    {t("Hapus", "Remove")}
                   </button>
                 </div>
               </li>
@@ -262,10 +265,10 @@ export default function SettingsDashboardPage() {
 
       <div className="qhse-set__simpan">
         <Button variant="accent" onClick={() => void simpan()} disabled={saveState === "saving"}>
-          {saveState === "saving" ? "Menyimpan…" : "Simpan susunan"}
+          {saveState === "saving" ? t("Menyimpan…", "Saving…") : t("Simpan susunan", "Save layout")}
         </Button>
-        {saveState === "saved" && <span className="qhse-set__ok">Tersimpan.</span>}
-        {saveState === "error" && <span className="qhse-set__bad">Gagal menyimpan.</span>}
+        {saveState === "saved" && <span className="qhse-set__ok">{t("Tersimpan.", "Saved.")}</span>}
+        {saveState === "error" && <span className="qhse-set__bad">{t("Gagal menyimpan.", "Could not save.")}</span>}
       </div>
     </div>
   );

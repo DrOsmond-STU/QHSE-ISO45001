@@ -595,7 +595,7 @@ async function main() {
     report(daftar.length > 0, "sesi bersertifikat memuat daftar peserta", `${daftar.length} peserta`);
     // Sertifikat pada peserta yang tidak lulus adalah cacat data yang paling
     // memalukan saat auditor membuka satu baris secara acak.
-    const salahSertifikat = daftar.filter((baris) => baris.result !== "LULUS" && baris.certificateNumber);
+    const salahSertifikat = daftar.filter((baris) => baris.result !== "PASSED" && baris.certificateNumber);
     report(salahSertifikat.length === 0, "hanya peserta lulus yang bernomor sertifikat", `${salahSertifikat.length} pelanggaran`);
     report(
       daftar.some((baris) => baris.userId === null),

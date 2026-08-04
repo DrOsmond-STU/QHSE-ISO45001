@@ -1,3 +1,6 @@
+import { KAMUS_MODUL } from "./modules-en";
+import type { Locale } from "./locale";
+
 // Registri modul — SATU sumber kebenaran untuk sidebar, halaman daftar,
 // halaman detail, dan kartu KPI dashboard.
 //
@@ -1339,13 +1342,59 @@ export const MODULES: ModuleDefinition[] = [
   },
 ];
 
-export function findModule(slug: string): ModuleDefinition | undefined {
-  return MODULES.find((module) => module.slug === slug);
+// --- Pengalihbahasaan -------------------------------------------------------
+//
+// Definisi di atas ditulis DALAM BAHASA INDONESIA dan tetap begitu — itulah
+// bahasa kerja penggunanya dan bahasa istilah standarnya. Wujud Inggrisnya
+// dihasilkan saat dibaca, dengan menukar tiap label lewat kamus di
+// lib/modules-en.ts.
+//
+// Label yang tidak ada di kamus dikembalikan APA ADANYA, bukan dikosongkan
+// atau diberi penanda: satu label yang belum diterjemahkan lebih baik tampil
+// dalam bahasa Indonesia daripada membuat kolomnya hilang. Yang menjaga agar
+// keadaan itu tidak diam-diam menetap adalah `pnpm --filter @qhse/web
+// check:i18n`, yang gagal dan menyebutkan setiap label yang belum punya
+// padanan.
+
+function lokal(label: string, locale: Locale): string {
+  if (locale !== "en") return label;
+  return KAMUS_MODUL[label] ?? label;
 }
 
-export function modulesByGroup(): Array<{ group: string; modules: ModuleDefinition[] }> {
+function lokalKolom(columns: ModuleColumn[], locale: Locale): ModuleColumn[] {
+  if (locale !== "en") return columns;
+  return columns.map((column) => ({ ...column, header: lokal(column.header, locale) }));
+}
+
+function lokalModul(module: ModuleDefinition, locale: Locale): ModuleDefinition {
+  if (locale !== "en") return module;
+  return {
+    ...module,
+    title: lokal(module.title, locale),
+    moduleNumber: lokal(module.moduleNumber, locale),
+    group: lokal(module.group, locale),
+    columns: lokalKolom(module.columns, locale),
+    detailSections: module.detailSections.map((section) => ({
+      title: lokal(section.title, locale),
+      fields: section.fields.map((field) => ({ ...field, label: lokal(field.label, locale) })),
+    })),
+    children: module.children?.map((child) => ({
+      ...child,
+      title: lokal(child.title, locale),
+      emptyMessage: lokal(child.emptyMessage, locale),
+      columns: lokalKolom(child.columns, locale),
+    })),
+  };
+}
+
+export function findModule(slug: string, locale: Locale = "id"): ModuleDefinition | undefined {
+  const found = MODULES.find((module) => module.slug === slug);
+  return found ? lokalModul(found, locale) : undefined;
+}
+
+export function modulesByGroup(locale: Locale = "id"): Array<{ group: string; modules: ModuleDefinition[] }> {
   return MODULE_GROUPS.map((group) => ({
-    group,
-    modules: MODULES.filter((module) => module.group === group),
+    group: lokal(group, locale),
+    modules: MODULES.filter((module) => module.group === group).map((module) => lokalModul(module, locale)),
   })).filter((entry) => entry.modules.length > 0);
 }

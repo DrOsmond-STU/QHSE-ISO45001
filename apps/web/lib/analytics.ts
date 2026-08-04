@@ -1,4 +1,6 @@
 import { apiFetch } from "./api-client";
+import { metrikLokal } from "./analytics-en";
+import type { Locale } from "./locale";
 import { statusTone, humanizeEnum } from "./status-tone";
 
 // Tipe dan pemuat data untuk dashboard analitik & Balanced Scorecard.
@@ -74,12 +76,34 @@ export interface Scorecard {
   objectiveCount: number;
 }
 
-export function fetchCatalog(): Promise<MetricCatalogEntry[]> {
-  return apiFetch<MetricCatalogEntry[]>("/analytics/catalog");
+// Judul, keterangan, kelompok, dan satuan ditukar ke bahasa antarmuka SAAT
+// DIMUAT, bukan saat dirender. Menukarnya di tiap tempat render berarti
+// setiap komponen baru yang menampilkan metrik harus ingat melakukannya —
+// dan yang lupa akan tampil berbahasa Indonesia di layar Inggris tanpa
+// gejala apa pun.
+function lokalkanEntri<T extends MetricCatalogEntry>(entry: T, locale: Locale): T {
+  if (locale !== "en") return entry;
+  return {
+    ...entry,
+    title: metrikLokal(entry.title, locale) ?? entry.title,
+    caption: metrikLokal(entry.caption, locale) ?? entry.caption,
+    group: metrikLokal(entry.group, locale) ?? entry.group,
+    unit: metrikLokal(entry.unit, locale) ?? entry.unit,
+  };
 }
 
-export function fetchMetric(key: string, period: { from: string; to: string }): Promise<MetricResult> {
-  return apiFetch<MetricResult>(`/analytics/${key}`, { query: { from: period.from, to: period.to } });
+export async function fetchCatalog(locale: Locale = "id"): Promise<MetricCatalogEntry[]> {
+  const entries = await apiFetch<MetricCatalogEntry[]>("/analytics/catalog");
+  return entries.map((entry) => lokalkanEntri(entry, locale));
+}
+
+export async function fetchMetric(
+  key: string,
+  period: { from: string; to: string },
+  locale: Locale = "id",
+): Promise<MetricResult> {
+  const result = await apiFetch<MetricResult>(`/analytics/${key}`, { query: { from: period.from, to: period.to } });
+  return lokalkanEntri(result, locale);
 }
 
 export function fetchScorecard(): Promise<Scorecard> {
@@ -187,10 +211,33 @@ export function sliceLabel(code: string): string {
   return humanizeEnum(code);
 }
 
-const CURRENCY = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
-const DECIMAL = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 });
+// Pemformat dibuat per bahasa dan disimpan: Intl.NumberFormat mahal untuk
+// dibuat, dan halaman analitik memanggilnya ratusan kali per render.
+//
+// Pemisah ribuan IKUT berganti. "961.833" pada halaman berbahasa Inggris
+// terbaca sebagai 961 koma sekian — bukan sekadar tidak lazim, melainkan
+// SALAH SERIBU KALI LIPAT bagi pembacanya.
+const FORMATTERS = new Map<string, { currency: Intl.NumberFormat; decimal: Intl.NumberFormat }>();
 
-export function formatMetricValue(value: number, format: MetricCatalogEntry["format"]): string {
+function formatters(locale: Locale) {
+  const tag = locale === "en" ? "en-GB" : "id-ID";
+  let found = FORMATTERS.get(tag);
+  if (!found) {
+    found = {
+      currency: new Intl.NumberFormat(tag, { style: "currency", currency: "IDR", maximumFractionDigits: 0 }),
+      decimal: new Intl.NumberFormat(tag, { maximumFractionDigits: 1 }),
+    };
+    FORMATTERS.set(tag, found);
+  }
+  return found;
+}
+
+export function formatMetricValue(
+  value: number,
+  format: MetricCatalogEntry["format"],
+  locale: Locale = "id",
+): string {
+  const { currency: CURRENCY, decimal: DECIMAL } = formatters(locale);
   if (format === "currency") {
     // Nilai rupiah pada kartu KPI dipendekkan — "Rp852.000.000" memaksa
     // ukuran huruf hero mengecil sampai tidak lagi terbaca sebagai angka

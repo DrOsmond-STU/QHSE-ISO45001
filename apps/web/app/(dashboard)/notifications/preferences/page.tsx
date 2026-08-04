@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { t } from "@qhse/i18n";
+import { useLocale } from "../../../../lib/locale";
 import { DataTable, Toggle } from "@qhse/ui-components";
 import { apiFetch, ApiError } from "../../../../lib/api-client";
 import { useHasAccessToken } from "../../../../lib/use-auth-token";
@@ -59,6 +60,7 @@ function buildRows(data: PreferencesResponseDto): CategoryRow[] {
 // StatusBadge yang TIDAK PERNAH cuma warna: cell IN_APP tetap ada teks
 // "Selalu aktif" eksplisit.
 export default function NotificationPreferencesPage() {
+  const { locale } = useLocale();
   const hasToken = useHasAccessToken();
   const [data, setData] = useState<PreferencesResponseDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export default function NotificationPreferencesPage() {
       setData(result);
     } catch (err) {
       setData(null);
-      setError(err instanceof ApiError ? err.message : t("notifications.preferences.error"));
+      setError(err instanceof ApiError ? err.message : t("notifications.preferences.error", locale));
     }
   }, []);
 
@@ -90,7 +92,7 @@ export default function NotificationPreferencesPage() {
       });
       await load(); // reload penuh — sederhana & selalu konsisten dgn server, matriks tidak besar (14 kategori)
     } catch {
-      setError(t("notifications.preferences.saveError"));
+      setError(t("notifications.preferences.saveError", locale));
     } finally {
       setSavingKey(null);
     }
@@ -100,20 +102,20 @@ export default function NotificationPreferencesPage() {
     return null;
   }
   if (hasToken === false) {
-    return <p>{t("notifications.preferences.unauthenticated")}</p>;
+    return <p>{t("notifications.preferences.unauthenticated", locale)}</p>;
   }
 
   return (
     <section>
       <header style={{ marginBottom: "var(--qhse-space-4)" }}>
         <Link href="/notifications" style={{ fontFamily: "var(--qhse-font-ui)", fontSize: "var(--qhse-text-body-sm-size)", color: "var(--qhse-text-secondary)" }}>
-          {t("notifications.preferences.backToInbox")}
+          {t("notifications.preferences.backToInbox", locale)}
         </Link>
         <h1 style={{ fontFamily: "var(--qhse-font-ui)", fontSize: "var(--qhse-text-h1-size)", margin: "var(--qhse-space-2) 0 0" }}>
-          {t("notifications.preferences.title")}
+          {t("notifications.preferences.title", locale)}
         </h1>
         <p style={{ fontFamily: "var(--qhse-font-ui)", color: "var(--qhse-text-secondary)", margin: "var(--qhse-space-1) 0 0" }}>
-          {t("notifications.preferences.subtitle")}
+          {t("notifications.preferences.subtitle", locale)}
         </p>
       </header>
 
@@ -124,7 +126,7 @@ export default function NotificationPreferencesPage() {
       )}
 
       {data === null && !error && (
-        <p style={{ fontFamily: "var(--qhse-font-ui)", color: "var(--qhse-text-secondary)" }}>{t("notifications.preferences.loading")}</p>
+        <p style={{ fontFamily: "var(--qhse-font-ui)", color: "var(--qhse-text-secondary)" }}>{t("notifications.preferences.loading", locale)}</p>
       )}
 
       {data && (
@@ -132,7 +134,7 @@ export default function NotificationPreferencesPage() {
           getRowId={(row) => row.categoryCode}
           rows={buildRows(data)}
           columns={[
-            { key: "categoryLabel", header: t("notifications.preferences.column.category") },
+            { key: "categoryLabel", header: t("notifications.preferences.column.category", locale) },
             ...CHANNELS.map((channelCode) => ({
               key: channelCode,
               header: t(`notifications.channel.${channelCode}`),
@@ -142,10 +144,10 @@ export default function NotificationPreferencesPage() {
                 if (!cell.editable) {
                   return (
                     <span
-                      title={t("notifications.preferences.inAppHint")}
+                      title={t("notifications.preferences.inAppHint", locale)}
                       style={{ fontFamily: "var(--qhse-font-ui)", fontSize: "var(--qhse-text-body-sm-size)", color: "var(--qhse-text-muted)" }}
                     >
-                      {t("notifications.preferences.inAppAlwaysOn")}
+                      {t("notifications.preferences.inAppAlwaysOn", locale)}
                     </span>
                   );
                 }

@@ -10,6 +10,36 @@ body {
   color: var(--qhse-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Ligatur dan kerning kontekstual dinyalakan eksplisit. Peramban memang
+     menyalakannya secara bawaan untuk teks biasa, tetapi mematikannya pada
+     elemen yang diberi `font-variant-numeric` — dan aplikasi ini memberi
+     tabular-nums pada hampir setiap angka. Tanpa baris ini, judul kartu KPI
+     dan angkanya dirender dengan kerning yang berbeda. */
+  font-kerning: normal;
+  font-variant-ligatures: common-ligatures contextual;
+  text-rendering: optimizeLegibility;
+  letter-spacing: var(--qhse-tracking-loose);
+}
+
+/* Judul memakai tracking rapat, badan teks memakai tracking longgar. Aturan
+   ini ada di satu tempat supaya tidak perlu diulang pada tiap komponen —
+   dan supaya judul yang lupa diberi kelas tetap terlihat benar. */
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: var(--qhse-tracking-tight);
+  font-family: var(--qhse-font-display);
+}
+
+/* Angka SELALU rata lebar di seluruh aplikasi. Sebelumnya diberikan
+   satu-satu per komponen, dan setiap tabel baru mengulang keputusan yang
+   sama — sampai ada yang lupa, dan kolomnya bergoyang saat data berubah. */
+td,
+dd,
+.qhse-widget__number,
+.qhse-total__value {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Warna sorotan seleksi ikut warna merek — detail kecil, tapi seleksi biru

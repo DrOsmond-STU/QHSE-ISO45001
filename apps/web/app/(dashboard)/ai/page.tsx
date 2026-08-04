@@ -16,6 +16,7 @@ import {
   type UsulSusunan,
 } from "../../../lib/ai";
 import { humanizeEnum, statusTone } from "../../../lib/status-tone";
+import { useLocale } from "../../../lib/locale";
 import "./ai.css";
 
 // Pencarian dan bantuan penyusunan dokumen.
@@ -51,6 +52,7 @@ function pesanGalat(error: unknown): string {
 }
 
 export default function AiPage() {
+  const { t } = useLocale();
   const [status, setStatus] = useState<AiStatus | null>(null);
   const [frasa, setFrasa] = useState("");
   const [jenis, setJenis] = useState("SOP");
@@ -106,15 +108,19 @@ export default function AiPage() {
     <div className="qhse-ai">
       <header className="qhse-ai__head">
         <div>
-          <h1 className="qhse-ai__title">Pencarian &amp; Bantuan Dokumen</h1>
+          <h1 className="qhse-ai__title">{t("Pencarian & Bantuan Dokumen", "Document Search & Assistance")}</h1>
           <p className="qhse-ai__lead">
-            Cari kata kunci di dalam Dokumen Terkendali dan Registrasi Peraturan milik perusahaan, telusuri peraturan
-            terkait di internet, dan mintakan usulan susunan dokumen baru.
+            {t(
+              "Cari kata kunci di dalam Dokumen Terkendali dan Registrasi Peraturan milik perusahaan, telusuri peraturan terkait di internet, dan mintakan usulan susunan dokumen baru.",
+              "Search keywords inside the company's Controlled Documents and Regulatory Register, look up related regulations on the web, and ask for a suggested outline for a new document.",
+            )}
           </p>
         </div>
         {status && (
           <span className={status.enabled ? "qhse-ai__lampu qhse-ai__lampu--nyala" : "qhse-ai__lampu"}>
-            {status.enabled ? `Bantuan AI aktif · ${status.model}` : "Bantuan AI belum diaktifkan"}
+            {status.enabled
+              ? t(`Bantuan AI aktif · ${status.model}`, `AI assistance active · ${status.model}`)
+              : t("Bantuan AI belum diaktifkan", "AI assistance is not enabled")}
           </span>
         )}
       </header>
@@ -130,20 +136,20 @@ export default function AiPage() {
           className="qhse-ai__input"
           type="search"
           value={frasa}
-          placeholder="mis. ruang terbatas, limbah B3, APD, izin kerja panas"
+          placeholder={t("mis. ruang terbatas, limbah B3, APD, izin kerja panas", "e.g. confined space, hazardous waste, PPE, hot work permit")}
           onChange={(event) => setFrasa(event.target.value)}
-          aria-label="Kata kunci"
+          aria-label={t("Kata kunci", "Keywords")}
         />
         <Button type="submit" variant="accent" disabled={!siap || hasil.kind === "muat"}>
-          {hasil.kind === "muat" ? "Mencari…" : "Cari"}
+          {hasil.kind === "muat" ? t("Mencari…", "Searching…") : t("Cari", "Search")}
         </Button>
       </form>
 
       {/* --- 1. Milik perusahaan --------------------------------------- */}
       <section className="qhse-ai__bagian">
-        <h2 className="qhse-ai__judul">Dokumen dan peraturan milik perusahaan</h2>
-        {hasil.kind === "diam" && <p className="qhse-ai__kosong">Ketik kata kunci lalu tekan Cari.</p>}
-        {hasil.kind === "muat" && <p className="qhse-ai__kosong">Mencari…</p>}
+        <h2 className="qhse-ai__judul">{t("Dokumen dan peraturan milik perusahaan", "Company documents and regulations")}</h2>
+        {hasil.kind === "diam" && <p className="qhse-ai__kosong">{t("Ketik kata kunci lalu tekan Cari.", "Type a keyword and press Search.")}</p>}
+        {hasil.kind === "muat" && <p className="qhse-ai__kosong">{t("Mencari…", "Searching…")}</p>}
         {hasil.kind === "gagal" && <p className="qhse-ai__bad">{hasil.pesan}</p>}
         {hasil.kind === "ok" && (
           <>
@@ -224,22 +230,24 @@ export default function AiPage() {
       {/* --- 2. Dari internet ------------------------------------------ */}
       <section className="qhse-ai__bagian">
         <div className="qhse-ai__judulBaris">
-          <h2 className="qhse-ai__judul">Peraturan terkait di internet</h2>
+          <h2 className="qhse-ai__judul">{t("Peraturan terkait di internet", "Related regulations on the web")}</h2>
           <Button variant="accent" disabled={!siap || peraturan.kind === "muat"} onClick={() => void jalankanPeraturan()}>
-            {peraturan.kind === "muat" ? "Menelusuri…" : "Telusuri"}
+            {peraturan.kind === "muat" ? t("Menelusuri…", "Searching…") : t("Telusuri", "Search the web")}
           </Button>
         </div>
         <p className="qhse-ai__peringatan">
-          Hasil penelusuran web, bukan nasihat hukum. Setiap butir wajib membawa tautan sumber — buka dan periksa
-          nomornya sebelum dipakai sebagai dasar hukum dokumen.
+          {t(
+            "Hasil penelusuran web, bukan nasihat hukum. Setiap butir wajib membawa tautan sumber — buka dan periksa nomornya sebelum dipakai sebagai dasar hukum dokumen.",
+            "Web search results, not legal advice. Every item must carry a source link — open it and check the number before using it as the legal basis of a document.",
+          )}
         </p>
-        {peraturan.kind === "muat" && <p className="qhse-ai__kosong">Menelusuri sumber resmi…</p>}
+        {peraturan.kind === "muat" && <p className="qhse-ai__kosong">{t("Menelusuri sumber resmi…", "Searching official sources…")}</p>}
         {peraturan.kind === "gagal" && <p className="qhse-ai__bad">{peraturan.pesan}</p>}
         {peraturan.kind === "ok" && (
           <>
             {peraturan.data.peraturan.length === 0 ? (
               <p className="qhse-ai__kosong">
-                Tidak ada peraturan yang ditemukan dengan sumber yang bisa diperiksa.
+                {t("Tidak ada peraturan yang ditemukan dengan sumber yang bisa diperiksa.", "No regulation was found with a verifiable source.")}
               </p>
             ) : (
               <ul className="qhse-ai__daftar">
@@ -259,7 +267,10 @@ export default function AiPage() {
             )}
             {peraturan.data.dibuang > 0 && (
               <p className="qhse-ai__catatan">
-                {peraturan.data.dibuang} butir dibuang karena tidak menyertakan tautan sumber yang bisa diperiksa.
+                {t(
+                  `${peraturan.data.dibuang} butir dibuang karena tidak menyertakan tautan sumber yang bisa diperiksa.`,
+                  `${peraturan.data.dibuang} item(s) discarded for not carrying a verifiable source link.`,
+                )}
               </p>
             )}
           </>
@@ -269,13 +280,13 @@ export default function AiPage() {
       {/* --- 3. Usulan susunan ----------------------------------------- */}
       <section className="qhse-ai__bagian">
         <div className="qhse-ai__judulBaris">
-          <h2 className="qhse-ai__judul">Usulan susunan dokumen</h2>
+          <h2 className="qhse-ai__judul">{t("Usulan susunan dokumen", "Suggested document outline")}</h2>
           <div className="qhse-ai__aksi">
             <select
               className="qhse-ai__pilih"
               value={jenis}
               onChange={(event) => setJenis(event.target.value)}
-              aria-label="Jenis dokumen"
+              aria-label={t("Jenis dokumen", "Document type")}
             >
               {(status?.jenis.length ? status.jenis : [{ kode: "SOP", label: "Prosedur (SOP)" }]).map((pilihan) => (
                 <option key={pilihan.kode} value={pilihan.kode}>
@@ -284,15 +295,18 @@ export default function AiPage() {
               ))}
             </select>
             <Button variant="accent" disabled={!siap || susunan.kind === "muat"} onClick={() => void jalankanSusunan()}>
-              {susunan.kind === "muat" ? "Menyusun…" : "Susunkan"}
+              {susunan.kind === "muat" ? t("Menyusun…", "Drafting…") : t("Susunkan", "Draft outline")}
             </Button>
           </div>
         </div>
         <p className="qhse-ai__peringatan">
-          Yang dihasilkan adalah <strong>kerangka</strong>: bagian apa saja yang perlu ada agar dokumen memenuhi
-          klausul standar. Isi teknisnya tetap harus ditulis orang yang mengetahui prosesnya.
+          {t("Yang dihasilkan adalah", "What you get is an")} <strong>{t("kerangka", "outline")}</strong>
+          {t(
+            ": bagian apa saja yang perlu ada agar dokumen memenuhi klausul standar. Isi teknisnya tetap harus ditulis orang yang mengetahui prosesnya.",
+            ": which sections must exist for the document to satisfy the standard's clauses. The technical content still has to be written by someone who knows the process.",
+          )}
         </p>
-        {susunan.kind === "muat" && <p className="qhse-ai__kosong">Menyusun kerangka…</p>}
+        {susunan.kind === "muat" && <p className="qhse-ai__kosong">{t("Menyusun kerangka…", "Drafting the outline…")}</p>}
         {susunan.kind === "gagal" && <p className="qhse-ai__bad">{susunan.pesan}</p>}
         {susunan.kind === "ok" && <Susunan data={susunan.data} />}
       </section>
@@ -301,6 +315,7 @@ export default function AiPage() {
 }
 
 function Susunan({ data }: { data: UsulSusunan }) {
+  const { t } = useLocale();
   return (
     <div className="qhse-ai__susunan">
       <p className="qhse-ai__susunanJudul">{data.judul}</p>
@@ -341,7 +356,7 @@ function Susunan({ data }: { data: UsulSusunan }) {
             <li key={langkah.urutan} className={langkah.keputusan ? "qhse-ai__alirKeputusan" : undefined}>
               <span className="qhse-ai__pelaku">{langkah.pelaku}</span>
               <span className="qhse-ai__tindakan">{langkah.tindakan}</span>
-              {langkah.keputusan && <span className="qhse-ai__keputusan">Keputusan: {langkah.keputusan}</span>}
+              {langkah.keputusan && <span className="qhse-ai__keputusan">{t("Keputusan:", "Decision:")} {langkah.keputusan}</span>}
             </li>
           ))}
         </ol>
@@ -351,9 +366,9 @@ function Susunan({ data }: { data: UsulSusunan }) {
         <table className="qhse-ai__tabel">
           <thead>
             <tr>
-              <th>Kolom isian</th>
-              <th>Jenis</th>
-              <th>Wajib</th>
+              <th>{t("Kolom isian", "Field")}</th>
+              <th>{t("Jenis", "Type")}</th>
+              <th>{t("Wajib", "Required")}</th>
             </tr>
           </thead>
           <tbody>
@@ -361,7 +376,7 @@ function Susunan({ data }: { data: UsulSusunan }) {
               <tr key={kolom.nama}>
                 <td>{kolom.nama}</td>
                 <td>{kolom.jenis}</td>
-                <td>{kolom.wajib ? "Ya" : "Tidak"}</td>
+                <td>{kolom.wajib ? t("Ya", "Yes") : t("Tidak", "No")}</td>
               </tr>
             ))}
           </tbody>
@@ -370,7 +385,7 @@ function Susunan({ data }: { data: UsulSusunan }) {
 
       {data.rekaman.length > 0 && (
         <>
-          <h3 className="qhse-ai__sub">Rekaman yang dihasilkan</h3>
+          <h3 className="qhse-ai__sub">{t("Rekaman yang dihasilkan", "Records produced")}</h3>
           <ul className="qhse-ai__daftarRingkas">
             {data.rekaman.map((rekaman) => (
               <li key={rekaman}>{rekaman}</li>

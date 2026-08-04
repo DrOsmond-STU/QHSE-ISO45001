@@ -39,8 +39,8 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   VERIFIED: "good",
   LEVEL_1_LOCAL: "good",
   OFI: "good",
-  LULUS: "good",
-  EFEKTIF: "good",
+  PASSED: "good",
+  EFFECTIVE: "good",
 
   // --- sedang berjalan / menunggu tindakan ---
   DRAFT: "warning",
@@ -73,9 +73,9 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   STANDBY: "warning",
   MEDIUM: "warning",
   SEDANG: "warning",
-  BELUM_DINILAI: "warning",
-  BELUM_DIEVALUASI: "warning",
-  SEBAGIAN_EFEKTIF: "warning",
+  NOT_ASSESSED: "warning",
+  NOT_EVALUATED: "warning",
+  PARTIALLY_EFFECTIVE: "warning",
   FAIR: "warning",
   NA: "warning",
   REWORK: "warning",
@@ -119,8 +119,8 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   OUT_OF_SERVICE: "critical",
   SCRAP: "critical",
   MAJOR_NC: "critical",
-  TIDAK_LULUS: "critical",
-  TIDAK_EFEKTIF: "critical",
+  FAILED: "critical",
+  NOT_EFFECTIVE: "critical",
   LEVEL_3_COMPANY_WIDE_EXTERNAL_AGENCY: "critical",
 };
 

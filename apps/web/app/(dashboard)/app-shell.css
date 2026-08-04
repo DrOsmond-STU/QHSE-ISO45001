@@ -122,6 +122,89 @@
   color: var(--qhse-text-muted);
 }
 
+/* --- Tombol ikon (tema) ---
+ *
+ * Persegi, bukan tombol berlabel. Ukurannya 38px dan bukan 44px seperti
+ * --qhse-tap-target-min: ini tombol pada bilah atas desktop yang tingginya
+ * 64px, dan tombol setinggi 44px di sana membuat bilahnya terasa penuh.
+ * Pada layar sentuh, aturan @media di bawah mengembalikannya ke 44px. */
+.qhse-shell__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+  background: var(--qhse-surface-1);
+  color: var(--qhse-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.qhse-shell__icon-button:hover {
+  background: var(--qhse-brand-wash);
+  border-color: var(--qhse-brand-light);
+  color: var(--qhse-brand);
+}
+
+/* --- Pemilih bahasa --- */
+
+.qhse-shell__lang {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+  overflow: hidden;
+  background: var(--qhse-surface-1);
+}
+
+.qhse-shell__lang-option {
+  min-width: 36px;
+  height: 38px;
+  padding: 0 var(--qhse-space-2);
+  border: none;
+  background: transparent;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  color: var(--qhse-text-muted);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.qhse-shell__lang-option:hover {
+  color: var(--qhse-text-primary);
+}
+
+/* Yang aktif diberi BIDANG berwarna, bukan sekadar huruf tebal. Dua kode dua
+   huruf yang bersebelahan terlalu mirip untuk dibedakan hanya oleh ketebalan
+   huruf, dan pemilih yang tidak jelas mana yang aktif justru menimbulkan
+   pertanyaan yang seharusnya ia jawab. */
+.qhse-shell__lang-option--on {
+  background: var(--qhse-brand);
+  color: var(--qhse-text-on-accent);
+}
+
+@media (pointer: coarse) {
+  .qhse-shell__icon-button,
+  .qhse-shell__lang-option {
+    height: var(--qhse-tap-target-min);
+  }
+
+  .qhse-shell__icon-button {
+    width: var(--qhse-tap-target-min);
+  }
+}
+
 /* --- Body: sidebar + konten --- */
 
 .qhse-shell__body {

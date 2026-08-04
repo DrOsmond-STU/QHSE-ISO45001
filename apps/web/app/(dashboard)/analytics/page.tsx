@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarList, Button, DonutChart, LineChart, StatusBadge } from "@qhse/ui-components";
 import { ApiError } from "../../../lib/api-client";
+import { useLocale } from "../../../lib/locale";
 import {
   DEFAULT_ANALYTICS_WIDGETS,
   defaultAnalyticsLayout,
@@ -54,6 +55,7 @@ export default function AnalyticsPage() {
   const [editing, setEditing] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const { locale, t } = useLocale();
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Penyimpanan pertama DILEWATI. Tanpa penjaga ini, susunan bawaan akan
@@ -66,7 +68,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchCatalog(), fetchLayout<AnalyticsLayout>("analytics")])
+    Promise.all([fetchCatalog(locale), fetchLayout<AnalyticsLayout>("analytics")])
       .then(([entries, stored]) => {
         if (cancelled) return;
         const known = new Set(entries.map((entry) => entry.key));
@@ -87,7 +89,7 @@ export default function AnalyticsPage() {
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        setLoadError(error instanceof ApiError ? error.message : "API tidak terjangkau.");
+        setLoadError(error instanceof ApiError ? error.message : t("API tidak terjangkau.", "API unreachable."));
       });
     return () => {
       cancelled = true;
@@ -113,13 +115,13 @@ export default function AnalyticsPage() {
     });
 
     for (const key of keys) {
-      fetchMetric(key, { from: periodFrom, to: periodTo })
+      fetchMetric(key, { from: periodFrom, to: periodTo }, locale)
         .then((result) => {
           if (!cancelled) setResults((prev) => ({ ...prev, [key]: { kind: "ok", result } }));
         })
         .catch((error: unknown) => {
           if (cancelled) return;
-          const message = error instanceof ApiError ? `HTTP ${error.status}` : "API tidak terjangkau";
+          const message = error instanceof ApiError ? `HTTP ${error.status}` : t("API tidak terjangkau", "API unreachable");
           setResults((prev) => ({ ...prev, [key]: { kind: "error", message } }));
         });
     }
@@ -208,7 +210,7 @@ export default function AnalyticsPage() {
 
       <div className="qhse-dash__toolbar">
         <div className="qhse-dash__period">
-          <label htmlFor="dari">Dari</label>
+          <label htmlFor="dari">{t("Dari", "From")}</label>
           <input
             id="dari"
             type="date"
@@ -216,7 +218,7 @@ export default function AnalyticsPage() {
             max={layout.period.to}
             onChange={(event) => setLayout({ ...layout, period: { ...layout.period, from: event.target.value } })}
           />
-          <label htmlFor="sampai">sampai</label>
+          <label htmlFor="sampai">{t("sampai", "to")}</label>
           <input
             id="sampai"
             type="date"
@@ -228,21 +230,25 @@ export default function AnalyticsPage() {
         <span className="qhse-dash__spacer" />
         <SaveIndicator state={saveState} />
         <Button variant={editing ? "accent" : "default"} onClick={() => setEditing((value) => !value)}>
-          {editing ? "Selesai menyusun" : "Susun dashboard"}
+          {editing ? t("Selesai menyusun", "Done arranging") : t("Susun dashboard", "Arrange dashboard")}
         </Button>
       </div>
 
       {editing && (
         <div className="qhse-dash__editbar">
           <p className="qhse-dash__edithint">
-            Seret kartu untuk memindahkannya, atau pakai tombol ‹ ›. Tombol ⤢ mengubah lebar, ✕ melepas widget.
-            Susunan tersimpan otomatis untuk akun Anda.
+            {t(
+              "Seret kartu untuk memindahkannya, atau pakai tombol ‹ ›. Tombol ⤢ mengubah lebar, ✕ melepas widget. Susunan tersimpan otomatis untuk akun Anda.",
+              "Drag a card to move it, or use the ‹ › buttons. ⤢ changes the width, ✕ removes the widget. The layout is saved automatically for your account.",
+            )}
           </p>
           <Button variant="default" onClick={() => setPickerOpen((value) => !value)}>
-            {pickerOpen ? "Tutup katalog" : `Tambah widget (${catalog.length - chosen.size} tersedia)`}
+            {pickerOpen
+              ? t("Tutup katalog", "Close catalogue")
+              : t(`Tambah widget (${catalog.length - chosen.size} tersedia)`, `Add widget (${catalog.length - chosen.size} available)`)}
           </Button>
           <Button variant="default" onClick={resetLayout}>
-            Kembalikan bawaan
+            {t("Kembalikan bawaan", "Restore defaults")}
           </Button>
         </div>
       )}
@@ -251,8 +257,9 @@ export default function AnalyticsPage() {
 
       {layout.widgets.length === 0 ? (
         <p className="qhse-dash__muted">
-          Belum ada widget. Buka <strong>Susun dashboard → Tambah widget</strong> untuk memilih dari {catalog.length} metrik
-          yang tersedia.
+          {t("Belum ada widget. Buka", "No widgets yet. Open")}{" "}
+          <strong>{t("Susun dashboard → Tambah widget", "Arrange dashboard → Add widget")}</strong>{" "}
+          {t(`untuk memilih dari ${catalog.length} metrik yang tersedia.`, `to choose from the ${catalog.length} available metrics.`)}
         </p>
       ) : (
         <div className="qhse-dash__grid">
@@ -281,14 +288,17 @@ export default function AnalyticsPage() {
 }
 
 function PageHeader() {
+  const { t } = useLocale();
   return (
     <header className="qhse-page__header">
       <div>
-        <p className="qhse-page__eyebrow">Analitik</p>
-        <h1 className="qhse-page__title">Dashboard Analitik</h1>
+        <p className="qhse-page__eyebrow">{t("Analitik", "Analytics")}</p>
+        <h1 className="qhse-page__title">{t("Dashboard Analitik", "Analytics Dashboard")}</h1>
         <p className="qhse-page__subtitle">
-          Angka dihitung langsung dari data tenant yang sedang aktif. Pilih widget yang Anda perlukan dan susun sendiri
-          urutannya.
+          {t(
+            "Angka dihitung langsung dari data tenant yang sedang aktif. Pilih widget yang Anda perlukan dan susun sendiri urutannya.",
+            "Figures are computed directly from the active tenant's data. Pick the widgets you need and arrange them yourself.",
+          )}
         </p>
       </div>
     </header>
@@ -296,9 +306,14 @@ function PageHeader() {
 }
 
 function SaveIndicator({ state }: { state: SaveState }) {
+  const { t } = useLocale();
   if (state === "idle") return null;
   const text =
-    state === "saving" ? "Menyimpan susunan…" : state === "saved" ? "Susunan tersimpan" : "Susunan gagal disimpan";
+    state === "saving"
+      ? t("Menyimpan susunan…", "Saving layout…")
+      : state === "saved"
+        ? t("Susunan tersimpan", "Layout saved")
+        : t("Susunan gagal disimpan", "Layout could not be saved");
   return <span className={`qhse-dash__save qhse-dash__save--${state}`}>{text}</span>;
 }
 
@@ -374,6 +389,7 @@ function MetricWidget({
   onWidth: (key: string, width: 1 | 2) => void;
   onRemove: (key: string) => void;
 }) {
+  const { t } = useLocale();
   return (
     <article
       className={`qhse-widget qhse-widget--w${width}${editing ? " qhse-widget--editing" : ""}`}
@@ -399,12 +415,12 @@ function MetricWidget({
         </div>
         {editing && (
           <div className="qhse-widget__tools">
-            <button type="button" aria-label="Pindah ke kiri" disabled={index === 0} onClick={() => onMove(index, index - 1)}>
+            <button type="button" aria-label={t("Pindah ke kiri", "Move left")} disabled={index === 0} onClick={() => onMove(index, index - 1)}>
               ‹
             </button>
             <button
               type="button"
-              aria-label="Pindah ke kanan"
+              aria-label={t("Pindah ke kanan", "Move right")}
               disabled={index === total - 1}
               onClick={() => onMove(index, index + 1)}
             >
@@ -412,12 +428,12 @@ function MetricWidget({
             </button>
             <button
               type="button"
-              aria-label={width === 1 ? "Perlebar" : "Persempit"}
+              aria-label={width === 1 ? t("Perlebar", "Widen") : t("Persempit", "Narrow")}
               onClick={() => onWidth(entry.key, width === 1 ? 2 : 1)}
             >
               ⤢
             </button>
-            <button type="button" aria-label="Lepas widget" onClick={() => onRemove(entry.key)}>
+            <button type="button" aria-label={t("Lepas widget", "Remove widget")} onClick={() => onRemove(entry.key)}>
               ✕
             </button>
           </div>
@@ -430,8 +446,11 @@ function MetricWidget({
         {state?.kind === "ok" && (
           <span>
             {entry.periodApplies
-              ? `Periode ${state.result.period.from} s.d. ${state.result.period.to}`
-              : "Potret saat ini — tidak terpengaruh penyaring periode"}
+              ? t(
+                  `Periode ${state.result.period.from} s.d. ${state.result.period.to}`,
+                  `Period ${state.result.period.from} — ${state.result.period.to}`,
+                )
+              : t("Potret saat ini — tidak terpengaruh penyaring periode", "Current snapshot — not affected by the period filter")}
           </span>
         )}
       </footer>
@@ -440,9 +459,15 @@ function MetricWidget({
 }
 
 function WidgetBody({ entry, state }: { entry: MetricCatalogEntry; state: WidgetState | undefined }) {
-  if (!state || state.kind === "loading") return <p className="qhse-widget__placeholder">Memuat…</p>;
+  const { locale, t } = useLocale();
+  if (!state || state.kind === "loading")
+    return <p className="qhse-widget__placeholder">{t("Memuat…", "Loading…")}</p>;
   if (state.kind === "error") {
-    return <p className="qhse-widget__placeholder qhse-widget__placeholder--error">Gagal memuat ({state.message}).</p>;
+    return (
+      <p className="qhse-widget__placeholder qhse-widget__placeholder--error">
+        {t(`Gagal memuat (${state.message}).`, `Failed to load (${state.message}).`)}
+      </p>
+    );
   }
 
   const result = state.result;
@@ -456,11 +481,11 @@ function WidgetBody({ entry, state }: { entry: MetricCatalogEntry; state: Widget
     const badge = entry.tone === "inverse" ? (value === 0 ? "good" : value <= 5 ? "warning" : "serious") : null;
     return (
       <div className="qhse-widget__scalar">
-        <span className="qhse-widget__number">{formatMetricValue(value, entry.format)}</span>
+        <span className="qhse-widget__number">{formatMetricValue(value, entry.format, locale)}</span>
         <span className="qhse-widget__unit">{entry.format === "percent" ? "" : entry.unit}</span>
         {badge && (
           <span className="qhse-widget__badge">
-            <StatusBadge tone={badge} label={value === 0 ? "Bersih" : "Perlu tindakan"} />
+            <StatusBadge tone={badge} label={value === 0 ? t("Bersih", "Clear") : t("Perlu tindakan", "Needs action")} />
           </span>
         )}
       </div>
@@ -473,8 +498,8 @@ function WidgetBody({ entry, state }: { entry: MetricCatalogEntry; state: Widget
     return (
       <div className="qhse-widget__series">
         <div className="qhse-widget__seriestotal">
-          <span className="qhse-widget__number">{formatMetricValue(total, entry.format)}</span>
-          <span className="qhse-widget__unit">{entry.format === "currency" ? "total" : `${entry.unit} total`}</span>
+          <span className="qhse-widget__number">{formatMetricValue(total, entry.format, locale)}</span>
+          <span className="qhse-widget__unit">{entry.format === "currency" ? t("total", "total") : t(`${entry.unit} total`, `${entry.unit} total`)}</span>
         </div>
         <LineChart points={points} ariaLabel={entry.title} />
       </div>

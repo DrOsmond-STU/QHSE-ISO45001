@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "@qhse/i18n";
+import { useLocale } from "../../lib/locale";
 import { Button, FormField } from "@qhse/ui-components";
 import { ApiError } from "../../lib/api-client";
 import { getRememberedEmail, getRememberedTenantId, login, MfaRequiredError } from "../../lib/auth-session";
@@ -19,6 +20,7 @@ import "./login.css";
 // deployment satu-tenant, isi NEXT_PUBLIC_DEFAULT_TENANT_ID supaya kolom ini
 // terisi otomatis dan user tinggal mengetik email + password.
 export default function LoginPage() {
+  const { locale, setLocale } = useLocale();
   const router = useRouter();
   const hasToken = useHasAccessToken();
 
@@ -52,15 +54,15 @@ export default function LoginPage() {
     } catch (err) {
       if (err instanceof MfaRequiredError) {
         setMfaNeeded(true);
-        setError(t("auth.login.mfaPrompt"));
+        setError(t("auth.login.mfaPrompt", locale));
       } else if (err instanceof ApiError && err.status === 401) {
-        setError(t("auth.login.invalidCredentials"));
+        setError(t("auth.login.invalidCredentials", locale));
       } else if (err instanceof ApiError && err.status === 429) {
-        setError(t("auth.login.rateLimited"));
+        setError(t("auth.login.rateLimited", locale));
       } else if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError(err instanceof Error ? err.message : t("auth.login.networkError"));
+        setError(err instanceof Error ? err.message : t("auth.login.networkError", locale));
       }
     } finally {
       setSubmitting(false);
@@ -69,12 +71,31 @@ export default function LoginPage() {
 
   return (
     <div className="qhse-login">
+      {/* Pemilih bahasa ada SEBELUM masuk, dan itu bukan kelengkapan yang
+          berlebihan: layar ini adalah hal pertama yang dilihat pengguna
+          berbahasa Inggris, dan pemilih yang baru muncul setelah berhasil
+          masuk datang terlambat bagi orang yang belum bisa membaca
+          petunjuk kolom Tenant ID. */}
+      <div className="qhse-login__lang" role="group" aria-label="Language / Bahasa">
+        {(["id", "en"] as const).map((kode) => (
+          <button
+            key={kode}
+            type="button"
+            lang={kode}
+            className={`qhse-login__lang-option${locale === kode ? " qhse-login__lang-option--on" : ""}`}
+            aria-pressed={locale === kode}
+            onClick={() => setLocale(kode)}
+          >
+            {kode === "id" ? "ID" : "EN"}
+          </button>
+        ))}
+      </div>
       <form className="qhse-login__card" onSubmit={handleSubmit}>
         <span className="qhse-login__mark" aria-hidden="true">
           QH
         </span>
         <h1 className="qhse-login__brand">QHSE Platform</h1>
-        <p className="qhse-login__tagline">{t("auth.login.title")}</p>
+        <p className="qhse-login__tagline">{t("auth.login.title", locale)}</p>
 
         {error && (
           <p role="alert" className="qhse-login__error">
@@ -82,7 +103,7 @@ export default function LoginPage() {
           </p>
         )}
 
-        <FormField label={t("auth.login.tenantId")} htmlFor="tenantId" required hint={t("auth.login.tenantId.hint")}>
+        <FormField label={t("auth.login.tenantId", locale)} htmlFor="tenantId" required hint={t("auth.login.tenantId.hint", locale)}>
           <input
             id="tenantId"
             className="qhse-login__input"
@@ -93,7 +114,7 @@ export default function LoginPage() {
           />
         </FormField>
 
-        <FormField label={t("auth.login.email")} htmlFor="email" required>
+        <FormField label={t("auth.login.email", locale)} htmlFor="email" required>
           <input
             id="email"
             type="email"
@@ -105,7 +126,7 @@ export default function LoginPage() {
           />
         </FormField>
 
-        <FormField label={t("auth.login.password")} htmlFor="password" required>
+        <FormField label={t("auth.login.password", locale)} htmlFor="password" required>
           <input
             id="password"
             type="password"
@@ -118,7 +139,7 @@ export default function LoginPage() {
         </FormField>
 
         {mfaNeeded && (
-          <FormField label={t("auth.login.totpCode")} htmlFor="totpCode" required hint={t("auth.login.totpCode.hint")}>
+          <FormField label={t("auth.login.totpCode", locale)} htmlFor="totpCode" required hint={t("auth.login.totpCode.hint", locale)}>
             <input
               id="totpCode"
               className="qhse-login__input"
@@ -134,11 +155,11 @@ export default function LoginPage() {
 
         <div className="qhse-login__actions">
           <Button type="submit" variant="accent" disabled={submitting}>
-            {submitting ? t("auth.login.submitting") : t("auth.login.submit")}
+            {submitting ? t("auth.login.submitting", locale) : t("auth.login.submit", locale)}
           </Button>
         </div>
 
-        <p className="qhse-login__hint">{t("auth.login.securityNote")}</p>
+        <p className="qhse-login__hint">{t("auth.login.securityNote", locale)}</p>
       </form>
     </div>
   );

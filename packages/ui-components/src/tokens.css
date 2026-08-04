@@ -53,10 +53,10 @@
   /* --- Netral (bersemu navy) --- */
   --qhse-surface-1: #ffffff;
   --qhse-surface-2: #f8fafc;
-  --qhse-page-plane: #f2f6fa;
+  --qhse-page-plane: #f4f7fb;
   --qhse-text-primary: #0f2233;
-  --qhse-text-secondary: #4a627a;
-  --qhse-text-muted: #8ba1b6;
+  --qhse-text-secondary: #51697f;
+  --qhse-text-muted: #90a5b9;
   --qhse-gridline: #eaf0f6;
   --qhse-border: #dbe5ee;
   --qhse-border-hairline: rgba(11, 39, 64, 0.08);
@@ -103,19 +103,26 @@
   /* Skala dinaikkan dari 14px/22px. Ukuran lama padat seperti aplikasi desktop
      lama; 15px badan dan 26px judul memberi antarmuka ruang bernapas tanpa
      mengurangi jumlah baris yang muat di satu layar secara berarti. */
-  --qhse-text-display-size: 34px;
-  --qhse-text-display-lh: 1.18;
-  --qhse-text-h1-size: 26px;
-  --qhse-text-h1-lh: 1.25;
+  --qhse-text-display-size: 36px;
+  --qhse-text-display-lh: 1.14;
+  --qhse-text-h1-size: 27px;
+  --qhse-text-h1-lh: 1.28;
   --qhse-text-h2-size: 19px;
-  --qhse-text-h2-lh: 1.35;
+  --qhse-text-h2-lh: 1.4;
   --qhse-text-body-size: 15px;
-  --qhse-text-body-lh: 1.6;
+  --qhse-text-body-lh: 1.65;
   --qhse-text-body-sm-size: 13.5px;
-  --qhse-text-body-sm-lh: 1.5;
+  --qhse-text-body-sm-lh: 1.55;
   --qhse-text-micro-size: 11.5px;
-  --qhse-text-micro-lh: 1.4;
-  --qhse-tracking-tight: -0.015em;
+  --qhse-text-micro-lh: 1.45;
+  /* Judul dirapatkan LEBIH JAUH daripada badan teks, dan itu bukan selera:
+     pada ukuran besar, jarak antarhuruf yang dirancang untuk 15px terlihat
+     renggang — huruf berukuran display butuh tracking negatif untuk terbaca
+     serapat teks kecil. Badan teks justru sebaliknya, sedikit dilonggarkan
+     supaya kalimat panjang tidak terasa berdesakan. */
+  --qhse-tracking-tight: -0.02em;
+  --qhse-tracking-normal: 0;
+  --qhse-tracking-loose: 0.01em;
   --qhse-tracking-wide: 0.08em;
 
   /* --- Spacing (kelipatan 4px) & Radius --- */
@@ -127,9 +134,9 @@
   --qhse-space-6: 32px;
   --qhse-space-7: 48px;
   --qhse-space-8: 64px;
-  --qhse-radius-sm: 8px;
-  --qhse-radius-md: 14px;
-  --qhse-radius-lg: 20px;
+  --qhse-radius-sm: 9px;
+  --qhse-radius-md: 16px;
+  --qhse-radius-lg: 22px;
   --qhse-radius-full: 9999px;
 
   /* --- Row density tabel data --- */
@@ -192,10 +199,10 @@
 :root[data-theme="light"] {
   --qhse-surface-1: #ffffff;
   --qhse-surface-2: #f8fafc;
-  --qhse-page-plane: #f2f6fa;
+  --qhse-page-plane: #f4f7fb;
   --qhse-text-primary: #0f2233;
-  --qhse-text-secondary: #4a627a;
-  --qhse-text-muted: #8ba1b6;
+  --qhse-text-secondary: #51697f;
+  --qhse-text-muted: #90a5b9;
   --qhse-gridline: #eaf0f6;
   --qhse-border: #dbe5ee;
   --qhse-border-hairline: rgba(11, 39, 64, 0.08);

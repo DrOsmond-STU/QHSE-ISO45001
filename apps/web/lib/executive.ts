@@ -1,5 +1,6 @@
 import type { GaugeBand } from "@qhse/ui-components";
 import { defaultPeriod, type MetricCatalogEntry } from "./analytics";
+import type { Locale } from "./locale";
 
 // Dashboard Eksekutif — susunan bawaan, pilihan tampilan, dan zona gauge.
 //
@@ -61,11 +62,14 @@ export const DEFAULT_EXECUTIVE_WIDGETS: ExecutiveWidget[] = [
   { key: "exec-manhours-trend", width: 1, viz: "garis" },
 ];
 
-export function defaultExecutiveLayout(): ExecutiveLayout {
+export function defaultExecutiveLayout(locale: Locale = "id"): ExecutiveLayout {
   return {
     widgets: [...DEFAULT_EXECUTIVE_WIDGETS],
     period: defaultPeriod(),
-    judul: "Kinerja QHSE",
+    // Judul BAWAAN mengikuti bahasa, judul yang SUDAH DISIMPAN tidak: begitu
+    // seseorang mengetik judulnya sendiri, itu teks miliknya — bukan teks
+    // antarmuka — dan menerjemahkannya berarti mengubah tulisan orang.
+    judul: locale === "en" ? "QHSE Performance" : "Kinerja QHSE",
   };
 }
 
@@ -84,9 +88,22 @@ export function defaultExecutiveLayout(): ExecutiveLayout {
 // penutupan temuan makin besar makin baik — dan itulah alasan zona tidak bisa
 // disimpulkan dari angkanya saja.
 
+/** Zona gauge dengan label dwibahasa. GaugeBand milik @qhse/ui-components
+ *  hanya menerima label berupa string; penerjemahannya dilakukan di halaman
+ *  yang merendernya, lewat `bandsLokal()` di bawah. */
+export interface GaugeSpecBand {
+  hingga: number;
+  color: string;
+  label: { id: string; en: string };
+}
+
 export interface GaugeSpec {
   max: number;
-  bands: GaugeBand[];
+  bands: GaugeSpecBand[];
+}
+
+export function bandsLokal(bands: GaugeSpecBand[], locale: Locale): GaugeBand[] {
+  return bands.map((band) => ({ hingga: band.hingga, color: band.color, label: band.label[locale] }));
 }
 
 const BAIK = "var(--qhse-status-good)";
@@ -99,47 +116,47 @@ export const GAUGE_SPEC: Record<string, GaugeSpec> = {
   "exec-ltifr": {
     max: 5,
     bands: [
-      { hingga: 0.5, color: BAIK, label: "Sangat baik" },
-      { hingga: 1.5, color: CUKUP, label: "Cukup" },
-      { hingga: 3, color: SERIUS, label: "Perlu perhatian" },
-      { hingga: 5, color: BURUK, label: "Buruk" },
+      { hingga: 0.5, color: BAIK, label: { id: "Sangat baik", en: "Very good" } },
+      { hingga: 1.5, color: CUKUP, label: { id: "Cukup", en: "Adequate" } },
+      { hingga: 3, color: SERIUS, label: { id: "Perlu perhatian", en: "Needs attention" } },
+      { hingga: 5, color: BURUK, label: { id: "Buruk", en: "Poor" } },
     ],
   },
   "exec-trir": {
     max: 12,
     bands: [
-      { hingga: 1.5, color: BAIK, label: "Sangat baik" },
-      { hingga: 4, color: CUKUP, label: "Cukup" },
-      { hingga: 8, color: SERIUS, label: "Perlu perhatian" },
-      { hingga: 12, color: BURUK, label: "Buruk" },
+      { hingga: 1.5, color: BAIK, label: { id: "Sangat baik", en: "Very good" } },
+      { hingga: 4, color: CUKUP, label: { id: "Cukup", en: "Adequate" } },
+      { hingga: 8, color: SERIUS, label: { id: "Perlu perhatian", en: "Needs attention" } },
+      { hingga: 12, color: BURUK, label: { id: "Buruk", en: "Poor" } },
     ],
   },
   // Makin besar makin baik — urutan warnanya karena itu terbalik.
   "exec-audit-finding-closed-rate": {
     max: 100,
     bands: [
-      { hingga: 50, color: BURUK, label: "Buruk" },
-      { hingga: 75, color: SERIUS, label: "Perlu perhatian" },
-      { hingga: 90, color: CUKUP, label: "Cukup" },
-      { hingga: 100, color: BAIK, label: "Sangat baik" },
+      { hingga: 50, color: BURUK, label: { id: "Buruk", en: "Poor" } },
+      { hingga: 75, color: SERIUS, label: { id: "Perlu perhatian", en: "Needs attention" } },
+      { hingga: 90, color: CUKUP, label: { id: "Cukup", en: "Adequate" } },
+      { hingga: 100, color: BAIK, label: { id: "Sangat baik", en: "Very good" } },
     ],
   },
   "capa-closure-rate": {
     max: 100,
     bands: [
-      { hingga: 50, color: BURUK, label: "Buruk" },
-      { hingga: 75, color: SERIUS, label: "Perlu perhatian" },
-      { hingga: 90, color: CUKUP, label: "Cukup" },
-      { hingga: 100, color: BAIK, label: "Sangat baik" },
+      { hingga: 50, color: BURUK, label: { id: "Buruk", en: "Poor" } },
+      { hingga: 75, color: SERIUS, label: { id: "Perlu perhatian", en: "Needs attention" } },
+      { hingga: 90, color: CUKUP, label: { id: "Cukup", en: "Adequate" } },
+      { hingga: 100, color: BAIK, label: { id: "Sangat baik", en: "Very good" } },
     ],
   },
   "inspection-pass-rate": {
     max: 100,
     bands: [
-      { hingga: 60, color: BURUK, label: "Buruk" },
-      { hingga: 80, color: SERIUS, label: "Perlu perhatian" },
-      { hingga: 92, color: CUKUP, label: "Cukup" },
-      { hingga: 100, color: BAIK, label: "Sangat baik" },
+      { hingga: 60, color: BURUK, label: { id: "Buruk", en: "Poor" } },
+      { hingga: 80, color: SERIUS, label: { id: "Perlu perhatian", en: "Needs attention" } },
+      { hingga: 92, color: CUKUP, label: { id: "Cukup", en: "Adequate" } },
+      { hingga: 100, color: BAIK, label: { id: "Sangat baik", en: "Very good" } },
     ],
   },
 };
@@ -159,11 +176,11 @@ export function vizBawaan(entry: MetricCatalogEntry): Viz {
   return vizPilihan(entry)[0] ?? "auto";
 }
 
-export const VIZ_LABEL: Record<Viz, string> = {
-  auto: "Otomatis",
-  angka: "Angka besar",
-  gauge: "Gauge berpita",
-  batang: "Batang",
-  donat: "Donat",
-  garis: "Garis",
+export const VIZ_LABEL: Record<Viz, { id: string; en: string }> = {
+  auto: { id: "Otomatis", en: "Automatic" },
+  angka: { id: "Angka besar", en: "Big number" },
+  gauge: { id: "Gauge berpita", en: "Banded gauge" },
+  batang: { id: "Batang", en: "Bar" },
+  donat: { id: "Donat", en: "Donut" },
+  garis: { id: "Garis", en: "Line" },
 };

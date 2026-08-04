@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BarList, DonutChart, GaugeChart, LineChart, shortMonthLabel } from "@qhse/ui-components";
 import { ApiError } from "../../../lib/api-client";
+import { localeTag, useLocale } from "../../../lib/locale";
 import {
   fetchCatalog,
   fetchLayout,
@@ -16,6 +17,7 @@ import {
 } from "../../../lib/analytics";
 import {
   GAUGE_SPEC,
+  bandsLokal,
   defaultExecutiveLayout,
   type ExecutiveLayout,
   type ExecutiveWidget,
@@ -40,6 +42,7 @@ type WidgetState =
   | { kind: "error"; message: string };
 
 export default function ExecutivePage() {
+  const { locale, t } = useLocale();
   const [catalog, setCatalog] = useState<MetricCatalogEntry[] | null>(null);
   const [layout, setLayout] = useState<ExecutiveLayout | null>(null);
   const [results, setResults] = useState<Record<string, WidgetState>>({});
@@ -47,11 +50,11 @@ export default function ExecutivePage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchCatalog(), fetchLayout<ExecutiveLayout>("executive")])
+    Promise.all([fetchCatalog(locale), fetchLayout<ExecutiveLayout>("executive")])
       .then(([entries, stored]) => {
         if (cancelled) return;
         const known = new Set(entries.map((entry) => entry.key));
-        const bawaan = defaultExecutiveLayout();
+        const bawaan = defaultExecutiveLayout(locale);
         const saved = stored.layout;
         // Widget yang metriknya tidak ada lagi dibuang saat DIBACA, bukan
         // ditolak saat disimpan — katalog boleh menyusut tanpa membuat
@@ -68,12 +71,12 @@ export default function ExecutivePage() {
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        setLoadError(error instanceof ApiError ? error.message : "API tidak terjangkau.");
+        setLoadError(error instanceof ApiError ? error.message : t("API tidak terjangkau.", "API unreachable."));
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale, t]);
 
   const widgetKeys = layout?.widgets.map((w) => w.key).join(",") ?? "";
   const periodFrom = layout?.period.from;
@@ -89,25 +92,25 @@ export default function ExecutivePage() {
       return next;
     });
     for (const key of keys) {
-      fetchMetric(key, { from: periodFrom, to: periodTo })
+      fetchMetric(key, { from: periodFrom, to: periodTo }, locale)
         .then((result) => {
           if (!cancelled) setResults((prev) => ({ ...prev, [key]: { kind: "ok", result } }));
         })
         .catch((error: unknown) => {
           if (cancelled) return;
-          const message = error instanceof ApiError ? error.message : "gagal dimuat";
+          const message = error instanceof ApiError ? error.message : t("gagal dimuat", "failed to load");
           setResults((prev) => ({ ...prev, [key]: { kind: "error", message } }));
         });
     }
     return () => {
       cancelled = true;
     };
-  }, [widgetKeys, periodFrom, periodTo]);
+  }, [widgetKeys, periodFrom, periodTo, locale, t]);
 
   const byKey = useMemo(() => new Map((catalog ?? []).map((entry) => [entry.key, entry])), [catalog]);
 
   if (loadError) return <p className="qhse-exec__bad">{loadError}</p>;
-  if (!layout) return <p className="qhse-exec__kosong">Memuat…</p>;
+  if (!layout) return <p className="qhse-exec__kosong">{t("Memuat…", "Loading…")}</p>;
 
   return (
     <div className="qhse-exec">
@@ -115,11 +118,11 @@ export default function ExecutivePage() {
         <div>
           <h1 className="qhse-exec__title">{layout.judul}</h1>
           <p className="qhse-exec__periode">
-            Periode {layout.period.from} s.d. {layout.period.to}
+            {t("Periode", "Period")} {layout.period.from} — {layout.period.to}
           </p>
         </div>
         <Link href="/settings/dashboard" className="qhse-exec__atur">
-          Atur komponen
+          {t("Atur komponen", "Configure widgets")}
         </Link>
       </header>
 
@@ -146,6 +149,7 @@ function Widget({
   entry: MetricCatalogEntry | null;
   state: WidgetState;
 }) {
+  const { t } = useLocale();
   const kelas = `qhse-exec__card qhse-exec__card--w${widget.width}`;
   return (
     <section className={kelas}>
@@ -156,7 +160,7 @@ function Widget({
       {/* Badan dipisahkan dari pita kepala supaya jaraknya sendiri dan pita
           kepala bisa berlatar sampai ke tepi kartu. */}
       <div className="qhse-exec__badan">
-        {state.kind === "loading" && <p className="qhse-exec__kosong">Memuat…</p>}
+        {state.kind === "loading" && <p className="qhse-exec__kosong">{t("Memuat…", "Loading…")}</p>}
         {state.kind === "error" && <p className="qhse-exec__bad">{state.message}</p>}
         {state.kind === "ok" && <Isi widget={widget} result={state.result} />}
         {/* Metrik yang TIDAK terpengaruh penyaring periode mengatakannya
@@ -164,7 +168,9 @@ function Widget({
             widget membuat pembacanya menyimpulkan angka yang salah tanpa
             punya cara mengetahuinya. */}
         {state.kind === "ok" && !state.result.periodApplies && (
-          <p className="qhse-exec__catatan">Potret saat ini — tidak mengikuti penyaring periode.</p>
+          <p className="qhse-exec__catatan">
+            {t("Potret saat ini — tidak mengikuti penyaring periode.", "Current snapshot — not affected by the period filter.")}
+          </p>
         )}
       </div>
     </section>
@@ -172,11 +178,12 @@ function Widget({
 }
 
 function Isi({ widget, result }: { widget: ExecutiveWidget; result: MetricResult }) {
+  const { locale, t } = useLocale();
   const viz = widget.viz;
 
   if (viz === "gauge") {
     const spec = GAUGE_SPEC[result.key];
-    if (!spec) return <p className="qhse-exec__bad">Zona gauge belum ditetapkan untuk metrik ini.</p>;
+    if (!spec) return <p className="qhse-exec__bad">{t("Zona gauge belum ditetapkan untuk metrik ini.", "Gauge bands have not been defined for this metric.")}</p>;
     return (
       <GaugeChart
         // value === undefined terjadi ketika pembaginya belum terisi (mis.
@@ -191,11 +198,11 @@ function Isi({ widget, result }: { widget: ExecutiveWidget; result: MetricResult
           result.value === undefined
             ? undefined
             : result.format === "percent"
-              ? `${result.value.toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`
-              : result.value.toLocaleString("id-ID", { maximumFractionDigits: 2 })
+              ? `${result.value.toLocaleString(localeTag(locale), { maximumFractionDigits: 1 })}%`
+              : result.value.toLocaleString(localeTag(locale), { maximumFractionDigits: 2 })
         }
         max={spec.max}
-        bands={spec.bands}
+        bands={bandsLokal(spec.bands, locale)}
         // Satuan TIDAK diulang ketika sudah menempel pada angkanya — gauge
         // persentase sempat tercetak "70%" dengan baris "%" di bawahnya.
         label={result.format === "percent" ? undefined : result.unit}
@@ -209,16 +216,16 @@ function Isi({ widget, result }: { widget: ExecutiveWidget; result: MetricResult
     return (
       <div className="qhse-exec__angka">
         <span className={kosong ? "qhse-exec__nilai qhse-exec__nilai--kosong" : "qhse-exec__nilai"}>
-          {kosong ? "—" : formatMetricValue(result.value as number, result.format)}
+          {kosong ? "—" : formatMetricValue(result.value as number, result.format, locale)}
         </span>
-        <span className="qhse-exec__satuan">{kosong ? "belum bisa dihitung" : result.unit}</span>
+        <span className="qhse-exec__satuan">{kosong ? t("belum bisa dihitung", "not computable yet") : result.unit}</span>
       </div>
     );
   }
 
   if (viz === "garis" || result.kind === "series") {
     const points = (result.points ?? []).map((p) => ({ label: shortMonthLabel(p.label), value: p.value }));
-    if (points.length === 0) return <p className="qhse-exec__kosong">Belum ada data pada periode ini.</p>;
+    if (points.length === 0) return <p className="qhse-exec__kosong">{t("Belum ada data pada periode ini.", "No data in this period yet.")}</p>;
     return <LineChart points={points} ariaLabel={result.title} />;
   }
 
@@ -227,7 +234,7 @@ function Isi({ widget, result }: { widget: ExecutiveWidget; result: MetricResult
     value: slice.value,
     color: sliceColor(slice.code, index),
   }));
-  if (slices.length === 0) return <p className="qhse-exec__kosong">Belum ada data pada periode ini.</p>;
+  if (slices.length === 0) return <p className="qhse-exec__kosong">{t("Belum ada data pada periode ini.", "No data in this period yet.")}</p>;
   return viz === "donat" ? (
     <DonutChart slices={slices} ariaLabel={result.title} />
   ) : (

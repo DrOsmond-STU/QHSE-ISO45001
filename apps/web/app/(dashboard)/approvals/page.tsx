@@ -5,7 +5,8 @@ import Link from "next/link";
 import { StatusBadge } from "@qhse/ui-components";
 import { ApiError } from "../../../lib/api-client";
 import { fetchInbox, type InboxTask } from "../../../lib/records";
-import { MODULES } from "../../../lib/modules";
+import { useLocale, type Locale } from "../../../lib/locale";
+import { findModule } from "../../../lib/modules";
 import { formatCell } from "../../../lib/format";
 import "../records.css";
 
@@ -32,8 +33,8 @@ const SLUG_BY_ENTITY: Record<string, string> = {
   inspection_record: "inspection-records",
 };
 
-function titleForSlug(slug: string): string {
-  return MODULES.find((module) => module.slug === slug)?.title ?? slug;
+function titleForSlug(slug: string, locale: Locale): string {
+  return findModule(slug, locale)?.title ?? slug;
 }
 
 /**
@@ -41,15 +42,22 @@ function titleForSlug(slug: string): string {
  * dari saat pengajuannya dimulai: SLA melekat pada tahap, dan tahap kedua
  * baru mulai berdetak ketika tahap pertama selesai.
  */
-function slaState(createdAt: string, slaHours: number): { text: string; tone: "good" | "warning" | "critical" } {
+function slaState(
+  createdAt: string,
+  slaHours: number,
+  t: (id: string, en: string) => string,
+): { text: string; tone: "good" | "warning" | "critical" } {
   const deadline = new Date(createdAt).getTime() + slaHours * 3600_000;
   const remainingHours = (deadline - Date.now()) / 3600_000;
-  if (remainingHours < 0) return { text: `Lewat ${Math.abs(Math.round(remainingHours))} jam`, tone: "critical" };
-  if (remainingHours < slaHours * 0.25) return { text: `Sisa ${Math.round(remainingHours)} jam`, tone: "warning" };
-  return { text: `Sisa ${Math.round(remainingHours)} jam`, tone: "good" };
+  const lewat = Math.abs(Math.round(remainingHours));
+  const sisa = Math.round(remainingHours);
+  if (remainingHours < 0) return { text: t(`Lewat ${lewat} jam`, `${lewat} h overdue`), tone: "critical" };
+  if (remainingHours < slaHours * 0.25) return { text: t(`Sisa ${sisa} jam`, `${sisa} h left`), tone: "warning" };
+  return { text: t(`Sisa ${sisa} jam`, `${sisa} h left`), tone: "good" };
 }
 
 export default function ApprovalsPage() {
+  const { locale, t } = useLocale();
   const [tasks, setTasks] = useState<InboxTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,27 +68,27 @@ export default function ApprovalsPage() {
         if (!cancelled) setTasks(loaded);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof ApiError ? cause.message : "API tidak terjangkau.");
+        if (!cancelled) setError(cause instanceof ApiError ? cause.message : t("API tidak terjangkau.", "API unreachable."));
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   return (
     <section>
       <header className="qhse-page__header">
         <div>
-          <p className="qhse-page__eyebrow">Persetujuan</p>
-          <h1 className="qhse-page__title">Kotak Persetujuan</h1>
+          <p className="qhse-page__eyebrow">{t("Persetujuan", "Approvals")}</p>
+          <h1 className="qhse-page__title">{t("Kotak Persetujuan", "Approval Inbox")}</h1>
           <p className="qhse-page__subtitle">
             {error
-              ? "Tidak ada data yang bisa ditampilkan."
+              ? t("Tidak ada data yang bisa ditampilkan.", "There is no data to show.")
               : tasks === null
-                ? "Memuat…"
+                ? t("Memuat…", "Loading…")
                 : tasks.length === 0
-                  ? "Tidak ada yang menunggu persetujuan Anda."
-                  : `${tasks.length} tugas menunggu tanda tangan Anda.`}
+                  ? t("Tidak ada yang menunggu persetujuan Anda.", "Nothing is waiting for your approval.")
+                  : t(`${tasks.length} tugas menunggu tanda tangan Anda.`, `${tasks.length} task(s) awaiting your sign-off.`)}
           </p>
         </div>
       </header>
@@ -93,33 +101,39 @@ export default function ApprovalsPage() {
 
       {tasks !== null && tasks.length === 0 && (
         <p className="qhse-dash__muted">
-          Kotak persetujuan hanya menampilkan tugas yang ditugaskan kepada Anda berdasarkan peran. Kalau Anda menunggu
-          sesuatu yang tidak muncul di sini, kemungkinan besar ia sedang berada di tahap yang penyetujunya orang lain.
+          {t(
+            "Kotak persetujuan hanya menampilkan tugas yang ditugaskan kepada Anda berdasarkan peran. Kalau Anda menunggu sesuatu yang tidak muncul di sini, kemungkinan besar ia sedang berada di tahap yang penyetujunya orang lain.",
+            "The inbox only shows tasks assigned to you by role. If something you are waiting on does not appear here, it is most likely sitting at a stage whose approver is someone else.",
+          )}
         </p>
       )}
 
       <div className="qhse-inbox">
         {(tasks ?? []).map((task) => {
           const slug = SLUG_BY_ENTITY[task.entityType];
-          const sla = slaState(task.createdAt, task.slaHours);
+          const sla = slaState(task.createdAt, task.slaHours, t);
           return (
             <article key={task.taskId} className="qhse-inbox__item">
               <div className="qhse-inbox__main">
-                <p className="qhse-inbox__module">{slug ? titleForSlug(slug) : task.moduleCode}</p>
+                <p className="qhse-inbox__module">{slug ? titleForSlug(slug, locale) : task.moduleCode}</p>
                 <h2 className="qhse-inbox__stage">
-                  Tahap {task.sequenceNo}: {task.stageName}
+                  {t("Tahap", "Stage")} {task.sequenceNo}: {task.stageName}
                 </h2>
                 <p className="qhse-inbox__flow">{task.definitionName}</p>
               </div>
               <div className="qhse-inbox__meta">
                 <StatusBadge tone={sla.tone} label={sla.text} />
-                <span className="qhse-inbox__since">Ditugaskan {formatCell(task.createdAt, "datetime")}</span>
+                <span className="qhse-inbox__since">
+                  {t("Ditugaskan", "Assigned")} {formatCell(task.createdAt, "datetime")}
+                </span>
                 {slug ? (
                   <Link className="qhse-inbox__open" href={`/modules/${slug}/${task.entityId}`}>
-                    Buka & putuskan →
+                    {t("Buka & putuskan", "Open & decide")} →
                   </Link>
                 ) : (
-                  <span className="qhse-inbox__since">Modul {task.moduleCode} belum punya halaman detail.</span>
+                  <span className="qhse-inbox__since">
+                    {t(`Modul ${task.moduleCode} belum punya halaman detail.`, `Module ${task.moduleCode} has no detail page yet.`)}
+                  </span>
                 )}
               </div>
             </article>
