@@ -216,3 +216,50 @@
   background: var(--qhse-text-muted);
   opacity: 0.7;
 }
+
+/* --- Gauge berpita ---------------------------------------------------- */
+
+.qhse-gauge {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.qhse-gauge svg {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+}
+
+.qhse-gauge__isi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  /* Angkanya duduk TEPAT DI BAWAH poros jarum, bukan di dalam busurnya.
+     Ditaruh di dalam busur, jarum yang menunjuk ke tengah (nilai pertengahan)
+     melintas persis menimpa angkanya — terlihat begitu gauge pertama kali
+     dirender dengan LTIFR 1,04 dan angka "1" tertusuk jarum. */
+  margin-top: -6px;
+}
+
+.qhse-gauge__nilai {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--qhse-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.qhse-gauge__satuan,
+.qhse-gauge__zona {
+  font-size: var(--qhse-font-size-caption);
+  color: var(--qhse-color-text-muted);
+}
+
+.qhse-gauge__zona {
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}

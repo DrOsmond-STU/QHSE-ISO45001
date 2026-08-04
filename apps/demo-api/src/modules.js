@@ -552,6 +552,54 @@ const MODULES = [
       { pathSuffix: "/evaluations", table: "contractor_performance_evaluations", pk: "evaluation_id", foreignKey: "contractor_id", orderBy: "evaluation_date DESC" },
     ],
   },
+
+  // --- Dua modul PENGATURAN ---------------------------------------------
+  //
+  // Keduanya sengaja didaftarkan sebagai MODUL BIASA, bukan diberi rute dan
+  // formulir sendiri. Registri modul sudah membawa seluruh yang dibutuhkan
+  // keduanya: daftar, detail, formulir yang diturunkan dari skema, validasi
+  // tipe dan panjang, penomoran, penghapusan lunak, dan penyaringnya. Menulis
+  // ulang semua itu untuk dua tabel berarti dua jalur tulis yang harus dijaga
+  // sejalan dengan lima belas jalur lainnya — dan yang dua itu pasti yang
+  // paling jarang diperiksa.
+  //
+  // Yang membedakan keduanya dari modul lain hanya di mana ia muncul di
+  // navigasi: di bawah "Pengaturan", bukan di bawah kelompok QHSE.
+  {
+    slug: "quality-objectives",
+    // TIDAK ada `approval` dan TIDAK ada `lifecycle` persetujuan: mengubah
+    // target sebuah KPI bukan peristiwa yang menuntut tanda tangan berjenjang
+    // seperti izin kerja panas. Statusnya tetap ada dan tetap dijaga state
+    // machine, tapi transisinya langsung.
+    write: {
+      statusColumn: "status",
+      lifecycle: {
+        DRAFT: ["ACTIVE"],
+        ACTIVE: ["ACHIEVED", "AT_RISK", "NOT_ACHIEVED", "CANCELLED"],
+        AT_RISK: ["ACTIVE", "ACHIEVED", "NOT_ACHIEVED", "CANCELLED"],
+        ACHIEVED: ["ACTIVE"],
+        NOT_ACHIEVED: ["ACTIVE"],
+        CANCELLED: [],
+      },
+    },
+    endpoint: "/quality-objectives",
+    table: "quality_objectives",
+    pk: "quality_objective_id",
+    orderBy: "bsc_perspective NULLS LAST, objective_code ASC",
+    children: [],
+  },
+  {
+    slug: "hse-period-statistics",
+    // Tanpa statusColumn sama sekali: statistik bulanan tidak punya siklus
+    // hidup — ia terisi, lalu dikoreksi kalau salah. Memberinya status berarti
+    // mengarang proses yang tidak ada.
+    write: {},
+    endpoint: "/hse-period-statistics",
+    table: "hse_period_statistics",
+    pk: "hse_period_statistic_id",
+    orderBy: "period_month DESC",
+    children: [],
+  },
 ];
 
 const MODULE_BY_ENDPOINT = new Map(MODULES.map((m) => [m.endpoint, m]));

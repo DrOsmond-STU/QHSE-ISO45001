@@ -1460,6 +1460,55 @@ model DashboardLayout {
   @@map("dashboard_layouts")
 }
 
+/// Statistik HSE per bulan — jam kerja, tenaga kerja, dan leading indicator.
+///
+/// Ada karena dua besaran yang menopang seluruh dashboard eksekutif HSE tidak
+/// dihasilkan proses QHSE mana pun: JAM KERJA dan JUMLAH TENAGA KERJA.
+/// Keduanya datang dari absensi dan penggajian. Tanpa keduanya, LTIFR dan TRIR
+/// tidak bisa dihitung — dan jumlah kecelakaan tanpa pembagi jam kerja tidak
+/// bisa dibandingkan antar periode maupun antar lokasi.
+///
+/// Leading indicator (induksi, toolbox talk, rapat HSE, jam pelatihan) ikut di
+/// sini karena wataknya sama: DIHITUNG per periode, bukan direkam satu per satu
+/// sebagai kasus.
+model HsePeriodStatistic {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @map("hse_period_statistic_id") @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  /// NULL = seluruh perusahaan. Pola scope longgar yang sama dipakai Document.
+  siteId String? @map("site_id") @db.Uuid
+  site   Site?   @relation(fields: [siteId], references: [id])
+
+  /// Tanggal 1 bulan yang bersangkutan.
+  periodMonth DateTime @map("period_month") @db.Date
+
+  manpower Int    @default(0)
+  /// BigInt: jam kerja kumulatif proyek besar melewati batas Int dalam
+  /// hitungan tahun, dan luapannya tidak bersuara.
+  manhours BigInt @default(0)
+
+  safetyInductions       Int @default(0) @map("safety_inductions")
+  toolboxTalks           Int @default(0) @map("toolbox_talks")
+  hseMeetings            Int @default(0) @map("hse_meetings")
+  trainingHours          Int @default(0) @map("training_hours")
+  managementWalkthroughs Int @default(0) @map("management_walkthroughs")
+  safetyObservations     Int @default(0) @map("safety_observations")
+  unsafeActs             Int @default(0) @map("unsafe_acts")
+  unsafeConditions       Int @default(0) @map("unsafe_conditions")
+
+  notes String? @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  @@index([tenantId, periodMonth])
+  @@map("hse_period_statistics")
+}
+
 model NotificationLog {
   id                String                  @id @default(dbgenerated("gen_random_uuid()")) @map("notification_log_id") @db.Uuid
   // BEYOND PRD literal (lihat banner comment poin 1 di atas).
@@ -1822,6 +1871,9 @@ model Tenant {
   // Task 0.14 — susunan widget dashboard per pengguna
   dashboardLayouts             DashboardLayout[]
 
+  // Statistik HSE per bulan — jam kerja, tenaga kerja, leading indicator.
+  hsePeriodStatistics          HsePeriodStatistic[]
+
   // Task 5.2 — Environmental Management
   environmentalAspectsImpacts        EnvironmentalAspectImpact[]
   environmentalMonitoringRecords     EnvironmentalMonitoringRecord[]
@@ -2056,6 +2108,7 @@ model Site {
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz
 
   departments                           Department[]
+  hsePeriodStatistics                   HsePeriodStatistic[]
   // Kalender yang SECARA KHUSUS dibuat untuk site ini (HolidayCalendar.appliesToSiteId)
   // — beda dari holidayCalendar di atas (kalender yang site ini PAKAI).
   scopedHolidayCalendars                HolidayCalendar[]                      @relation("HolidayCalendarAppliesToSite")

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BulletChart, Button, LineChart, StatusBadge } from "@qhse/ui-components";
 import { ApiError } from "../../../lib/api-client";
@@ -258,6 +260,14 @@ function ScorecardHeader() {
           capaian terhadap target, ditimbang bobot masing-masing KPI.
         </p>
       </div>
+      {/* Tautan ke tempat indikatornya diubah.
+          Tanpa ini, satu-satunya jalan ke sana adalah menggulir sidebar sampai
+          kelompok terakhir — dan halaman yang memperlihatkan sebuah angka
+          tanpa memberi tahu di mana angka itu ditetapkan akan dianggap tidak
+          bisa diubah sama sekali. */}
+      <Link href="/modules/quality-objectives" className="qhse-page__aksi">
+        Atur indikator
+      </Link>
     </header>
   );
 }

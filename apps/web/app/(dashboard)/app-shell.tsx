@@ -22,6 +22,7 @@ function navGroups(): Array<{ group: string; items: NavItem[] }> {
       group: "Ringkasan",
       items: [
         { href: "/dashboard", label: "Dashboard" },
+        { href: "/executive", label: "Dashboard Eksekutif" },
         { href: "/analytics", label: "Analitik" },
         { href: "/scorecard", label: "Balanced Scorecard" },
         { href: "/ai", label: "Pencarian & Bantuan" },
@@ -32,6 +33,10 @@ function navGroups(): Array<{ group: string; items: NavItem[] }> {
       group,
       items: modules.map((module) => ({ href: `/modules/${module.slug}`, label: module.title })),
     })),
+    {
+      group: "Pengaturan Tampilan",
+      items: [{ href: "/settings/dashboard", label: "Susunan Dashboard Eksekutif" }],
+    },
     {
       group: "Akun",
       items: [

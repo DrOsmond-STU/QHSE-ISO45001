@@ -499,6 +499,45 @@ async function main() {
   //  menolak dengan jelas — bukan mengembalikan hasil kosong yang terlihat
   //  seperti "tidak ada dokumen yang cocok".
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  //  Dashboard eksekutif.
+  //
+  //  Yang diperiksa terutama SATU HAL: bahwa indikator kekerapan membedakan
+  //  "nol" dari "belum bisa dihitung". LTIFR nol berarti tidak ada kecelakaan;
+  //  LTIFR kosong berarti jam kerjanya belum diisi. Menampilkan yang kedua
+  //  sebagai yang pertama adalah kabar baik yang dikarang dari data yang tidak
+  //  ada — dan pada dashboard direksi, itu jenis kesalahan yang paling mahal.
+  // --------------------------------------------------------------------------
+  console.log("\n--- dashboard eksekutif ---");
+  const jamKerja = await call("/analytics/exec-manhours?from=2025-09-01&to=2026-08-31", { token });
+  report((jamKerja.payload?.data?.value ?? 0) > 0, "jam kerja terisi", `${jamKerja.payload?.data?.value} jam`);
+
+  const ltifr = await call("/analytics/exec-ltifr?from=2025-09-01&to=2026-08-31", { token });
+  const nilaiLtifr = ltifr.payload?.data?.value;
+  report(ltifr.status === 200 && typeof nilaiLtifr === "number", "LTIFR terhitung", nilaiLtifr?.toFixed?.(2));
+  // Kisaran kewajaran, bukan sekadar "ada angkanya": LTIFR 40 atau 0,0001
+  // berarti pembilang dan penyebutnya tidak sepadan, dan itu tidak akan
+  // ketahuan dari pemeriksaan yang hanya menuntut angka bukan null.
+  report(nilaiLtifr > 0 && nilaiLtifr < 20, "LTIFR berada di kisaran yang masuk akal");
+
+  // Periode tanpa statistik jam kerja HARUS mengembalikan null, bukan nol.
+  const ltifrKosong = await call("/analytics/exec-ltifr?from=2015-01-01&to=2015-12-31", { token });
+  report(ltifrKosong.payload?.data?.value === null, "LTIFR tanpa jam kerja kosong, bukan nol", String(ltifrKosong.payload?.data?.value));
+
+  const leading = await call("/analytics/exec-leading-indicators?from=2025-09-01&to=2026-08-31", { token });
+  const irisan = leading.payload?.data?.slices ?? [];
+  report(irisan.length === 5, "leading indicator memuat lima kegiatan", `${irisan.length} irisan`);
+  report(!irisan.some((s) => s.code === "TRAINING_HOUR"), "jam pelatihan tidak dicampur ke cacah kegiatan");
+
+  const tataEksekutif = await call("/dashboard-layouts/executive", { token });
+  report(tataEksekutif.status === 200, "GET /dashboard-layouts/executive", `HTTP ${tataEksekutif.status}`);
+
+  const objektif = await call("/quality-objectives?page=1&limit=1", { token });
+  report((objektif.payload?.meta?.total ?? 0) > 0, "indikator scorecard bisa dikelola sebagai modul", `${objektif.payload?.meta?.total} indikator`);
+
+  const statistik = await call("/hse-period-statistics?page=1&limit=1", { token });
+  report((statistik.payload?.meta?.total ?? 0) >= 12, "statistik HSE bulanan tersedia", `${statistik.payload?.meta?.total} bulan`);
+
   console.log("\n--- pencarian & bantuan AI ---");
   const statusAi = await call("/ai/status", { token });
   const aiAktif = statusAi.payload?.data?.enabled === true;
@@ -554,7 +593,7 @@ async function main() {
     report(marked.status === 200 && marked.payload?.data?.isRead === true, "POST /notifications/:id/read", `HTTP ${marked.status}`);
   }
 
-  console.log(`\n=== ${failures === 0 ? "SEMUA PEMERIKSAAN LULUS" : `${failures} PEMERIKSAAN GAGAL`} — total ${grandTotal} record di 15 modul ===`);
+  console.log(`\n=== ${failures === 0 ? "SEMUA PEMERIKSAAN LULUS" : `${failures} PEMERIKSAAN GAGAL`} — total ${grandTotal} record di ${MODULES.length} modul ===`);
   process.exit(failures === 0 ? 0 : 1);
 }
 

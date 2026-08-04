@@ -1,0 +1,87 @@
+/* Dashboard Eksekutif.
+ *
+ * Menumpang grid dan kartu dari dashboards.css — susunannya sama, yang
+ * berbeda hanya kepala halaman dan kartu angka besar. Menyalin seluruh grid
+ * ke sini berarti dua tata letak yang harus dijaga sejalan.
+ */
+
+.qhse-exec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-5);
+}
+
+.qhse-exec__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--qhse-space-3);
+  padding-bottom: var(--qhse-space-3);
+  border-bottom: 2px solid var(--qhse-color-brand);
+}
+
+.qhse-exec__title {
+  margin: 0;
+  font-size: var(--qhse-font-size-h1);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--qhse-color-text);
+}
+
+.qhse-exec__periode {
+  margin: 4px 0 0;
+  font-size: var(--qhse-font-size-caption);
+  color: var(--qhse-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.qhse-exec__atur {
+  padding: 8px 16px;
+  border-radius: var(--qhse-radius-sm);
+  border: 1px solid var(--qhse-color-border);
+  background: var(--qhse-color-surface);
+  color: var(--qhse-color-text);
+  font-size: var(--qhse-font-size-caption);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.qhse-exec__atur:hover {
+  border-color: var(--qhse-color-brand);
+  color: var(--qhse-color-brand-strong, var(--qhse-color-brand));
+}
+
+/* --- kartu angka besar ------------------------------------------------ */
+
+.qhse-exec__angka {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--qhse-space-2) 0;
+}
+
+.qhse-exec__nilai {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--qhse-color-brand-strong, var(--qhse-color-brand));
+  /* Angka rata lebar: tanpa ini, kartu yang nilainya berubah tiap muat
+     bergeser-geser sendiri di layar rapat. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nilai yang belum bisa dihitung TIDAK diberi warna merek — supaya tidak
+   terbaca sebagai capaian. Ia sedang mengatakan "datanya belum ada". */
+.qhse-exec__nilai--kosong {
+  color: var(--qhse-color-text-muted);
+  font-weight: 600;
+}
+
+.qhse-exec__satuan {
+  font-size: var(--qhse-font-size-caption);
+  color: var(--qhse-color-text-muted);
+}

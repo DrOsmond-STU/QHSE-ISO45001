@@ -332,3 +332,129 @@ export function BulletChart({ actual, target, baseline, color, ariaLabel }: Bull
 export function ChartEmpty({ message = "Belum ada data pada periode ini." }: { message?: string }) {
   return <p className="qhse-chart__empty">{message}</p>;
 }
+
+// ---------------------------------------------------------------------------
+// Gauge berpita — jarum penunjuk dengan zona penilaian
+// ---------------------------------------------------------------------------
+//
+// Bentuk yang diminta dashboard eksekutif: setengah lingkaran dengan pita
+// berwarna (buruk / cukup / baik / sangat baik) dan satu jarum.
+//
+// KENAPA PITANYA DATANG DARI PEMANGGIL, BUKAN DIHITUNG DI SINI. Ambang "baik"
+// untuk tingkat penutupan temuan (makin tinggi makin baik) dan untuk LTIFR
+// (makin rendah makin baik) berlawanan arah. Gauge yang memutuskan sendiri
+// warnanya akan mewarnai LTIFR 8 dengan hijau karena angkanya besar. Zona
+// adalah kebijakan perusahaan, bukan sifat grafik.
+//
+// Setiap zona WAJIB punya label teks. Gauge yang membedakan kinerja hanya
+// lewat merah-kuning-hijau tidak terbaca oleh sebagian orang, dan pada layar
+// proyektor ruang rapat sering tidak terbaca oleh siapa pun.
+
+export interface GaugeBand {
+  /** Batas atas zona ini, dalam satuan nilainya. */
+  hingga: number;
+  color: string;
+  label: string;
+}
+
+const GAUGE_W = 240;
+const GAUGE_H = 130;
+const GAUGE_CX = 120;
+const GAUGE_CY = 118;
+const GAUGE_R = 88;
+const GAUGE_TEBAL = 22;
+
+/** Sudut 180° (kiri) sampai 0° (kanan), dipetakan dari min..max. */
+function gaugeSudut(nilai: number, min: number, max: number): number {
+  const bagian = max === min ? 0 : (nilai - min) / (max - min);
+  return Math.PI * (1 - Math.min(1, Math.max(0, bagian)));
+}
+
+function gaugeTitik(sudut: number, radius: number): [number, number] {
+  return [GAUGE_CX + radius * Math.cos(sudut), GAUGE_CY - radius * Math.sin(sudut)];
+}
+
+function busur(dariNilai: number, hinggaNilai: number, min: number, max: number): string {
+  const a1 = gaugeSudut(dariNilai, min, max);
+  const a2 = gaugeSudut(hinggaNilai, min, max);
+  const luar = GAUGE_R;
+  const dalam = GAUGE_R - GAUGE_TEBAL;
+  const [x1, y1] = gaugeTitik(a1, luar);
+  const [x2, y2] = gaugeTitik(a2, luar);
+  const [x3, y3] = gaugeTitik(a2, dalam);
+  const [x4, y4] = gaugeTitik(a1, dalam);
+  // sweep-flag 0 karena sudut MENGECIL dari a1 ke a2 (kiri ke kanan).
+  return `M ${x1} ${y1} A ${luar} ${luar} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${dalam} ${dalam} 0 0 0 ${x4} ${y4} Z`;
+}
+
+export function GaugeChart({
+  value,
+  valueText,
+  min = 0,
+  max,
+  bands,
+  label,
+  ariaLabel,
+}: {
+  /** null = belum bisa dihitung. Jarumnya tidak digambar. */
+  value: number | null;
+  /**
+   * Nilai yang DITULIS, bila berbeda dari angkanya.
+   *
+   * compactNumber membulatkan ke satu angka di belakang koma, sehingga LTIFR
+   * 1,04 tercetak "1" — dan pada indikator kekerapan, angka di belakang koma
+   * itulah yang dibandingkan orang antar periode.
+   */
+  valueText?: string;
+  min?: number;
+  max: number;
+  bands: GaugeBand[];
+  /** Teks di bawah angka — biasanya satuan. */
+  label?: string;
+  ariaLabel: string;
+}) {
+  const sudut = value === null ? null : gaugeSudut(value, min, max);
+  const zonaAktif =
+    value === null ? null : (bands.find((band) => value <= band.hingga) ?? bands[bands.length - 1] ?? null);
+
+  return (
+    <figure className="qhse-gauge" aria-label={ariaLabel}>
+      <svg viewBox={`0 0 ${GAUGE_W} ${GAUGE_H}`} role="img" preserveAspectRatio="xMidYMax meet">
+        {bands.map((band, index) => {
+          const dari = index === 0 ? min : bands[index - 1]!.hingga;
+          return (
+            <path key={band.label} d={busur(dari, Math.min(band.hingga, max), min, max)} fill={band.color}>
+              <title>{`${band.label}: ${compactNumber(dari)}–${compactNumber(band.hingga)}`}</title>
+            </path>
+          );
+        })}
+
+        {sudut !== null && (
+          <>
+            {/* Jarum digambar sebagai garis tebal berujung bulat, bukan
+                segitiga: pada lebar widget yang kecil, segitiga tipis hilang
+                sama sekali sementara garis tetap terbaca. */}
+            <line
+              x1={GAUGE_CX}
+              y1={GAUGE_CY}
+              x2={gaugeTitik(sudut, GAUGE_R - 6)[0]}
+              y2={gaugeTitik(sudut, GAUGE_R - 6)[1]}
+              stroke="var(--qhse-color-text)"
+              strokeWidth={3}
+              strokeLinecap="round"
+            />
+            <circle cx={GAUGE_CX} cy={GAUGE_CY} r={6} fill="var(--qhse-color-text)" />
+          </>
+        )}
+      </svg>
+
+      <figcaption className="qhse-gauge__isi">
+        <span className="qhse-gauge__nilai">{value === null ? "—" : (valueText ?? compactNumber(value))}</span>
+        {label && <span className="qhse-gauge__satuan">{label}</span>}
+        {/* Nama zona ditulis, bukan hanya diwarnai. */}
+        {zonaAktif && <span className="qhse-gauge__zona">{zonaAktif.label}</span>}
+        {value === null && <span className="qhse-gauge__zona">belum bisa dihitung</span>}
+      </figcaption>
+    </figure>
+  );
+}

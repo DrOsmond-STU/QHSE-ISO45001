@@ -506,6 +506,302 @@ const METRICS = [
       where: " AND t.status = 'ACTIVE'",
     }),
   },
+
+  // --- Eksekutif: jam kerja, angka kekerapan, leading indicator -------------
+  //
+  // Kelompok ini menjawab pertanyaan yang berbeda dari kelompok di atasnya.
+  // Yang di atas menghitung KEJADIAN; yang di sini menghitung KEKERAPAN —
+  // kejadian dibagi jam kerja — dan KEGIATAN PENCEGAHAN yang mendahuluinya.
+  //
+  // Pembedaan leading vs lagging bukan istilah hiasan. Lagging indicator
+  // (kecelakaan, hari kerja hilang) hanya bisa dibaca setelah orang celaka;
+  // leading indicator (induksi, toolbox talk, inspeksi, observasi) bisa
+  // digerakkan sebelum ada yang celaka. Dashboard yang hanya memuat lagging
+  // memberi tahu manajemen apa yang sudah terlambat.
+  {
+    key: "exec-manhours",
+    title: "Jam kerja",
+    caption: "Total jam kerja pada periode terpilih. Pembagi bagi LTIFR dan TRIR.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "jam",
+    dateColumn: "period_month",
+    build: scalarMetric({
+      table: "hse_period_statistics",
+      valueExpr: "sum(t.manhours)",
+      dateColumn: "period_month",
+    }),
+  },
+  {
+    key: "exec-manhours-trend",
+    title: "Tren jam kerja",
+    caption: "Jam kerja per bulan.",
+    group: "Eksekutif",
+    kind: "series",
+    unit: "jam",
+    dateColumn: "period_month",
+    build: monthlySeriesMetric({
+      table: "hse_period_statistics",
+      dateColumn: "period_month",
+      valueExpr: "sum(t.manhours)",
+    }),
+  },
+  {
+    key: "exec-manpower",
+    title: "Tenaga kerja rata-rata",
+    caption: "Rata-rata jumlah pekerja per bulan pada periode terpilih.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "orang",
+    dateColumn: "period_month",
+    build: scalarMetric({
+      table: "hse_period_statistics",
+      valueExpr: "round(avg(t.manpower))",
+      dateColumn: "period_month",
+    }),
+  },
+
+  // LTIFR dan TRIR dihitung dari DUA tabel sekaligus, jadi keduanya tidak
+  // memakai pembantu scalarMetric — pembilangnya insiden, penyebutnya jam
+  // kerja.
+  //
+  // NULLIF pada penyebut, bukan CASE WHEN: tanpa jam kerja terisi, jawaban
+  // yang benar adalah "belum bisa dihitung" (null), bukan nol. Nol berarti
+  // "tidak ada kecelakaan per juta jam kerja" — kabar baik yang dibuat-buat
+  // dari data yang belum ada.
+  {
+    key: "exec-ltifr",
+    title: "LTIFR",
+    caption:
+      "Kecelakaan hilang hari kerja per satu juta jam kerja. Kosong bila jam kerja periode itu belum diisi.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "per 1 juta jam",
+    tone: "inverse",
+    dateColumn: "incident_datetime",
+    build: ({ tenantId, from, to }) => ({
+      text: `
+        SELECT (
+          (SELECT count(*) FROM incident_reports i
+            WHERE i.tenant_id = $1 AND i.deleted_at IS NULL
+              AND i.classification IN ('LOST_TIME_INJURY', 'FATALITY')
+              AND i.incident_datetime >= $2::date AND i.incident_datetime < ($3::date + 1))::float
+          * 1000000
+          / NULLIF((SELECT sum(s.manhours) FROM hse_period_statistics s
+                     WHERE s.tenant_id = $1 AND s.deleted_at IS NULL
+                       AND s.period_month >= date_trunc('month', $2::date)
+                       AND s.period_month <= $3::date), 0)
+        )::float AS value`,
+      values: [tenantId, from, to],
+    }),
+  },
+  {
+    key: "exec-trir",
+    title: "TRIR",
+    caption:
+      "Kasus tercatat (cedera medis, kerja terbatas, hilang hari kerja, fatal) per satu juta jam kerja.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "per 1 juta jam",
+    tone: "inverse",
+    dateColumn: "incident_datetime",
+    build: ({ tenantId, from, to }) => ({
+      text: `
+        SELECT (
+          (SELECT count(*) FROM incident_reports i
+            WHERE i.tenant_id = $1 AND i.deleted_at IS NULL
+              AND i.classification IN ('MEDICAL_TREATMENT', 'RESTRICTED_WORK_CASE', 'LOST_TIME_INJURY', 'FATALITY')
+              AND i.incident_datetime >= $2::date AND i.incident_datetime < ($3::date + 1))::float
+          * 1000000
+          / NULLIF((SELECT sum(s.manhours) FROM hse_period_statistics s
+                     WHERE s.tenant_id = $1 AND s.deleted_at IS NULL
+                       AND s.period_month >= date_trunc('month', $2::date)
+                       AND s.period_month <= $3::date), 0)
+        )::float AS value`,
+      values: [tenantId, from, to],
+    }),
+  },
+  {
+    key: "exec-safe-manhours",
+    title: "Jam kerja aman tanpa LTI",
+    caption: "Jam kerja sejak kecelakaan hilang hari kerja terakhir.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "jam",
+    dateColumn: null,
+    build: ({ tenantId }) => ({
+      // Dihitung dari LTI TERAKHIR, bukan dari awal periode: "jam kerja aman"
+      // yang di-reset tiap tanggal 1 bukan capaian apa pun.
+      text: `
+        SELECT COALESCE(sum(s.manhours), 0)::float AS value
+          FROM hse_period_statistics s
+         WHERE s.tenant_id = $1 AND s.deleted_at IS NULL
+           AND s.period_month > COALESCE(
+                 (SELECT date_trunc('month', max(i.incident_datetime))
+                    FROM incident_reports i
+                   WHERE i.tenant_id = $1 AND i.deleted_at IS NULL
+                     AND i.classification IN ('LOST_TIME_INJURY', 'FATALITY')),
+                 '1900-01-01'::timestamptz)`,
+      values: [tenantId],
+    }),
+  },
+  {
+    key: "exec-fatality",
+    title: "Kecelakaan fatal",
+    caption: "Jumlah kejadian fatal pada periode terpilih. Sasarannya selalu nol.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "kejadian",
+    tone: "inverse",
+    dateColumn: "incident_datetime",
+    build: scalarMetric({
+      table: "incident_reports",
+      valueExpr: "count(*)",
+      dateColumn: "incident_datetime",
+      where: " AND t.classification = 'FATALITY'",
+    }),
+  },
+  {
+    key: "exec-lost-days",
+    title: "Hari kerja hilang",
+    caption: "Total hari kerja yang hilang akibat insiden pada periode terpilih.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "hari",
+    tone: "inverse",
+    dateColumn: "incident_datetime",
+    build: scalarMetric({
+      table: "incident_reports",
+      valueExpr: "sum(t.days_lost)",
+      dateColumn: "incident_datetime",
+    }),
+  },
+  {
+    key: "exec-leading-indicators",
+    title: "Leading indicator",
+    // JAM PELATIHAN SENGAJA TIDAK ADA DI SINI, dan itu bukan kelalaian.
+    //
+    // Rincian ini ditampilkan sebagai batang beserta PERSENTASE dari totalnya.
+    // Persentase hanya berarti bila seluruh butirnya satu satuan. Dengan jam
+    // pelatihan ikut di dalamnya, totalnya adalah penjumlahan jam dan jumlah
+    // kegiatan — dan layar sempat menampilkan "Training hour 4221 (39%)"
+    // seolah 39% kegiatan pencegahan adalah pelatihan, padahal yang
+    // dibandingkan jam melawan cacah. Jam pelatihan punya widget sendiri.
+    caption: "Cacah kegiatan pencegahan pada periode terpilih. Jam pelatihan dihitung terpisah.",
+    group: "Eksekutif",
+    kind: "breakdown",
+    unit: "kegiatan",
+    dateColumn: "period_month",
+    build: ({ tenantId, from, to }) => ({
+      // Satu baris per jenis kegiatan, dirakit dengan VALUES supaya urutannya
+      // tetap dan tidak ada kegiatan yang hilang ketika nilainya nol —
+      // kegiatan pencegahan yang tidak dijalankan justru yang paling perlu
+      // terlihat.
+      text: `
+        WITH j AS (
+          SELECT COALESCE(sum(t.safety_inductions), 0) AS induksi,
+                 COALESCE(sum(t.toolbox_talks), 0) AS tbt,
+                 COALESCE(sum(t.hse_meetings), 0) AS rapat,
+                 COALESCE(sum(t.management_walkthroughs), 0) AS kunjungan,
+                 COALESCE(sum(t.safety_observations), 0) AS observasi
+            FROM hse_period_statistics t
+           WHERE t.tenant_id = $1 AND t.deleted_at IS NULL
+             AND t.period_month >= date_trunc('month', $2::date)
+             AND t.period_month <= $3::date
+        )
+        SELECT v.code, v.value::float AS value
+          FROM j, LATERAL (VALUES
+            ('SAFETY_INDUCTION', j.induksi),
+            ('TOOLBOX_TALK', j.tbt),
+            ('HSE_MEETING', j.rapat),
+            ('MANAGEMENT_WALKTHROUGH', j.kunjungan),
+            ('SAFETY_OBSERVATION', j.observasi)
+          ) AS v(code, value)`,
+      values: [tenantId, from, to],
+    }),
+  },
+  {
+    key: "exec-training-hours",
+    title: "Jam pelatihan",
+    caption: "Total jam pelatihan K3 yang terselenggara pada periode terpilih.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "jam",
+    dateColumn: "period_month",
+    build: scalarMetric({
+      table: "hse_period_statistics",
+      valueExpr: "sum(t.training_hours)",
+      dateColumn: "period_month",
+    }),
+  },
+  {
+    key: "exec-unsafe-acts-conditions",
+    title: "Tindakan vs kondisi tidak aman",
+    caption: "Hasil observasi keselamatan, dipisah antara perilaku dan keadaan.",
+    group: "Eksekutif",
+    kind: "breakdown",
+    unit: "temuan",
+    dateColumn: "period_month",
+    build: ({ tenantId, from, to }) => ({
+      text: `
+        WITH j AS (
+          SELECT COALESCE(sum(t.unsafe_acts), 0) AS tindakan,
+                 COALESCE(sum(t.unsafe_conditions), 0) AS kondisi
+            FROM hse_period_statistics t
+           WHERE t.tenant_id = $1 AND t.deleted_at IS NULL
+             AND t.period_month >= date_trunc('month', $2::date)
+             AND t.period_month <= $3::date
+        )
+        SELECT v.code, v.value::float AS value
+          FROM j, LATERAL (VALUES ('UNSAFE_ACT', j.tindakan), ('UNSAFE_CONDITION', j.kondisi)) AS v(code, value)`,
+      values: [tenantId, from, to],
+    }),
+  },
+  {
+    key: "exec-unsafe-trend",
+    title: "Tren observasi tidak aman",
+    caption: "Tindakan dan kondisi tidak aman yang tercatat per bulan.",
+    group: "Eksekutif",
+    kind: "series",
+    unit: "temuan",
+    dateColumn: "period_month",
+    build: monthlySeriesMetric({
+      table: "hse_period_statistics",
+      dateColumn: "period_month",
+      valueExpr: "sum(t.unsafe_acts + t.unsafe_conditions)",
+    }),
+  },
+  {
+    key: "exec-toolbox-trend",
+    title: "Tren toolbox talk",
+    caption: "Jumlah toolbox talk yang terselenggara per bulan.",
+    group: "Eksekutif",
+    kind: "series",
+    unit: "kegiatan",
+    dateColumn: "period_month",
+    build: monthlySeriesMetric({
+      table: "hse_period_statistics",
+      dateColumn: "period_month",
+      valueExpr: "sum(t.toolbox_talks)",
+    }),
+  },
+  {
+    key: "exec-audit-finding-closed-rate",
+    title: "Temuan audit tertutup",
+    caption: "Bagian temuan audit yang sudah ditutup, dari seluruh temuan pada periode terpilih.",
+    group: "Eksekutif",
+    kind: "scalar",
+    unit: "%",
+    format: "percent",
+    dateColumn: null,
+    build: ({ tenantId }) => ({
+      text: `
+        SELECT (100.0 * count(*) FILTER (WHERE t.status = 'CLOSED') / NULLIF(count(*), 0))::float AS value
+          FROM audit_findings t
+         WHERE t.tenant_id = $1 AND t.deleted_at IS NULL`,
+      values: [tenantId],
+    }),
+  },
 ];
 
 const METRIC_BY_KEY = new Map(METRICS.map((metric) => [metric.key, metric]));

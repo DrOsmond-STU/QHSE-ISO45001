@@ -101,11 +101,13 @@ export interface ScorecardLayout {
   showTrend: boolean;
 }
 
-export function fetchLayout<T>(key: "analytics" | "scorecard"): Promise<{ key: string; layout: T | null }> {
+export type DashboardKey = "analytics" | "scorecard" | "executive";
+
+export function fetchLayout<T>(key: DashboardKey): Promise<{ key: string; layout: T | null }> {
   return apiFetch<{ key: string; layout: T | null }>(`/dashboard-layouts/${key}`);
 }
 
-export function saveLayout<T>(key: "analytics" | "scorecard", layout: T): Promise<unknown> {
+export function saveLayout<T>(key: DashboardKey, layout: T): Promise<unknown> {
   return apiFetch(`/dashboard-layouts/${key}`, { method: "PUT", body: { layout } });
 }
 

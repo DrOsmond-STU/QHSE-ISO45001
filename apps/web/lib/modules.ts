@@ -105,6 +105,13 @@ export const MODULE_GROUPS = [
   "Mutu & Lingkungan",
   "Kesehatan & Darurat",
   "Aset & Mitra Kerja",
+  // Kelompok TERAKHIR dan sengaja terpisah dari enam kelompok QHSE di atasnya:
+  // isinya bukan pekerjaan QHSE harian, melainkan angka yang MENENTUKAN
+  // bagaimana pekerjaan itu diukur — target KPI dan jam kerja. Menaruhnya di
+  // antara modul operasional membuat orang mengubah target di tengah rutinitas
+  // pencatatan, dan target yang diubah tanpa disadari adalah cara paling
+  // halus membuat kinerja terlihat baik.
+  "Pengaturan",
 ] as const;
 
 /** Blok pencatatan yang sama di seluruh modul — siapa membuat, siapa terakhir mengubah. */
@@ -979,6 +986,102 @@ export const MODULES: ModuleDefinition[] = [
           { key: "calibrationResult", header: "Hasil", type: "status" },
           { key: "asFoundCondition", header: "Kondisi saat diterima" },
           { key: "measurementUncertainty", header: "Ketidakpastian" },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "quality-objectives",
+    endpoint: "/quality-objectives",
+    title: "Indikator Balanced Scorecard",
+    moduleNumber: "Pengaturan",
+    group: "Pengaturan",
+    labelField: "objectiveTitle",
+    subtitleField: "kpiMetricName",
+    columns: [
+      { key: "objectiveCode", header: "Kode" },
+      { key: "objectiveTitle", header: "Sasaran" },
+      { key: "bscPerspective", header: "Perspektif", type: "enum" },
+      { key: "bscWeightPercentage", header: "Bobot %" },
+      { key: "targetValue", header: "Target" },
+      { key: "currentValue", header: "Capaian" },
+      { key: "status", header: "Status", type: "status" },
+    ],
+    detailSections: [
+      {
+        title: "Sasaran",
+        fields: [
+          { key: "objectiveCode", label: "Kode sasaran" },
+          { key: "objectiveTitle", label: "Judul sasaran" },
+          { key: "description", label: "Uraian" },
+          { key: "isoClauseRef", label: "Acuan klausul ISO" },
+        ],
+      },
+      {
+        title: "Pengukuran",
+        fields: [
+          { key: "kpiMetricName", label: "Nama indikator" },
+          { key: "baselineValue", label: "Nilai awal" },
+          { key: "targetValue", label: "Target" },
+          { key: "currentValue", label: "Capaian berjalan" },
+          { key: "targetUnit", label: "Satuan" },
+          { key: "measurementFrequency", label: "Frekuensi pengukuran", type: "enum" },
+        ],
+      },
+      {
+        title: "Balanced Scorecard",
+        fields: [
+          { key: "bscPerspective", label: "Perspektif", type: "enum" },
+          { key: "bscWeightPercentage", label: "Bobot dalam perspektif (%)" },
+          { key: "periodStart", label: "Awal periode", type: "date" },
+          { key: "periodEnd", label: "Akhir periode", type: "date" },
+          { key: "status", label: "Status", type: "status" },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "hse-period-statistics",
+    endpoint: "/hse-period-statistics",
+    title: "Statistik HSE Bulanan",
+    moduleNumber: "Pengaturan",
+    group: "Pengaturan",
+    labelField: "periodMonth",
+    columns: [
+      { key: "periodMonth", header: "Bulan", type: "date" },
+      { key: "manpower", header: "Tenaga kerja" },
+      { key: "manhours", header: "Jam kerja" },
+      { key: "safetyInductions", header: "Induksi" },
+      { key: "toolboxTalks", header: "Toolbox talk" },
+      { key: "unsafeActs", header: "Tindakan tidak aman" },
+      { key: "unsafeConditions", header: "Kondisi tidak aman" },
+    ],
+    detailSections: [
+      {
+        title: "Pembagi indikator kekerapan",
+        fields: [
+          { key: "periodMonth", label: "Bulan", type: "date" },
+          { key: "manpower", label: "Jumlah tenaga kerja" },
+          { key: "manhours", label: "Jam kerja" },
+        ],
+      },
+      {
+        title: "Leading indicator",
+        fields: [
+          { key: "safetyInductions", label: "Induksi keselamatan" },
+          { key: "toolboxTalks", label: "Toolbox talk" },
+          { key: "hseMeetings", label: "Rapat HSE" },
+          { key: "trainingHours", label: "Jam pelatihan" },
+          { key: "managementWalkthroughs", label: "Kunjungan manajemen" },
+          { key: "safetyObservations", label: "Observasi keselamatan" },
+        ],
+      },
+      {
+        title: "Hasil observasi",
+        fields: [
+          { key: "unsafeActs", label: "Tindakan tidak aman" },
+          { key: "unsafeConditions", label: "Kondisi tidak aman" },
+          { key: "notes", label: "Catatan" },
         ],
       },
     ],

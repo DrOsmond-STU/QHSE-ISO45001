@@ -31,6 +31,7 @@ const { seedEvents } = require("./domain-events");
 const { seedOperations } = require("./domain-operations");
 const { seedChildren } = require("./domain-children");
 const { seedScorecard } = require("./scorecard");
+const { seedHseStatistics } = require("./hse-statistics");
 const { seedWorkflows } = require("./workflows");
 const { seedFiles } = require("./files");
 const { seedNotifications } = require("./notifications");
@@ -83,6 +84,13 @@ async function main() {
     // Definisi workflow disemai SETELAH fondasi (butuh role_id) dan sebelum
     // notifikasi. Ia tidak bergantung pada data domain mana pun: yang dibuat
     // hanya kerangka tahap dan transisinya, bukan instance-nya.
+    // Statistik HSE bulanan disemai setelah insiden: jam kerjanya sengaja
+    // diselaraskan dengan jumlah insiden yang sudah ada, supaya LTIFR yang
+    // muncul di dashboard eksekutif jatuh di kisaran yang wajar untuk operasi
+    // migas alih-alih angka yang langsung terlihat karangan.
+    console.log("[7b/10] statistik HSE bulanan — jam kerja & leading indicator");
+    const statistik = await seedHseStatistics(client, ctx);
+
     console.log("[8/10] definisi workflow persetujuan");
     const workflows = await seedWorkflows(client, ctx);
 
@@ -94,7 +102,7 @@ async function main() {
     console.log("[10/10] notifikasi");
     const notifications = await seedNotifications(client, ctx);
 
-    return { ...compliance, ...events, ...operations, ...children, ...scorecard, ...workflows, ...berkas, ...notifications, users: ctx.users.length };
+    return { ...compliance, ...events, ...operations, ...children, ...scorecard, ...statistik, ...workflows, ...berkas, ...notifications, users: ctx.users.length };
   });
 
   console.log("\n=== selesai dalam %d detik ===", Math.round((Date.now() - started) / 1000));

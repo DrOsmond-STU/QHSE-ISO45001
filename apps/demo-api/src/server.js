@@ -401,9 +401,21 @@ async function handleMetric(res, claims, key, searchParams) {
   const { text, values } = metric.build({ tenantId: claims.tenant_id, from, to });
   const rows = await withRls(claims.tenant_id, (client) => client.query(text, values).then((r) => r.rows));
 
+  // NULL DIPERTAHANKAN SEBAGAI NULL, TIDAK DIJADIKAN NOL.
+  //
+  // Sebagian metrik adalah pecahan yang penyebutnya bisa belum ada: LTIFR dan
+  // TRIR dibagi jam kerja, dan jam kerja bulan itu mungkin belum diisi. SQL-nya
+  // sudah benar — NULLIF pada penyebut membuat hasilnya NULL — tapi `Number(null)`
+  // adalah 0, dan di sinilah artinya berubah total.
+  //
+  // Nol berarti "tidak ada kecelakaan per satu juta jam kerja": kabar baik.
+  // Kosong berarti "belum bisa dihitung". Menukar yang kedua menjadi yang
+  // pertama menampilkan kabar baik yang dikarang dari data yang tidak ada —
+  // pada dashboard direksi, jenis kesalahan yang paling mahal, karena tidak
+  // ada satu pun tanda di layar bahwa angkanya tidak berarti apa-apa.
   const shape =
     metric.kind === "scalar"
-      ? { value: rows[0] ? Number(rows[0].value) : 0 }
+      ? { value: rows[0] && rows[0].value !== null ? Number(rows[0].value) : null }
       : metric.kind === "series"
         ? { points: rows.map((row) => ({ label: row.label, value: Number(row.value) })) }
         : { slices: rows.map((row) => ({ code: row.code, value: Number(row.value) })) };
@@ -431,7 +443,7 @@ async function handleScorecard(res, claims) {
 
 // --- Tata letak dashboard ----------------------------------------------------
 
-const LAYOUT_KEYS = new Set(["analytics", "scorecard"]);
+const LAYOUT_KEYS = new Set(["analytics", "scorecard", "executive"]);
 // Batas ukuran ditegakkan di sini, bukan diserahkan ke kolom jsonb: kolom itu
 // akan menerima berapa pun besarnya, dan satu klien yang keliru sudah cukup
 // untuk menumbuhkan tabel preferensi tanpa batas.
