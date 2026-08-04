@@ -49,7 +49,7 @@
 .qhse-ai__lampu--nyala {
   border-color: color-mix(in srgb, var(--qhse-brand) 40%, transparent);
   background: var(--qhse-brand-wash);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
 }
 
 /* --- kotak pencarian ------------------------------------------------- */
@@ -174,7 +174,7 @@
 
 .qhse-ai__tautan {
   font-weight: 600;
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   text-decoration: none;
 }
 
@@ -229,7 +229,7 @@
   padding: 3px 10px;
   border-radius: var(--qhse-radius-pill, 999px);
   background: var(--qhse-brand-wash);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   font-weight: 600;
 }
 
@@ -272,7 +272,7 @@
 
 .qhse-ai__bagianNomor {
   font-weight: 700;
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
 }
 
 .qhse-ai__bagianJudul {
@@ -323,7 +323,7 @@
   place-items: center;
   border-radius: 50%;
   background: var(--qhse-brand-wash);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   font-size: 0.75rem;
   font-weight: 700;
 }

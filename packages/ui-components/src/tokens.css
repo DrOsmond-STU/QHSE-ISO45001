@@ -41,6 +41,17 @@
   --qhse-brand-bright: #29abe2;
   --qhse-brand-light: #4bcbfb;
   --qhse-brand-wash: #eaf6fc;
+  /* TINTA MEREK — dipakai untuk TEKS, bukan untuk bidang.
+     --qhse-brand (#1189c1) diukur dari situs semestateknologiutama.com dan
+     pertamina.com, dan tetap dipakai apa adanya sebagai warna BIDANG: tombol,
+     gradien, seri grafik. Tetapi sebagai teks di atas putih rasio kontrasnya
+     hanya 3,91:1 — di bawah ambang 4.5:1 WCAG AA untuk teks biasa, dan itu
+     berlaku pada tautan serta menu aktif di sidebar, dua tempat yang paling
+     sering dibaca.
+     Tinta ini rona yang sama, hanya lebih tua: 5,71:1 di atas putih dan
+     5,19:1 di atas brand-wash. Memisahkan tinta dari bidang menyelesaikan
+     keduanya tanpa mengganti warna merek. */
+  --qhse-brand-ink: #0b6d9b;
   --qhse-accent: #f7941d;
   --qhse-accent-soft: #fbb040;
   --qhse-accent-wash: #fff4e6;
@@ -56,7 +67,11 @@
   --qhse-page-plane: #f4f7fb;
   --qhse-text-primary: #0f2233;
   --qhse-text-secondary: #51697f;
-  --qhse-text-muted: #90a5b9;
+  /* 4,76:1 di atas putih. Nilai sebelumnya (#90a5b9) hanya 2,54:1 —
+     keterangan kartu dan sub-judul tabel praktis tidak terbaca oleh
+     mata yang tidak muda lagi, dan itu justru teks yang menjelaskan
+     arti angkanya. */
+  --qhse-text-muted: #64748b;
   --qhse-gridline: #eaf0f6;
   --qhse-border: #dbe5ee;
   --qhse-border-hairline: rgba(11, 39, 64, 0.08);
@@ -82,6 +97,18 @@
   --qhse-status-serious-wash: #fdeee3;
   --qhse-status-critical: #d13438;
   --qhse-status-critical-wash: #fdeaea;
+
+  /* TINTA LENCANA — teks di atas wash, bukan warna bidangnya.
+     Warna status di atas dipakai sebagai bidang (titik grafik, batang, garis
+     tepi) dan tetap. Sebagai TEKS di atas wash-nya sendiri, tiga dari empat
+     gagal: hijau 3,03:1, kuning 2,05:1, oranye 2,71:1. Lencana status adalah
+     satu-satunya tempat di aplikasi ini yang memberi tahu sesuatu GENTING,
+     dan lencana genting yang tidak terbaca adalah kegagalan yang paling
+     mahal di antara semua kegagalan kontras. */
+  --qhse-status-good-ink: #0b7a3b;
+  --qhse-status-warning-ink: #8a6206;
+  --qhse-status-serious-ink: #a8480f;
+  --qhse-status-critical-ink: #a3161a;
 
   /* --- Diverging (tren KPI membaik/memburuk) --- */
   --qhse-trend-improving: #1189c1;
@@ -157,11 +184,19 @@
     --qhse-page-plane: #091827;
     --qhse-text-primary: #eaf2f8;
     --qhse-text-secondary: #a7bccf;
-    --qhse-text-muted: #6f8aa3;
+    --qhse-text-muted: #8ba1b6;
     --qhse-gridline: #1b3853;
     --qhse-border: #234362;
     --qhse-border-hairline: rgba(234, 242, 248, 0.1);
     --qhse-brand-wash: rgba(41, 171, 226, 0.14);
+  /* Di bidang gelap arahnya terbalik: tinta harus LEBIH TERANG daripada
+     warna merek, bukan lebih tua. #1189c1 di atas surface gelap hanya
+     3,80:1; brand-bright 5,68:1. */
+  --qhse-brand-ink: #29abe2;
+  --qhse-status-good-ink: #3ddc84;
+  --qhse-status-warning-ink: #f5c451;
+  --qhse-status-serious-ink: #ff9a5c;
+  --qhse-status-critical-ink: #ff7b7f;
     --qhse-accent-wash: rgba(247, 148, 29, 0.14);
     --qhse-status-good-wash: rgba(18, 161, 80, 0.16);
     --qhse-status-warning-wash: rgba(224, 162, 7, 0.16);
@@ -180,11 +215,19 @@
   --qhse-page-plane: #091827;
   --qhse-text-primary: #eaf2f8;
   --qhse-text-secondary: #a7bccf;
-  --qhse-text-muted: #6f8aa3;
+  --qhse-text-muted: #8ba1b6;
   --qhse-gridline: #1b3853;
   --qhse-border: #234362;
   --qhse-border-hairline: rgba(234, 242, 248, 0.1);
   --qhse-brand-wash: rgba(41, 171, 226, 0.14);
+  /* Di bidang gelap arahnya terbalik: tinta harus LEBIH TERANG daripada
+     warna merek, bukan lebih tua. #1189c1 di atas surface gelap hanya
+     3,80:1; brand-bright 5,68:1. */
+  --qhse-brand-ink: #29abe2;
+  --qhse-status-good-ink: #3ddc84;
+  --qhse-status-warning-ink: #f5c451;
+  --qhse-status-serious-ink: #ff9a5c;
+  --qhse-status-critical-ink: #ff7b7f;
   --qhse-accent-wash: rgba(247, 148, 29, 0.14);
   --qhse-status-good-wash: rgba(18, 161, 80, 0.16);
   --qhse-status-warning-wash: rgba(224, 162, 7, 0.16);
@@ -202,11 +245,26 @@
   --qhse-page-plane: #f4f7fb;
   --qhse-text-primary: #0f2233;
   --qhse-text-secondary: #51697f;
-  --qhse-text-muted: #90a5b9;
+  /* 4,76:1 di atas putih. Nilai sebelumnya (#90a5b9) hanya 2,54:1 —
+     keterangan kartu dan sub-judul tabel praktis tidak terbaca oleh
+     mata yang tidak muda lagi, dan itu justru teks yang menjelaskan
+     arti angkanya. */
+  --qhse-text-muted: #64748b;
   --qhse-gridline: #eaf0f6;
   --qhse-border: #dbe5ee;
   --qhse-border-hairline: rgba(11, 39, 64, 0.08);
   --qhse-brand-wash: #eaf6fc;
+  /* TINTA MEREK — dipakai untuk TEKS, bukan untuk bidang.
+     --qhse-brand (#1189c1) diukur dari situs semestateknologiutama.com dan
+     pertamina.com, dan tetap dipakai apa adanya sebagai warna BIDANG: tombol,
+     gradien, seri grafik. Tetapi sebagai teks di atas putih rasio kontrasnya
+     hanya 3,91:1 — di bawah ambang 4.5:1 WCAG AA untuk teks biasa, dan itu
+     berlaku pada tautan serta menu aktif di sidebar, dua tempat yang paling
+     sering dibaca.
+     Tinta ini rona yang sama, hanya lebih tua: 5,71:1 di atas putih dan
+     5,19:1 di atas brand-wash. Memisahkan tinta dari bidang menyelesaikan
+     keduanya tanpa mengganti warna merek. */
+  --qhse-brand-ink: #0b6d9b;
   --qhse-accent-wash: #fff4e6;
   --qhse-status-good-wash: #e7f7ee;
   --qhse-status-warning-wash: #fdf4e0;

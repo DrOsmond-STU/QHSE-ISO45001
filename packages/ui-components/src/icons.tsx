@@ -63,3 +63,85 @@ export function IconCross({ size = 16, ...props }: IconProps) {
     </svg>
   );
 }
+
+// --- Ikon navigasi & aksi -----------------------------------------------
+//
+// Ditambahkan untuk menggantikan karakter teks yang sebelumnya dipakai
+// sebagai ikon: ‹ › ↑ ↓ → ✕ ⤢ ☐ ☑.
+//
+// Karakter itu tampak berfungsi di layar yang dipakai menulisnya, dan itulah
+// masalahnya. Lebar dan tebal optisnya ditentukan oleh huruf yang kebetulan
+// tersedia di mesin PEMBACA, bukan oleh kita: pada Windows tanpa Plus Jakarta
+// Sans, ‹ › jatuh ke huruf cadangan yang tebalnya berbeda dari ↑ ↓, sehingga
+// empat tombol yang seharusnya seragam tampak dipungut dari empat tempat
+// berbeda. Sebagian sistem bahkan merender ⤢ dan ✕ sebagai emoji berwarna.
+//
+// Memakai kisi 24x24 dan tebal 1.75 yang sama dengan ikon status di atas,
+// jadi seluruh ikon aplikasi ini tetap satu keluarga.
+
+export function IconChevronLeft({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, props)}>
+      <path d="M15 5 8 12l7 7" />
+    </svg>
+  );
+}
+
+export function IconChevronRight({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, props)}>
+      <path d="m9 5 7 7-7 7" />
+    </svg>
+  );
+}
+
+export function IconArrowUp({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, props)}>
+      <path d="M12 19V5m0 0-6 6m6-6 6 6" />
+    </svg>
+  );
+}
+
+export function IconArrowDown({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, props)}>
+      <path d="M12 5v14m0 0 6-6m-6 6-6-6" />
+    </svg>
+  );
+}
+
+export function IconArrowRight({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, props)}>
+      <path d="M5 12h14m0 0-6-6m6 6-6 6" />
+    </svg>
+  );
+}
+
+export function IconClose({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, props)}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
+/** Panah diagonal keluar — mengubah lebar widget. */
+export function IconExpand({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, props)}>
+      <path d="M9 4H4v5M4 4l6 6M15 20h5v-5M20 20l-6-6" />
+    </svg>
+  );
+}
+
+/** Kotak centang untuk daftar perspektif yang bisa disembunyikan. */
+export function IconCheckbox({ size = 16, checked, ...props }: IconProps & { checked?: boolean }) {
+  return (
+    <svg {...baseProps(size, props)}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
+      {checked && <path d="m7.5 12 3 3 6-6" />}
+    </svg>
+  );
+}

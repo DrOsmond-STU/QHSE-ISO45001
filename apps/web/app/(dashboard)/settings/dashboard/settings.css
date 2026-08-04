@@ -132,7 +132,7 @@
   place-items: center;
   border-radius: 50%;
   background: var(--qhse-brand-wash);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -209,7 +209,7 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
 }
 
 .qhse-set__pilihanCaption {

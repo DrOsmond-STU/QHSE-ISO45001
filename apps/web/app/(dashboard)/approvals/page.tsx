@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { StatusBadge } from "@qhse/ui-components";
+import { IconArrowRight, StatusBadge } from "@qhse/ui-components";
 import { ApiError } from "../../../lib/api-client";
 import { fetchInbox, type InboxTask } from "../../../lib/records";
 import { useLocale, type Locale } from "../../../lib/locale";
@@ -128,7 +128,7 @@ export default function ApprovalsPage() {
                 </span>
                 {slug ? (
                   <Link className="qhse-inbox__open" href={`/modules/${slug}/${task.entityId}`}>
-                    {t("Buka & putuskan", "Open & decide")} →
+                    {t("Buka & putuskan", "Open & decide")} <IconArrowRight />
                   </Link>
                 ) : (
                   <span className="qhse-inbox__since">

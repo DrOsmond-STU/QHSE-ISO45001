@@ -68,7 +68,7 @@
 /* Tautan di dalam tabel — nomor dokumen, nomor izin — adalah jalan masuk ke
    halaman detail, jadi diberi warna merek, bukan biru bawaan peramban. */
 .qhse-data-table a {
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   font-weight: 600;
   text-decoration: none;
 }

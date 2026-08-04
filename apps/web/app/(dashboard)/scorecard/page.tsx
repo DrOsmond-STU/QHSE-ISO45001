@@ -3,7 +3,15 @@
 import Link from "next/link";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BulletChart, Button, LineChart, StatusBadge } from "@qhse/ui-components";
+import {
+  BulletChart,
+  Button,
+  IconCheckbox,
+  IconChevronLeft,
+  IconChevronRight,
+  LineChart,
+  StatusBadge,
+} from "@qhse/ui-components";
 import { ApiError } from "../../../lib/api-client";
 import {
   defaultScorecardLayout,
@@ -43,7 +51,7 @@ const FREQUENCY_LABEL: Record<string, string> = {
 };
 
 export default function ScorecardPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [data, setData] = useState<Scorecard | null>(null);
   const [layout, setLayout] = useState<ScorecardLayout>(defaultScorecardLayout());
   const [editing, setEditing] = useState(false);
@@ -204,7 +212,7 @@ export default function ScorecardPage() {
                   disabled={index === 0}
                   onClick={() => movePerspective(perspective.code, -1)}
                 >
-                  ‹
+                  <IconChevronLeft />
                 </button>
                 <button
                   type="button"
@@ -212,7 +220,8 @@ export default function ScorecardPage() {
                   onClick={() => toggleHidden(perspective.code)}
                   aria-pressed={!layout.hidden.includes(perspective.code)}
                 >
-                  {layout.hidden.includes(perspective.code) ? "☐" : "☑"} {perspective.title}
+                  <IconCheckbox checked={!layout.hidden.includes(perspective.code)} />{" "}
+                  {metrikLokal(perspective.title, locale)}
                 </button>
                 <button
                   type="button"
@@ -220,7 +229,7 @@ export default function ScorecardPage() {
                   disabled={index === ordered.length - 1}
                   onClick={() => movePerspective(perspective.code, 1)}
                 >
-                  ›
+                  <IconChevronRight />
                 </button>
               </span>
             ))}

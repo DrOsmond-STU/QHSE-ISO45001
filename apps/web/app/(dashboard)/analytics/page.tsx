@@ -1,7 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarList, Button, DonutChart, LineChart, StatusBadge } from "@qhse/ui-components";
+import {
+  BarList,
+  Button,
+  DonutChart,
+  IconChevronLeft,
+  IconChevronRight,
+  IconClose,
+  IconExpand,
+  LineChart,
+  StatusBadge,
+} from "@qhse/ui-components";
 import { ApiError } from "../../../lib/api-client";
 import { useLocale } from "../../../lib/locale";
 import {
@@ -238,8 +248,8 @@ export default function AnalyticsPage() {
         <div className="qhse-dash__editbar">
           <p className="qhse-dash__edithint">
             {t(
-              "Seret kartu untuk memindahkannya, atau pakai tombol ‹ ›. Tombol ⤢ mengubah lebar, ✕ melepas widget. Susunan tersimpan otomatis untuk akun Anda.",
-              "Drag a card to move it, or use the ‹ › buttons. ⤢ changes the width, ✕ removes the widget. The layout is saved automatically for your account.",
+              "Seret kartu untuk memindahkannya, atau pakai tombol panah. Tombol panah diagonal mengubah lebar, tombol silang melepas widget. Susunan tersimpan otomatis untuk akun Anda.",
+              "Drag a card to move it, or use the arrow buttons. The diagonal arrows change the width, the cross removes the widget. The layout is saved automatically for your account.",
             )}
           </p>
           <Button variant="default" onClick={() => setPickerOpen((value) => !value)}>
@@ -416,7 +426,7 @@ function MetricWidget({
         {editing && (
           <div className="qhse-widget__tools">
             <button type="button" aria-label={t("Pindah ke kiri", "Move left")} disabled={index === 0} onClick={() => onMove(index, index - 1)}>
-              ‹
+              <IconChevronLeft />
             </button>
             <button
               type="button"
@@ -424,17 +434,17 @@ function MetricWidget({
               disabled={index === total - 1}
               onClick={() => onMove(index, index + 1)}
             >
-              ›
+              <IconChevronRight />
             </button>
             <button
               type="button"
               aria-label={width === 1 ? t("Perlebar", "Widen") : t("Persempit", "Narrow")}
               onClick={() => onWidth(entry.key, width === 1 ? 2 : 1)}
             >
-              ⤢
+              <IconExpand />
             </button>
             <button type="button" aria-label={t("Lepas widget", "Remove widget")} onClick={() => onRemove(entry.key)}>
-              ✕
+              <IconClose />
             </button>
           </div>
         )}

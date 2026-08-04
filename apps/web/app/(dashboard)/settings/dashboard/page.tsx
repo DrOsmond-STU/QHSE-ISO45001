@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Button } from "@qhse/ui-components";
+import { Button, IconArrowDown, IconArrowUp } from "@qhse/ui-components";
 import { ApiError } from "../../../../lib/api-client";
 import { fetchCatalog, fetchLayout, saveLayout, type MetricCatalogEntry } from "../../../../lib/analytics";
 import {
@@ -243,7 +243,7 @@ export default function SettingsDashboardPage() {
 
                 <div className="qhse-set__aksi">
                   <button type="button" onClick={() => geser(index, -1)} disabled={index === 0} aria-label={t("Naikkan", "Move up")}>
-                    ↑
+                    <IconArrowUp />
                   </button>
                   <button
                     type="button"
@@ -251,7 +251,7 @@ export default function SettingsDashboardPage() {
                     disabled={index === layout.widgets.length - 1}
                     aria-label={t("Turunkan", "Move down")}
                   >
-                    ↓
+                    <IconArrowDown />
                   </button>
                   <button type="button" className="qhse-set__hapus" onClick={() => hapus(index)}>
                     {t("Hapus", "Remove")}

@@ -220,7 +220,20 @@ async function main() {
   );
   const rejected = await call("/dashboard-layouts/analytics", { method: "PUT", token, body: { layout: "bukan objek" } });
   report(rejected.status === 400, "susunan tidak sah ditolak", `HTTP ${rejected.status}`);
-  if (original) await call("/dashboard-layouts/analytics", { method: "PUT", token, body: { layout: original } });
+  // PEMULIHAN, dan cabang `else` itu yang selama ini hilang.
+  //
+  // Sebelumnya hanya `if (original)`. Pada jalan PERTAMA belum ada susunan
+  // tersimpan, jadi tidak ada yang dipulihkan — dan layout uji berisi satu
+  // widget itu menetap sebagai susunan milik akun demo. Jalan-jalan
+  // berikutnya membacanya sebagai "asli" lalu memulihkannya dengan setia,
+  // sehingga dashboard analitik akun demo terkunci pada satu widget selamanya.
+  // Ditemukan saat membuka halamannya sendiri, bukan oleh pemeriksaan mana pun.
+  if (original) {
+    await call("/dashboard-layouts/analytics", { method: "PUT", token, body: { layout: original } });
+  } else {
+    const dihapus = await call("/dashboard-layouts/analytics", { method: "DELETE", token });
+    report(dihapus.status === 200, "susunan uji dihapus, dashboard kembali ke bawaan", `HTTP ${dihapus.status}`);
+  }
 
   console.log("\n--- CRUD & persetujuan (izin kerja) ---");
   // Membuat baris SUNGGUHAN lalu menghapusnya lunak di akhir. Alurnya tidak

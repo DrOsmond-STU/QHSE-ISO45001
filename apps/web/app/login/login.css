@@ -11,6 +11,9 @@
   position: relative;
   min-height: 100vh;
   display: flex;
+  /* KOLOM, bukan baris. Sebelumnya baris, dan pemilih bahasa yang ditaruh
+     sebelum kartu ikut berjajar di SAMPING kartu alih-alih di atasnya. */
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--qhse-space-5);
@@ -155,6 +158,12 @@
 .qhse-login__lang {
   display: inline-flex;
   align-self: center;
+  /* position: relative WAJIB. `.qhse-login::before` adalah lapisan sorotan
+     radial berposisi absolut tanpa z-index; elemen setelahnya yang TIDAK
+     berposisi akan dilukis di BAWAHnya, jadi pemilih bahasa ada di DOM
+     tetapi tertutup sepenuhnya. Kartu masuk lolos dari nasib yang sama
+     hanya karena ia kebetulan sudah punya position: relative. */
+  position: relative;
   margin-bottom: var(--qhse-space-4);
   border: 1px solid var(--qhse-border);
   border-radius: var(--qhse-radius-sm);

@@ -47,10 +47,72 @@ dd,
    terasa tidak dirancang. */
 ::selection {
   background: var(--qhse-brand-wash);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
 }
 
 *:focus-visible {
   outline: 2px solid var(--qhse-brand-bright);
   outline-offset: 2px;
+}
+
+/* Menghormati preferensi "kurangi gerak" pada SELURUH aplikasi.
+ *
+ * Sebelumnya hanya drawer sidebar yang menghormatinya, sementara ada 60-an
+ * transisi lain di seluruh lembar gaya — kartu, tombol, baris tabel, tautan
+ * menu. Menutup satu dan membiarkan enam puluh lainnya bukan setengah
+ * pemenuhan, melainkan tidak memenuhi sama sekali: orang yang menyalakan
+ * setelan ini melakukannya karena gerak memicu pusing atau mual, dan enam
+ * puluh gerak yang tersisa tetap memicunya.
+ *
+ * Durasi 0.01ms, bukan 0: animasi berdurasi nol pada sebagian peramban tidak
+ * pernah memicu `animationend`, dan komponen yang menunggu peristiwa itu
+ * menggantung selamanya. Nilai yang sangat kecil tetap menghasilkan
+ * peristiwanya seketika.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Setiap elemen yang bisa ditekan HARUS memakai kursor penunjuk.
+ *
+ * <button> mendapat `cursor: default` dari gaya bawaan peramban — bukan
+ * pointer — dan itu satu-satunya perbedaan yang membuat tombol ikon terasa
+ * mati padahal berfungsi. Ditetapkan sekali di sini alih-alih diingat di
+ * setiap komponen baru.
+ *
+ * Yang dinonaktifkan dikecualikan: kursor penunjuk pada tombol yang tidak
+ * bisa ditekan menjanjikan sesuatu yang tidak terjadi.
+ */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+label,
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Kartu KPI dashboard dibungkus tautan; tautannya sendiri tidak punya gaya,
+   jadi tanda "bisa diklik" harus datang dari kartunya. */
+a:has(> .qhse-kpi-card) {
+  display: block;
+  text-decoration: none;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+a:has(> .qhse-kpi-card):hover .qhse-kpi-card {
+  border-color: var(--qhse-brand-light);
+  box-shadow: var(--qhse-shadow-md);
 }

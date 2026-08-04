@@ -69,7 +69,7 @@
 
 .qhse-exec__atur:hover {
   border-color: var(--qhse-brand);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   background: var(--qhse-brand-wash);
 }
 

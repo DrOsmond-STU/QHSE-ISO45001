@@ -120,6 +120,9 @@
 }
 
 .qhse-chip button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qhse-space-1);
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-sm-size);
   color: var(--qhse-text-secondary);
@@ -131,7 +134,7 @@
 
 .qhse-chip button:hover:not(:disabled) {
   background: var(--qhse-brand-wash);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
 }
 
 .qhse-chip button:disabled {
@@ -181,7 +184,7 @@
   font-weight: 700;
   letter-spacing: var(--qhse-tracking-wide);
   text-transform: uppercase;
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   margin: 0 0 var(--qhse-space-3);
 }
 
@@ -315,11 +318,15 @@
 }
 
 .qhse-widget__tools button {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* cursor: pointer eksplisit — <button> mendapat `cursor: default` dari
+     gaya bawaan peramban, bukan pointer. Tanpa baris ini tombol ikon tidak
+     memberi tanda apa pun bahwa ia bisa ditekan. */
+  cursor: pointer;
   font-size: 13px;
   color: var(--qhse-text-secondary);
   background: var(--qhse-surface-2);

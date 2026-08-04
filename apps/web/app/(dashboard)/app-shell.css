@@ -150,7 +150,7 @@
 .qhse-shell__icon-button:hover {
   background: var(--qhse-brand-wash);
   border-color: var(--qhse-brand-light);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
 }
 
 /* --- Pemilih bahasa --- */
@@ -280,7 +280,7 @@
    Bidangnya terbaca dari sudut mata; garis 3px tidak. */
 .qhse-shell__nav-link[aria-current="page"] {
   background: var(--qhse-brand-wash);
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   font-weight: 700;
   box-shadow: none;
 }
@@ -385,7 +385,7 @@
   font-weight: 700;
   letter-spacing: var(--qhse-tracking-wide);
   text-transform: uppercase;
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   margin: 0;
 }
 
@@ -524,7 +524,7 @@
   font-weight: 700;
   letter-spacing: var(--qhse-tracking-wide);
   text-transform: uppercase;
-  color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
   margin: 0 0 var(--qhse-space-3);
 }
 

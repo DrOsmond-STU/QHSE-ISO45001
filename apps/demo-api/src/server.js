@@ -485,6 +485,28 @@ async function handlePutLayout(res, claims, key, body) {
   sendData(res, { key, layout });
 }
 
+/**
+ * Menghapus susunan tersimpan sehingga dashboard kembali ke bawaan.
+ *
+ * ADA KARENA "kembali ke bawaan" TIDAK SAMA dengan "simpan susunan bawaan".
+ * Yang kedua membekukan bawaan yang berlaku hari ini: ketika kelak ada widget
+ * baru yang ditambahkan ke susunan bawaan, pengguna yang pernah menekan
+ * "kembalikan bawaan" tidak akan pernah melihatnya, karena ia punya baris
+ * tersimpan yang menang atas bawaan. Menghapus barisnya membuat ia benar-benar
+ * mengikuti bawaan, termasuk bawaan yang berubah.
+ *
+ * Ini juga yang dibutuhkan verify.js: pemeriksaan tulis-baca susunan harus
+ * bisa memulihkan keadaan "belum pernah disusun", bukan hanya keadaan
+ * "pernah disusun begini".
+ */
+async function handleDeleteLayout(res, claims, key) {
+  if (!LAYOUT_KEYS.has(key)) return sendProblem(res, 404, "Dashboard tidak dikenal.", key);
+  await withRls(claims.tenant_id, (client) =>
+    client.query(`DELETE FROM dashboard_layouts WHERE user_id = $1 AND dashboard_key = $2`, [claims.sub, key]),
+  );
+  sendData(res, { key, layout: null });
+}
+
 // --- Router ------------------------------------------------------------------
 
 async function route(req, res, url) {
@@ -565,6 +587,7 @@ async function route(req, res, url) {
     if (!claims) return;
     if (method === "GET") return handleGetLayout(res, claims, segments[1]);
     if (method === "PUT") return handlePutLayout(res, claims, segments[1], await readJsonBody(req));
+    if (method === "DELETE") return handleDeleteLayout(res, claims, segments[1]);
     return sendProblem(res, 405, "Metode tidak didukung.", method);
   }
 

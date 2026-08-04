@@ -1,3 +1,8 @@
+/* WARNA TEKS lencana memakai token *-ink, bukan warna statusnya sendiri.
+   Warna status dipakai sebagai BIDANG (garis tepi di sini, dan titik/batang
+   pada grafik); sebagai teks di atas wash-nya sendiri tiga dari empat gagal
+   ambang 4.5:1 — kuning bahkan hanya 2,05:1. Diukur, bukan dikira.
+   Lihat blok "TINTA LENCANA" di tokens.css. */
 /* Lencana status. Latarnya memakai token *-wash yang sudah disetel terpisah
    untuk mode terang dan gelap, BUKAN color-mix dengan transparan: warna yang
    dicampur transparan mengambil warna bidang di belakangnya, sehingga lencana
@@ -18,25 +23,25 @@
 }
 
 .qhse-status-badge--good {
-  color: var(--qhse-status-good);
+  color: var(--qhse-status-good-ink);
   background: var(--qhse-status-good-wash);
   border-color: color-mix(in srgb, var(--qhse-status-good) 22%, transparent);
 }
 
 .qhse-status-badge--warning {
-  color: var(--qhse-status-warning);
+  color: var(--qhse-status-warning-ink);
   background: var(--qhse-status-warning-wash);
   border-color: color-mix(in srgb, var(--qhse-status-warning) 24%, transparent);
 }
 
 .qhse-status-badge--serious {
-  color: var(--qhse-status-serious);
+  color: var(--qhse-status-serious-ink);
   background: var(--qhse-status-serious-wash);
   border-color: color-mix(in srgb, var(--qhse-status-serious) 24%, transparent);
 }
 
 .qhse-status-badge--critical {
-  color: var(--qhse-status-critical);
+  color: var(--qhse-status-critical-ink);
   background: var(--qhse-status-critical-wash);
   border-color: color-mix(in srgb, var(--qhse-status-critical) 22%, transparent);
 }
