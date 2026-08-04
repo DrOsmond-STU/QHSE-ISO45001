@@ -24,6 +24,7 @@ function navGroups(): Array<{ group: string; items: NavItem[] }> {
         { href: "/dashboard", label: "Dashboard" },
         { href: "/analytics", label: "Analitik" },
         { href: "/scorecard", label: "Balanced Scorecard" },
+        { href: "/ai", label: "Pencarian & Bantuan" },
         { href: "/approvals", label: "Kotak Persetujuan" },
       ],
     },

@@ -35,8 +35,25 @@ async function seedDocumentVersions(client, ctx, random) {
   const controller = actor(ctx, "DOCUMENT_CONTROLLER");
   const hseManager = actor(ctx, "HSE_MANAGER");
 
+  // deleted_at IS NULL, dan itu bukan kerapian.
+  //
+  // Pemeriksaan otomatis membuat dokumen sekali pakai, mengunggah satu revisi
+  // ke dalamnya, lalu menghapus dokumennya (lunak). Tanpa saringan ini,
+  // penyemaian berikutnya ikut membuatkan versi untuk dokumen-dokumen bekas
+  // itu — dan menabrak revisi 1.0 yang sudah ada di sana:
+  //
+  //     duplicate key value violates unique constraint
+  //     "document_versions_document_id_major_version_minor_version_key"
+  //
+  // Penghapusan LUNAK tidak melepaskan batasan unik: barisnya tetap ada dan
+  // tetap memegang nomor versinya. Jadi menyemai ulang — operasi yang
+  // seharusnya aman diulang kapan saja — akan gagal di tengah jalan setelah
+  // pemeriksaan otomatis berjalan beberapa kali.
   const { rows: documents } = await client.query(
-    `SELECT document_id, document_number, title, status, effective_date FROM documents WHERE tenant_id = $1 ORDER BY document_number`,
+    `SELECT document_id, document_number, title, status, effective_date
+       FROM documents
+      WHERE tenant_id = $1 AND deleted_at IS NULL
+      ORDER BY document_number`,
     [ctx.tenantId],
   );
 
@@ -124,7 +141,7 @@ async function seedComplianceObligations(client, ctx, random) {
   const hseManager = actor(ctx, "HSE_MANAGER");
 
   const { rows: regulations } = await client.query(
-    `SELECT regulatory_register_id, regulation_number FROM regulatory_register WHERE tenant_id = $1 ORDER BY regulation_number`,
+    `SELECT regulatory_register_id, regulation_number FROM regulatory_register WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY regulation_number`,
     [ctx.tenantId],
   );
 
@@ -190,7 +207,7 @@ function levelOf(score) {
 async function seedHiraLines(client, ctx, random) {
   const supervisors = actors(ctx, "SUPERVISOR");
   const { rows: assessments } = await client.query(
-    `SELECT hira_id, hira_number FROM hira_assessments WHERE tenant_id = $1 ORDER BY hira_number`,
+    `SELECT hira_id, hira_number FROM hira_assessments WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY hira_number`,
     [ctx.tenantId],
   );
 
@@ -326,11 +343,11 @@ async function seedIncidentDepth(client, ctx, random) {
 
   const { rows: incidents } = await client.query(
     `SELECT incident_report_id, incident_number, incident_datetime, status, classification
-       FROM incident_reports WHERE tenant_id = $1 ORDER BY incident_number`,
+       FROM incident_reports WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY incident_number`,
     [ctx.tenantId],
   );
   const { rows: capas } = await client.query(
-    `SELECT capa_register_id, capa_number FROM capa_register WHERE tenant_id = $1 AND source_type = 'INCIDENT' ORDER BY capa_number`,
+    `SELECT capa_register_id, capa_number FROM capa_register WHERE tenant_id = $1 AND deleted_at IS NULL AND source_type = 'INCIDENT' ORDER BY capa_number`,
     [ctx.tenantId],
   );
 
@@ -443,7 +460,7 @@ async function seedCapaDepth(client, ctx, random) {
   const hseOfficers = actors(ctx, "HSE_OFFICER");
 
   const { rows: capas } = await client.query(
-    `SELECT capa_register_id, capa_number, status, initiated_at, target_closure_date FROM capa_register WHERE tenant_id = $1 ORDER BY capa_number`,
+    `SELECT capa_register_id, capa_number, status, initiated_at, target_closure_date FROM capa_register WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY capa_number`,
     [ctx.tenantId],
   );
 
@@ -541,7 +558,7 @@ async function seedInspectionFindings(client, ctx, random) {
 
   const { rows: records } = await client.query(
     `SELECT inspection_record_id, inspection_record_number, actual_date, overall_result
-       FROM inspection_records WHERE tenant_id = $1 AND status = 'COMPLETED' ORDER BY inspection_record_number`,
+       FROM inspection_records WHERE tenant_id = $1 AND deleted_at IS NULL AND status = 'COMPLETED' ORDER BY inspection_record_number`,
     [ctx.tenantId],
   );
 
@@ -642,7 +659,7 @@ const PLAN_STEPS = [
 
 async function seedPlanSteps(client, ctx) {
   const { rows: plans } = await client.query(
-    `SELECT emergency_response_plan_id, plan_number FROM emergency_response_plans WHERE tenant_id = $1 ORDER BY plan_number`,
+    `SELECT emergency_response_plan_id, plan_number FROM emergency_response_plans WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY plan_number`,
     [ctx.tenantId],
   );
 
@@ -684,7 +701,7 @@ const MAINTENANCE_FINDINGS = [
 async function seedMaintenance(client, ctx, random) {
   const technicians = actors(ctx, "WORKER_EMPLOYEE");
   const { rows: assets } = await client.query(
-    `SELECT asset_id, asset_code, condition_status FROM assets WHERE tenant_id = $1 ORDER BY asset_code`,
+    `SELECT asset_id, asset_code, condition_status FROM assets WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY asset_code`,
     [ctx.tenantId],
   );
 
@@ -757,7 +774,7 @@ async function seedCalibrationCertificates(client, ctx, random) {
   const inspector = actor(ctx, "QC_INSPECTOR");
   const { rows: items } = await client.query(
     `SELECT calibration_item_id, equipment_tag_no, calibration_interval_months, is_critical_measurement
-       FROM calibration_items WHERE tenant_id = $1 ORDER BY equipment_tag_no`,
+       FROM calibration_items WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY equipment_tag_no`,
     [ctx.tenantId],
   );
 
@@ -826,7 +843,7 @@ const RECOMMENDATIONS = {
 async function seedContractorEvaluations(client, ctx, random) {
   const hseManager = actor(ctx, "HSE_MANAGER");
   const { rows: contractors } = await client.query(
-    `SELECT contractor_id, contractor_name, status, overall_risk_rating FROM contractors WHERE tenant_id = $1 ORDER BY contractor_name`,
+    `SELECT contractor_id, contractor_name, status, overall_risk_rating FROM contractors WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY contractor_name`,
     [ctx.tenantId],
   );
 

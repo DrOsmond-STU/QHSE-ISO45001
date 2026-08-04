@@ -133,6 +133,50 @@ async function seedCompliance(client, ctx, ref) {
   // kalau kolom ini kosong maka membuka sebuah dokumen tidak
   // memperlihatkan apa pun tentang dokumen itu, dan modul dokumen
   // terkendali kehilangan seluruh maknanya di layar.
+  // POKOK KETENTUAN yang KHAS per dokumen, dicocokkan dari kata kunci judulnya.
+  //
+  // Sebelumnya paragraf ini sama persis untuk seluruh 24 dokumen, dan itu
+  // merusak lebih dari sekadar keasrian data: pencarian kata kunci pada
+  // uraian dokumen mengembalikan SELURUH dokumen untuk hampir setiap kata,
+  // karena setiap kata memang ada di setiap dokumen. Ketahuan saat menguji
+  // pencarian — "alat pelindung diri" cocok dengan 24 dari 24 dokumen.
+  //
+  // Isinya sengaja memakai istilah yang sungguh dipakai di lapangan (nama
+  // formulir, ambang angka, nama alat), karena justru itulah yang diketik
+  // orang di kotak pencarian.
+  const KETENTUAN = [
+    [/izin kerja panas|hot work/i, "(1) Izin kerja panas diterbitkan Area Authority dan disetujui HSE untuk pekerjaan berisiko tinggi. (2) Pengukuran gas mudah terbakar wajib menunjukkan 0% LEL sebelum percikan pertama. (3) Radius 11 meter dibersihkan dari bahan mudah terbakar dan ditutup selimut tahan api. (4) Fire watch berjaga selama pekerjaan dan 30 menit sesudahnya. (5) Izin berlaku maksimal satu shift dan wajib diperbarui bila kondisi berubah."],
+    [/ruang terbatas|confined space/i, "(1) Ruang terbatas hanya dimasuki dengan izin masuk dan daftar pekerja yang dicatat penjaga lubang. (2) Kadar oksigen wajib 19,5%–23,5%, H2S di bawah 10 ppm, dan gas mudah terbakar 0% LEL. (3) Ventilasi paksa dijalankan sebelum dan selama pekerjaan. (4) Penjaga lubang (hole watch) dilarang meninggalkan posisi. (5) Rencana penyelamatan dan alat angkat tersedia sebelum orang pertama masuk."],
+    [/isolasi energi|lock out|loto/i, "(1) Seluruh sumber energi diidentifikasi dalam daftar titik isolasi sebelum pekerjaan. (2) Setiap pekerja memasang gembok dan label pribadi pada kotak isolasi. (3) Energi sisa dilepaskan dan diuji nol sebelum pekerjaan dimulai. (4) Pelepasan gembok hanya oleh pemasangnya sendiri. (5) Gembok yatim dibuka lewat prosedur pelepasan paksa dengan persetujuan Manajer HSE."],
+    [/tumpahan minyak|tumpahan/i, "(1) Tumpahan dilaporkan ke Control Room dalam 5 menit sejak diketahui. (2) Sumber tumpahan dihentikan bila aman dilakukan. (3) Oil boom dan absorbent pad dipasang untuk mencegah penyebaran ke saluran air. (4) Limbah hasil penanganan dikelola sebagai limbah B3. (5) Tumpahan di atas 15 liter dilaporkan ke instansi lingkungan sesuai ketentuan."],
+    [/ketinggian|harness/i, "(1) Pekerjaan di atas 1,8 meter wajib memakai full body harness dengan double lanyard. (2) Titik angkur menahan beban minimal 15 kN dan diperiksa sebelum dipakai. (3) Perancah diperiksa dan diberi scafftag hijau sebelum digunakan. (4) Area di bawah pekerjaan dibarikade untuk mencegah benda jatuh. (5) Pekerja dengan riwayat vertigo atau tekanan darah tidak terkendali tidak diizinkan bekerja di ketinggian."],
+    [/jetty|pemuatan|pembongkaran|bbm/i, "(1) Pemeriksaan sebelum sandar mencakup ship-shore safety checklist yang ditandatangani kedua pihak. (2) Kabel bonding dipasang sebelum selang dihubungkan. (3) Laju alir awal dibatasi hingga jalur terisi penuh untuk mencegah listrik statis. (4) Emergency shutdown diuji sebelum pemuatan dimulai. (5) Pemuatan dihentikan saat petir terdeteksi dalam radius 8 km."],
+    [/pemeriksaan gas|gas testing/i, "(1) Detektor gas dikalibrasi dan diuji bump test pada hari pemakaian. (2) Pengukuran dilakukan pada tiga tinggi: dasar, tengah, dan atas ruang. (3) Hasil dicatat pada formulir pemeriksaan gas beserta jam pengukuran. (4) Pengukuran ulang dilakukan setiap 2 jam atau setelah pekerjaan terhenti. (5) Pekerjaan dihentikan bila LEL melebihi 0% atau H2S terdeteksi."],
+    [/investigasi insiden|akar masalah/i, "(1) Lokasi insiden diamankan dan bukti dikumpulkan sebelum berubah. (2) Investigasi dimulai maksimal 24 jam setelah kejadian. (3) Analisis akar masalah memakai metode 5 Why dan diagram tulang ikan. (4) Tindakan perbaikan diterbitkan sebagai CAPA dengan penanggung jawab dan tenggat. (5) Pembelajaran disebarkan lewat safety alert ke seluruh area dalam 7 hari."],
+    [/limbah b3|limbah/i, "(1) Limbah B3 dipilah dan diberi simbol serta label sesuai karakteristiknya. (2) Penyimpanan di TPS tidak melebihi 90 hari sejak tanggal masuk. (3) Neraca limbah dicatat pada logbook TPS setiap penerimaan dan pengeluaran. (4) Pengangkutan hanya oleh pengangkut berizin dengan manifes elektronik. (5) Ceceran di TPS ditangani seketika dan dicatat sebagai kejadian lingkungan."],
+    [/pemadam api|apar/i, "(1) APAR diperiksa visual setiap bulan dan diuji isi setiap 12 bulan. (2) Tekanan jarum harus berada di zona hijau dan segel dalam keadaan utuh. (3) Kartu pemeriksaan ditempel pada tiap tabung dan diisi pemeriksa. (4) APAR yang terpakai walau sebentar langsung ditarik untuk diisi ulang. (5) Akses ke APAR bebas hambatan sejauh minimal 1 meter."],
+    [/kontraktor/i, "(1) Kontraktor dinilai kelayakan HSE-nya sebelum masuk daftar rekanan. (2) Penilaian mencakup statistik kecelakaan, sertifikat, dan kesiapan alat. (3) Kinerja dievaluasi tiap kuartal memakai kartu skor HSE. (4) Nilai di bawah ambang menghentikan penugasan pekerjaan baru. (5) Hasil evaluasi menjadi dasar perpanjangan kontrak."],
+    [/kalibrasi|out of tolerance/i, "(1) Seluruh alat ukur terdaftar beserta rentang dan siklus kalibrasinya. (2) Kalibrasi dilakukan laboratorium terakreditasi KAN dengan sertifikat tertelusur. (3) Alat lulus diberi label kalibrasi berisi tanggal dan masa berlaku. (4) Alat out of tolerance ditarik dan hasil pengukuran sebelumnya ditinjau ulang. (5) Alat rusak diberi label larangan pakai dan dipisahkan."],
+    [/kesehatan berkala|medical check/i, "(1) Pemeriksaan kesehatan berkala dilakukan minimal setahun sekali. (2) Jenis pemeriksaan mengikuti pajanan pekerjaan: audiometri, spirometri, dan darah lengkap. (3) Hasil bersifat rahasia dan hanya diakses dokter perusahaan. (4) Status fit to work disampaikan ke atasan tanpa memuat rincian diagnosis. (5) Pekerja dengan pembatasan kerja diberikan penugasan terbatas sesuai anjuran dokter."],
+    [/manajemen perubahan|management of change/i, "(1) Setiap perubahan proses, peralatan, atau organisasi diajukan lewat formulir MOC. (2) Kajian risiko perubahan wajib dilakukan sebelum persetujuan. (3) Perubahan sementara diberi batas waktu dan ditinjau saat berakhir. (4) Dokumen, gambar, dan pelatihan diperbarui sebelum perubahan dijalankan. (5) Penutupan MOC memerlukan verifikasi lapangan."],
+    [/h2s|kebocoran gas/i, "(1) Detektor H2S tetap dipasang di wellpad dan diuji fungsi setiap minggu. (2) Alarm tahap pertama berbunyi pada 10 ppm, evakuasi pada 20 ppm. (3) Pekerja bergerak melawan arah angin menuju titik kumpul sesuai wind sock. (4) SCBA tersedia di jalur evakuasi dan hanya dipakai personel terlatih. (5) Area hanya dinyatakan aman setelah pengukuran ulang oleh petugas HSE."],
+    [/penggalian|utilitas bawah tanah/i, "(1) Izin penggalian diterbitkan setelah pemetaan utilitas bawah tanah. (2) Penggalian di atas 1,2 meter memerlukan penopang dinding atau kemiringan aman. (3) Jalur masuk dan keluar tersedia setiap 7,5 meter panjang galian. (4) Material galian ditempatkan minimal 0,6 meter dari tepi. (5) Galian diperiksa ulang setiap pagi dan setelah hujan."],
+    [/nyaris celaka|near miss/i, "(1) Setiap orang boleh melaporkan nyaris celaka tanpa takut disalahkan. (2) Laporan disampaikan pada hari kejadian lewat formulir atau kartu observasi. (3) Laporan ditelaah HSE dalam 3 hari kerja. (4) Kejadian berpotensi keparahan tinggi diinvestigasi seperti insiden sungguhan. (5) Jumlah laporan menjadi indikator kepedulian, bukan indikator buruknya kinerja."],
+    [/narkoba|alkohol/i, "(1) Perusahaan menetapkan kadar alkohol nol bagi seluruh pekerja di area operasi. (2) Pengujian acak dilakukan minimal dua kali setahun. (3) Pengujian juga dilakukan setelah insiden yang melibatkan pekerja. (4) Hasil positif menghentikan penugasan seketika dan diproses sesuai peraturan perusahaan. (5) Pekerja yang melapor sukarela sebelum pengujian diberikan jalur pemulihan."],
+    [/stop work/i, "(1) Setiap pekerja, tanpa memandang jabatan, berwenang menghentikan pekerjaan yang tidak aman. (2) Penghentian tidak memerlukan izin atasan dan tidak boleh berbuah sanksi. (3) Pekerjaan hanya dilanjutkan setelah bahaya dikendalikan dan diverifikasi. (4) Setiap penggunaan wewenang ini dicatat dan ditelaah. (5) Manajemen wajib mendukung keputusan penghentian di depan umum."],
+    [/tanggap darurat/i, "(1) Skenario darurat mencakup kebakaran, tumpahan, kebocoran gas, dan gempa. (2) Latihan darurat diselenggarakan minimal dua kali setahun per lokasi. (3) Titik kumpul dan jalur evakuasi ditandai dan bebas hambatan. (4) Struktur komando insiden ditetapkan beserta penggantinya. (5) Hasil evaluasi latihan menjadi dasar perbaikan rencana."],
+    [/k3 dan lingkungan/i, "(1) Perusahaan menetapkan pencegahan cedera dan pencemaran sebagai prioritas yang setara dengan produksi. (2) Kepatuhan pada peraturan K3 dan lingkungan adalah batas terendah, bukan sasaran. (3) Setiap pekerja berhak atas tempat kerja yang aman dan berkewajiban menjaganya. (4) Konsultasi dan partisipasi pekerja dijalankan lewat P2K3. (5) Kebijakan ini dikomunikasikan ke seluruh pekerja, kontraktor, dan tamu."],
+    [/terintegrasi|smt qhse/i, "(1) Sistem manajemen menggabungkan ISO 9001, ISO 14001, dan ISO 45001 dalam satu kerangka. (2) Konteks organisasi serta pihak berkepentingan ditetapkan dan ditinjau tahunan. (3) Risiko dan peluang dikelola dalam satu daftar terpadu. (4) Audit internal menilai ketiga standar dalam satu program. (5) Tinjauan manajemen membahas kinerja mutu, lingkungan, dan K3 sekaligus."],
+    [/mutu|iso 9001/i, "(1) Sasaran mutu ditetapkan terukur dan ditinjau pada rapat tinjauan manajemen. (2) Proses dipetakan beserta masukan, keluaran, dan indikator kinerjanya. (3) Ketidaksesuaian dicatat sebagai NCR dengan tindakan koreksi terverifikasi. (4) Kepuasan pelanggan diukur dan hasilnya menjadi masukan perbaikan. (5) Audit internal dijalankan sesuai program tahunan."],
+  ];
+
+  function pokokKetentuan(title) {
+    const cocok = KETENTUAN.find(([pola]) => pola.test(title));
+    return cocok
+      ? `POKOK KETENTUAN — ${cocok[1]}`
+      : "POKOK KETENTUAN — (1) Identifikasi bahaya dan penilaian risiko dilakukan sebelum pekerjaan dimulai. (2) Persyaratan izin, kompetensi, dan alat pelindung diri dipenuhi sebelum pelaksanaan. (3) Pengawas melakukan verifikasi lapangan dan mencatat hasilnya. (4) Penyimpangan dihentikan seketika lewat Stop Work Authority dan dilaporkan pada hari yang sama. (5) Rekaman pelaksanaan disimpan sesuai masa retensi yang ditetapkan.";
+  }
+
   function isiDokumen(title, documentType, categoryCode) {
     const acuan =
       categoryCode === "POL"
@@ -149,7 +193,7 @@ async function seedCompliance(client, ctx, ref) {
       `RUANG LINGKUP — ${lingkup}`,
       `ACUAN — ${acuan}.`,
       "TANGGUNG JAWAB — Manajer HSE menetapkan dan meninjau dokumen ini; Supervisor area memastikan pelaksanaannya di lapangan; setiap pekerja wajib mematuhi ketentuan yang diatur di dalamnya.",
-      "POKOK KETENTUAN — (1) Identifikasi bahaya dan penilaian risiko dilakukan sebelum pekerjaan dimulai. (2) Persyaratan izin, kompetensi, dan alat pelindung diri dipenuhi sebelum pelaksanaan. (3) Pengawas melakukan verifikasi lapangan dan mencatat hasilnya. (4) Penyimpangan dihentikan seketika lewat Stop Work Authority dan dilaporkan pada hari yang sama. (5) Rekaman pelaksanaan disimpan sesuai masa retensi yang ditetapkan.",
+      pokokKetentuan(title),
       "PENINJAUAN — Dokumen ditinjau sesuai siklus yang ditetapkan, atau lebih awal bila terjadi perubahan proses, peraturan, atau setelah insiden yang relevan.",
     ].join("\n\n");
   }

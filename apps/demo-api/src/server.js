@@ -41,6 +41,8 @@ const writes = require("./writes");
 const files = require("./files");
 const { attachLabels } = require("./labels");
 const { hasSoftDelete } = require("./fields");
+const ai = require("./ai");
+const search = require("./search");
 const { findMetric, catalog } = require("./analytics");
 const { loadScorecard } = require("./scorecard");
 const { login, exchangeAuthorizationCode, exchangeRefreshToken, revokeRefreshToken, AuthError } = require("./auth");
@@ -186,6 +188,77 @@ async function handleModuleChildren(res, claims, moduleDef, child, parentId) {
   });
   if (rows === null) return sendProblem(res, 404, "Data tidak ditemukan.");
   sendData(res, rows.map(rowToCamel));
+}
+
+// --- Pencarian & bantuan AI --------------------------------------------------
+//
+// Pemisahan yang menentukan bentuk seluruh bagian ini: PENCARIAN DOKUMEN
+// MILIK PERUSAHAAN TIDAK BERGANTUNG PADA MODEL. Kalau kunci API tidak ada
+// atau pemanggilan model gagal, pencarian tetap menjawab dengan hasil dari
+// basis data dan hanya kehilangan perluasan kata kuncinya. Yang gagal adalah
+// bantuannya, bukan fungsinya.
+
+function handleAiStatus(res) {
+  sendData(res, {
+    enabled: ai.aktif(),
+    model: ai.aktif() ? ai.MODEL : null,
+    jenis: Object.entries(ai.JENIS).map(([kode, j]) => ({ kode, label: j.label })),
+  });
+}
+
+async function handleAiSearch(res, claims, body) {
+  const frasa = String(body?.q || "").trim();
+  if (frasa.length < 2) return sendProblem(res, 400, "Kata kunci terlalu pendek.", "Minimal 2 huruf.");
+
+  // Perluasan dicoba lebih dulu, tapi kegagalannya TIDAK menggagalkan
+  // pencarian — ia hanya dicatat dan disampaikan apa adanya ke layar.
+  let perluasan = null;
+  let catatanPerluasan = null;
+  if (ai.aktif()) {
+    try {
+      perluasan = await ai.perluasKataKunci(frasa);
+    } catch (error) {
+      catatanPerluasan =
+        error instanceof ai.AiError
+          ? `Perluasan kata kunci dilewati: ${error.title}`
+          : "Perluasan kata kunci dilewati karena model tidak terjangkau.";
+      console.error("[demo-api] perluasan kata kunci gagal:", error);
+    }
+  } else {
+    catatanPerluasan = "Perluasan kata kunci mati karena kunci API belum disetel.";
+  }
+
+  const hasil = await search.cari(claims.tenant_id, frasa, perluasan?.istilah ?? []);
+  sendData(res, {
+    frasa,
+    perluasan: perluasan?.istilah ?? [],
+    tafsir: perluasan?.catatan ?? null,
+    catatan: catatanPerluasan,
+    documents: hasil.documents.map(rowToCamel),
+    regulations: hasil.regulations.map(rowToCamel),
+  });
+}
+
+async function handleAiRegulations(res, body) {
+  const frasa = String(body?.q || "").trim();
+  if (frasa.length < 2) return sendProblem(res, 400, "Kata kunci terlalu pendek.", "Minimal 2 huruf.");
+  try {
+    sendData(res, await ai.rekomendasiPeraturan(frasa));
+  } catch (error) {
+    if (error instanceof ai.AiError) return sendProblem(res, error.status, error.title, error.detail);
+    throw error;
+  }
+}
+
+async function handleAiStructure(res, body) {
+  const frasa = String(body?.q || "").trim();
+  if (frasa.length < 2) return sendProblem(res, 400, "Kata kunci terlalu pendek.", "Minimal 2 huruf.");
+  try {
+    sendData(res, await ai.usulSusunan(frasa, String(body?.jenis || "SOP")));
+  } catch (error) {
+    if (error instanceof ai.AiError) return sendProblem(res, error.status, error.title, error.detail);
+    throw error;
+  }
 }
 
 // --- Notifikasi --------------------------------------------------------------
@@ -444,6 +517,19 @@ async function route(req, res, url) {
     if (segments[1] === "preferences" && method === "GET") return handlePreferences(res, claims);
     if (segments[1] === "preferences" && method === "PUT") return handleUpsertPreference(res, claims, await readJsonBody(req));
     if (segments.length === 3 && segments[2] === "read" && method === "POST") return handleMarkRead(res, claims, segments[1]);
+    return sendProblem(res, 404, "Rute tidak dikenal.", pathname);
+  }
+
+  // --- pencarian & bantuan AI ---
+  if (segments[0] === "ai") {
+    const claims = requireClaims(req, res);
+    if (!claims) return;
+    if (segments[1] === "status" && method === "GET") return handleAiStatus(res);
+    if (segments[1] === "search" && method === "POST") return handleAiSearch(res, claims, await readJsonBody(req));
+    if (segments[1] === "regulations" && method === "POST") {
+      return handleAiRegulations(res, await readJsonBody(req));
+    }
+    if (segments[1] === "structure" && method === "POST") return handleAiStructure(res, await readJsonBody(req));
     return sendProblem(res, 404, "Rute tidak dikenal.", pathname);
   }
 

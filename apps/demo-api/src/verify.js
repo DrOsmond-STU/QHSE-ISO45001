@@ -490,6 +490,53 @@ async function main() {
     }
   }
 
+  // --------------------------------------------------------------------------
+  //  Pencarian & bantuan AI.
+  //
+  //  Yang diperiksa di sini BUKAN kecerdasan modelnya, melainkan pembagian
+  //  tugasnya: pencarian dokumen milik perusahaan harus tetap bekerja penuh
+  //  ketika kunci API tidak ada, dan rute yang memang butuh model harus
+  //  menolak dengan jelas — bukan mengembalikan hasil kosong yang terlihat
+  //  seperti "tidak ada dokumen yang cocok".
+  // --------------------------------------------------------------------------
+  console.log("\n--- pencarian & bantuan AI ---");
+  const statusAi = await call("/ai/status", { token });
+  const aiAktif = statusAi.payload?.data?.enabled === true;
+  report(statusAi.status === 200, "GET /ai/status", aiAktif ? `aktif — ${statusAi.payload?.data?.model}` : "belum diaktifkan");
+  report((statusAi.payload?.data?.jenis ?? []).length >= 4, "jenis dokumen yang bisa disusunkan terdaftar");
+
+  const cariRuang = await call("/ai/search", { method: "POST", token, body: { q: "ruang terbatas" } });
+  const dokumenDitemukan = cariRuang.payload?.data?.documents ?? [];
+  report(cariRuang.status === 200 && dokumenDitemukan.length > 0, "POST /ai/search menemukan dokumen", `${dokumenDitemukan.length} dokumen`);
+  report(
+    dokumenDitemukan.some((d) => /Ruang Terbatas/i.test(d.title)),
+    "dokumen yang paling cocok ikut terbawa",
+    dokumenDitemukan[0]?.documentNumber,
+  );
+  report(Boolean(dokumenDitemukan[0]?.cuplikan), "cuplikan penjelas ikut dikirim");
+
+  // Pencarian nomor peraturan menempuh jalur ILIKE, bukan tsquery — dan itu
+  // jalur terpisah yang pernah gagal sendiri karena tanda baca pada nomor.
+  const cariNomor = await call("/ai/search", { method: "POST", token, body: { q: "PermenLHK" } });
+  report(
+    (cariNomor.payload?.data?.regulations ?? []).length > 0,
+    "pencarian nomor peraturan menempuh jalur ILIKE",
+    `${(cariNomor.payload?.data?.regulations ?? []).length} peraturan`,
+  );
+
+  const cariPendek = await call("/ai/search", { method: "POST", token, body: { q: "a" } });
+  report(cariPendek.status === 400, "kata kunci terlalu pendek ditolak", `HTTP ${cariPendek.status}`);
+
+  const susun = await call("/ai/structure", { method: "POST", token, body: { q: "ruang terbatas", jenis: "IK" } });
+  if (aiAktif) {
+    report(susun.status === 200 && (susun.payload?.data?.bagian ?? []).length > 0, "POST /ai/structure menyusun kerangka", `${(susun.payload?.data?.bagian ?? []).length} bagian`);
+  } else {
+    // Tanpa kunci, yang benar adalah menolak dengan alasan yang terbaca —
+    // bukan mengembalikan kerangka kosong yang tampak seperti jawaban.
+    report(susun.status === 503, "tanpa kunci API, rute yang butuh model menolak dengan jelas", `HTTP ${susun.status}`);
+    report(/ANTHROPIC_API_KEY/.test(susun.payload?.detail || ""), "penolakannya menyebutkan apa yang kurang");
+  }
+
   console.log("\n--- notifikasi ---");
   const inbox = await call("/notifications?page=1&limit=20", { token });
   report(inbox.status === 200 && (inbox.payload?.meta?.total ?? 0) > 0, "GET /notifications", `${inbox.payload?.meta?.total ?? 0} notifikasi`);
