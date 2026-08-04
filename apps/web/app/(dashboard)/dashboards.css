@@ -609,16 +609,16 @@
   align-self: flex-start;
   padding: 8px 16px;
   border-radius: var(--qhse-radius-sm);
-  border: 1px solid var(--qhse-color-border);
-  background: var(--qhse-color-surface);
-  color: var(--qhse-color-text);
-  font-size: var(--qhse-font-size-caption);
+  border: 1px solid var(--qhse-border);
+  background: var(--qhse-surface-1);
+  color: var(--qhse-text-primary);
+  font-size: var(--qhse-text-body-sm-size);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .qhse-page__aksi:hover {
-  border-color: var(--qhse-color-brand);
-  color: var(--qhse-color-brand-strong, var(--qhse-color-brand));
+  border-color: var(--qhse-brand);
+  color: var(--qhse-brand);
 }

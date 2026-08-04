@@ -16,33 +16,33 @@
 
 .qhse-set__title {
   margin: 0;
-  font-size: var(--qhse-font-size-h1);
+  font-size: var(--qhse-text-h1-size);
   font-weight: 700;
   letter-spacing: -0.015em;
-  color: var(--qhse-color-text);
+  color: var(--qhse-text-primary);
 }
 
 .qhse-set__lead {
   margin: var(--qhse-space-2) 0 0;
   max-width: 64ch;
-  color: var(--qhse-color-text-muted);
+  color: var(--qhse-text-muted);
 }
 
 .qhse-set__tautan {
   padding: 8px 16px;
   border-radius: var(--qhse-radius-sm);
-  border: 1px solid var(--qhse-color-border);
-  color: var(--qhse-color-text);
+  border: 1px solid var(--qhse-border);
+  color: var(--qhse-text-primary);
   text-decoration: none;
-  font-size: var(--qhse-font-size-caption);
+  font-size: var(--qhse-text-body-sm-size);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .qhse-set__blok {
   padding: var(--qhse-space-5);
-  background: var(--qhse-color-surface);
-  border: 1px solid var(--qhse-color-border);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
   border-radius: var(--qhse-radius-lg);
   box-shadow: var(--qhse-shadow-sm);
 }
@@ -57,9 +57,9 @@
 
 .qhse-set__judul {
   margin: 0 0 var(--qhse-space-3);
-  font-size: var(--qhse-font-size-h3);
+  font-size: var(--qhse-text-h2-size);
   font-weight: 650;
-  color: var(--qhse-color-text);
+  color: var(--qhse-text-primary);
 }
 
 .qhse-set__judulBaris .qhse-set__judul {
@@ -77,8 +77,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: var(--qhse-font-size-caption);
-  color: var(--qhse-color-text-muted);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-muted);
 }
 
 .qhse-set__label {
@@ -89,9 +89,9 @@
 .qhse-set__pilih {
   padding: 8px 12px;
   font: inherit;
-  color: var(--qhse-color-text);
-  background: var(--qhse-color-surface);
-  border: 1px solid var(--qhse-color-border);
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
   border-radius: var(--qhse-radius-sm);
 }
 
@@ -112,9 +112,9 @@
   align-items: end;
   gap: var(--qhse-space-3);
   padding: var(--qhse-space-3);
-  border: 1px solid var(--qhse-color-border);
+  border: 1px solid var(--qhse-border);
   border-radius: var(--qhse-radius-md);
-  background: var(--qhse-color-surface-muted);
+  background: var(--qhse-surface-2);
 }
 
 .qhse-set__itemJudul {
@@ -131,16 +131,16 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--qhse-color-brand-wash);
-  color: var(--qhse-color-brand-strong, var(--qhse-color-brand));
+  background: var(--qhse-brand-wash);
+  color: var(--qhse-brand);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 .qhse-set__grup {
   display: block;
-  font-size: var(--qhse-font-size-caption);
-  color: var(--qhse-color-text-muted);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-muted);
 }
 
 .qhse-set__aksi {
@@ -151,10 +151,10 @@
 .qhse-set__aksi button {
   padding: 6px 10px;
   font: inherit;
-  font-size: var(--qhse-font-size-caption);
-  color: var(--qhse-color-text);
-  background: var(--qhse-color-surface);
-  border: 1px solid var(--qhse-color-border);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
   border-radius: var(--qhse-radius-sm);
   cursor: pointer;
 }
@@ -165,7 +165,7 @@
 }
 
 .qhse-set__hapus {
-  color: var(--qhse-color-danger) !important;
+  color: var(--qhse-status-critical) !important;
 }
 
 /* --- daftar pilihan metrik -------------------------------------------- */
@@ -176,7 +176,7 @@
   gap: var(--qhse-space-2);
   margin-top: var(--qhse-space-3);
   padding: var(--qhse-space-3);
-  border: 1px dashed var(--qhse-color-border);
+  border: 1px dashed var(--qhse-border);
   border-radius: var(--qhse-radius-md);
   max-height: 22rem;
   overflow-y: auto;
@@ -189,19 +189,19 @@
   padding: 10px 12px;
   text-align: left;
   font: inherit;
-  background: var(--qhse-color-surface);
-  border: 1px solid var(--qhse-color-border);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
   border-radius: var(--qhse-radius-sm);
   cursor: pointer;
 }
 
 .qhse-set__pilihanItem:hover {
-  border-color: var(--qhse-color-brand);
+  border-color: var(--qhse-brand);
 }
 
 .qhse-set__pilihanJudul {
   font-weight: 650;
-  color: var(--qhse-color-text);
+  color: var(--qhse-text-primary);
 }
 
 .qhse-set__pilihanGrup {
@@ -209,12 +209,12 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--qhse-color-brand-strong, var(--qhse-color-brand));
+  color: var(--qhse-brand);
 }
 
 .qhse-set__pilihanCaption {
-  font-size: var(--qhse-font-size-caption);
-  color: var(--qhse-color-text-muted);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-muted);
   line-height: 1.45;
 }
 
@@ -228,18 +228,18 @@
 
 .qhse-set__ok {
   color: var(--qhse-status-good);
-  font-size: var(--qhse-font-size-caption);
+  font-size: var(--qhse-text-body-sm-size);
   font-weight: 600;
 }
 
 .qhse-set__bad {
-  color: var(--qhse-color-danger);
-  font-size: var(--qhse-font-size-caption);
+  color: var(--qhse-status-critical);
+  font-size: var(--qhse-text-body-sm-size);
 }
 
 .qhse-set__kosong {
-  color: var(--qhse-color-text-muted);
-  font-size: var(--qhse-font-size-caption);
+  color: var(--qhse-text-muted);
+  font-size: var(--qhse-text-body-sm-size);
 }
 
 @media (max-width: 720px) {

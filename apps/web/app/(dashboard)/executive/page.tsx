@@ -20,7 +20,6 @@ import {
   type ExecutiveLayout,
   type ExecutiveWidget,
 } from "../../../lib/executive";
-import "../dashboards.css";
 import "./executive.css";
 
 // Dashboard Eksekutif — hanya MENAMPILKAN.
@@ -107,8 +106,8 @@ export default function ExecutivePage() {
 
   const byKey = useMemo(() => new Map((catalog ?? []).map((entry) => [entry.key, entry])), [catalog]);
 
-  if (loadError) return <p className="qhse-dash__bad">{loadError}</p>;
-  if (!layout) return <p className="qhse-dash__kosong">Memuat…</p>;
+  if (loadError) return <p className="qhse-exec__bad">{loadError}</p>;
+  if (!layout) return <p className="qhse-exec__kosong">Memuat…</p>;
 
   return (
     <div className="qhse-exec">
@@ -124,7 +123,7 @@ export default function ExecutivePage() {
         </Link>
       </header>
 
-      <div className="qhse-dash__grid">
+      <div className="qhse-exec__grid">
         {layout.widgets.map((widget) => (
           <Widget
             key={widget.key}
@@ -147,23 +146,27 @@ function Widget({
   entry: MetricCatalogEntry | null;
   state: WidgetState;
 }) {
-  const kelas = `qhse-dash__card qhse-dash__card--w${widget.width}`;
+  const kelas = `qhse-exec__card qhse-exec__card--w${widget.width}`;
   return (
     <section className={kelas}>
-      <header className="qhse-dash__cardHead">
-        <h2 className="qhse-dash__cardTitle">{entry?.title ?? widget.key}</h2>
-        {entry?.caption && <p className="qhse-dash__cardCaption">{entry.caption}</p>}
+      <header className="qhse-exec__cardHead">
+        <h2 className="qhse-exec__cardTitle">{entry?.title ?? widget.key}</h2>
+        {entry?.caption && <p className="qhse-exec__cardCaption">{entry.caption}</p>}
       </header>
-      {state.kind === "loading" && <p className="qhse-dash__kosong">Memuat…</p>}
-      {state.kind === "error" && <p className="qhse-dash__bad">{state.message}</p>}
-      {state.kind === "ok" && <Isi widget={widget} result={state.result} />}
-      {/* Metrik yang TIDAK terpengaruh penyaring periode mengatakannya
-          sendiri. Penyaring yang diam-diam tidak berlaku pada sebagian widget
-          membuat pembacanya menyimpulkan angka yang salah tanpa punya cara
-          mengetahuinya. */}
-      {state.kind === "ok" && !state.result.periodApplies && (
-        <p className="qhse-dash__catatan">Potret saat ini — tidak mengikuti penyaring periode.</p>
-      )}
+      {/* Badan dipisahkan dari pita kepala supaya jaraknya sendiri dan pita
+          kepala bisa berlatar sampai ke tepi kartu. */}
+      <div className="qhse-exec__badan">
+        {state.kind === "loading" && <p className="qhse-exec__kosong">Memuat…</p>}
+        {state.kind === "error" && <p className="qhse-exec__bad">{state.message}</p>}
+        {state.kind === "ok" && <Isi widget={widget} result={state.result} />}
+        {/* Metrik yang TIDAK terpengaruh penyaring periode mengatakannya
+            sendiri. Penyaring yang diam-diam tidak berlaku pada sebagian
+            widget membuat pembacanya menyimpulkan angka yang salah tanpa
+            punya cara mengetahuinya. */}
+        {state.kind === "ok" && !state.result.periodApplies && (
+          <p className="qhse-exec__catatan">Potret saat ini — tidak mengikuti penyaring periode.</p>
+        )}
+      </div>
     </section>
   );
 }
@@ -173,7 +176,7 @@ function Isi({ widget, result }: { widget: ExecutiveWidget; result: MetricResult
 
   if (viz === "gauge") {
     const spec = GAUGE_SPEC[result.key];
-    if (!spec) return <p className="qhse-dash__bad">Zona gauge belum ditetapkan untuk metrik ini.</p>;
+    if (!spec) return <p className="qhse-exec__bad">Zona gauge belum ditetapkan untuk metrik ini.</p>;
     return (
       <GaugeChart
         // value === undefined terjadi ketika pembaginya belum terisi (mis.
@@ -215,7 +218,7 @@ function Isi({ widget, result }: { widget: ExecutiveWidget; result: MetricResult
 
   if (viz === "garis" || result.kind === "series") {
     const points = (result.points ?? []).map((p) => ({ label: shortMonthLabel(p.label), value: p.value }));
-    if (points.length === 0) return <p className="qhse-dash__kosong">Belum ada data pada periode ini.</p>;
+    if (points.length === 0) return <p className="qhse-exec__kosong">Belum ada data pada periode ini.</p>;
     return <LineChart points={points} ariaLabel={result.title} />;
   }
 
@@ -224,7 +227,7 @@ function Isi({ widget, result }: { widget: ExecutiveWidget; result: MetricResult
     value: slice.value,
     color: sliceColor(slice.code, index),
   }));
-  if (slices.length === 0) return <p className="qhse-dash__kosong">Belum ada data pada periode ini.</p>;
+  if (slices.length === 0) return <p className="qhse-exec__kosong">Belum ada data pada periode ini.</p>;
   return viz === "donat" ? (
     <DonutChart slices={slices} ariaLabel={result.title} />
   ) : (
