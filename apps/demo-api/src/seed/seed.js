@@ -32,6 +32,7 @@ const { seedOperations } = require("./domain-operations");
 const { seedChildren } = require("./domain-children");
 const { seedScorecard } = require("./scorecard");
 const { seedHseStatistics } = require("./hse-statistics");
+const { seedTraining } = require("./training");
 const { seedWorkflows } = require("./workflows");
 const { seedFiles } = require("./files");
 const { seedNotifications } = require("./notifications");
@@ -91,6 +92,14 @@ async function main() {
     console.log("[7b/10] statistik HSE bulanan — jam kerja & leading indicator");
     const statistik = await seedHseStatistics(client, ctx);
 
+    // Pelatihan disemai setelah statistik HSE, dan itu bukan urutan bebas:
+    // jam pelatihan pada statistik bulanan dan jam pelatihan yang muncul dari
+    // realisasi harus berada di besaran yang sama. Menyemainya berdampingan
+    // membuat ketidakcocokan keduanya terlihat saat dibaca, bukan saat
+    // seseorang menemukannya di layar rapat.
+    console.log("[7c/10] program pelatihan & realisasinya");
+    const pelatihan = await seedTraining(client, ctx);
+
     console.log("[8/10] definisi workflow persetujuan");
     const workflows = await seedWorkflows(client, ctx);
 
@@ -102,7 +111,7 @@ async function main() {
     console.log("[10/10] notifikasi");
     const notifications = await seedNotifications(client, ctx);
 
-    return { ...compliance, ...events, ...operations, ...children, ...scorecard, ...statistik, ...workflows, ...berkas, ...notifications, users: ctx.users.length };
+    return { ...compliance, ...events, ...operations, ...children, ...scorecard, ...statistik, ...pelatihan, ...workflows, ...berkas, ...notifications, users: ctx.users.length };
   });
 
   console.log("\n=== selesai dalam %d detik ===", Math.round((Date.now() - started) / 1000));

@@ -802,6 +802,166 @@ const METRICS = [
       values: [tenantId],
     }),
   },
+
+  // --- Pelatihan ------------------------------------------------------------
+  {
+    key: "training-realization-rate",
+    title: "Pencapaian program pelatihan",
+    caption: "Sesi pelatihan yang terlaksana dibanding sesi yang direncanakan pada tahun anggaran berjalan.",
+    group: "Kompetensi & Pelatihan",
+    kind: "scalar",
+    unit: "%",
+    format: "percent",
+    // Sengaja TIDAK mengikuti penyaring periode. Pencapaian program pelatihan
+    // hanya berarti terhadap tahun anggarannya sendiri: menghitungnya atas
+    // rentang tiga bulan akan membandingkan sesi yang terlaksana pada rentang
+    // itu dengan rencana SETAHUN, dan angkanya selalu tampak buruk tanpa
+    // sebab.
+    dateColumn: null,
+    build: ({ tenantId }) => ({
+      text: `
+        WITH rencana AS (
+          SELECT COALESCE(sum(p.planned_sessions), 0) AS sesi
+            FROM training_programs p
+           WHERE p.tenant_id = $1 AND p.deleted_at IS NULL
+             AND p.fiscal_year = EXTRACT(YEAR FROM CURRENT_DATE)
+             -- Program yang DIBATALKAN keluar dari pembagi; yang DITUNDA
+             -- tetap masuk. Kalau keduanya dibuang, tingkat pencapaian bisa
+             -- dinaikkan hanya dengan menunda rencana yang tidak sempat
+             -- dijalankan, dan angkanya berhenti mengukur apa pun.
+             AND p.status <> 'CANCELLED'
+        ),
+        terlaksana AS (
+          SELECT count(*) AS sesi
+            FROM training_realizations r
+            JOIN training_programs p ON p.training_program_id = r.training_program_id
+           WHERE r.tenant_id = $1 AND r.deleted_at IS NULL AND p.deleted_at IS NULL
+             AND r.status = 'COMPLETED'
+             AND p.fiscal_year = EXTRACT(YEAR FROM CURRENT_DATE)
+        )
+        SELECT (100.0 * terlaksana.sesi / NULLIF(rencana.sesi, 0))::float AS value
+          FROM rencana, terlaksana`,
+      values: [tenantId],
+    }),
+  },
+  {
+    key: "training-participant-hours",
+    title: "Jam-orang pelatihan terealisasi",
+    caption: "Jumlah peserta hadir dikali durasi tiap sesi yang selesai pada periode terpilih.",
+    group: "Kompetensi & Pelatihan",
+    kind: "scalar",
+    unit: "jam-orang",
+    dateColumn: "session_date",
+    build: scalarMetric({
+      table: "training_realizations",
+      valueExpr: "sum(t.actual_participants * t.duration_hours)",
+      dateColumn: "session_date",
+      where: " AND t.status = 'COMPLETED'",
+    }),
+  },
+  {
+    key: "training-by-type",
+    title: "Realisasi pelatihan per jenis",
+    caption: "Sesi yang selesai, dipisah menurut jenis pelatihannya.",
+    group: "Kompetensi & Pelatihan",
+    kind: "breakdown",
+    dateColumn: "session_date",
+    build: breakdownMetric({
+      table: "training_realizations",
+      column: "training_type",
+      dateColumn: "session_date",
+      where: " AND t.status = 'COMPLETED'",
+    }),
+  },
+  {
+    key: "training-effectiveness",
+    title: "Keefektifan pelatihan",
+    caption: "Penilaian keefektifan sesi yang sudah dievaluasi — ISO 45001 klausul 7.2 d).",
+    group: "Kompetensi & Pelatihan",
+    kind: "breakdown",
+    dateColumn: "session_date",
+    build: breakdownMetric({
+      table: "training_realizations",
+      column: "effectiveness",
+      dateColumn: "session_date",
+      where: " AND t.status = 'COMPLETED'",
+    }),
+  },
+  {
+    key: "training-hours-trend",
+    title: "Tren jam-orang pelatihan",
+    caption: "Jam-orang pelatihan yang terealisasi per bulan.",
+    group: "Kompetensi & Pelatihan",
+    kind: "series",
+    dateColumn: "session_date",
+    build: monthlySeriesMetric({
+      table: "training_realizations",
+      dateColumn: "session_date",
+      valueExpr: "sum(t.actual_participants * t.duration_hours)",
+      where: " AND t.status = 'COMPLETED'",
+    }),
+  },
+  {
+    key: "training-program-by-status",
+    title: "Program pelatihan per status",
+    caption: "Posisi seluruh program pada tahun anggaran berjalan — termasuk yang ditunda dan dibatalkan.",
+    group: "Kompetensi & Pelatihan",
+    kind: "breakdown",
+    dateColumn: null,
+    build: ({ tenantId }) => ({
+      text: `SELECT t.status::text AS code, count(*)::float AS value
+               FROM training_programs t
+              WHERE t.tenant_id = $1 AND t.deleted_at IS NULL
+                AND t.fiscal_year = EXTRACT(YEAR FROM CURRENT_DATE)
+              GROUP BY t.status
+              ORDER BY count(*) DESC, t.status::text ASC`,
+      values: [tenantId],
+    }),
+  },
+  {
+    key: "training-mandatory-not-done",
+    title: "Pelatihan wajib belum terlaksana",
+    caption: "Program yang diwajibkan peraturan dan belum punya satu pun sesi selesai tahun ini.",
+    group: "Kompetensi & Pelatihan",
+    kind: "scalar",
+    unit: "program",
+    // Angka yang paling dicari auditor, dan satu-satunya di kelompok ini yang
+    // menuntut tindakan segera: pelatihan wajib yang belum berjalan adalah
+    // ketidaksesuaian terhadap peraturan, bukan sekadar rencana tertinggal.
+    dateColumn: null,
+    build: ({ tenantId }) => ({
+      text: `
+        SELECT count(*)::float AS value
+          FROM training_programs p
+         WHERE p.tenant_id = $1 AND p.deleted_at IS NULL
+           AND p.is_mandatory = true
+           AND p.fiscal_year = EXTRACT(YEAR FROM CURRENT_DATE)
+           AND p.status <> 'CANCELLED'
+           AND NOT EXISTS (
+                 SELECT 1 FROM training_realizations r
+                  WHERE r.training_program_id = p.training_program_id
+                    AND r.deleted_at IS NULL AND r.status = 'COMPLETED')`,
+      values: [tenantId],
+    }),
+  },
+  {
+    key: "training-certificate-expiring",
+    title: "Sertifikat pelatihan akan kedaluwarsa",
+    caption: "Sertifikat peserta yang masa berlakunya habis dalam 90 hari ke depan, atau sudah lewat.",
+    group: "Kompetensi & Pelatihan",
+    kind: "scalar",
+    unit: "sertifikat",
+    dateColumn: null,
+    build: ({ tenantId }) => ({
+      text: `
+        SELECT count(*)::float AS value
+          FROM training_participants t
+         WHERE t.tenant_id = $1 AND t.deleted_at IS NULL
+           AND t.certificate_expiry_date IS NOT NULL
+           AND t.certificate_expiry_date < CURRENT_DATE + 90`,
+      values: [tenantId],
+    }),
+  },
 ];
 
 const METRIC_BY_KEY = new Map(METRICS.map((metric) => [metric.key, metric]));

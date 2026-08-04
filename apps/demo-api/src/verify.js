@@ -538,6 +538,137 @@ async function main() {
   const statistik = await call("/hse-period-statistics?page=1&limit=1", { token });
   report((statistik.payload?.meta?.total ?? 0) >= 12, "statistik HSE bulanan tersedia", `${statistik.payload?.meta?.total} bulan`);
 
+  // --------------------------------------------------------------------------
+  //  PELATIHAN — yang diperiksa di sini adalah HUBUNGAN rencana dan realisasi,
+  //  bukan sekadar keberadaan barisnya.
+  //
+  //  Dua modul yang masing-masing berisi data yang benar tetapi tidak
+  //  berhubungan akan lulus setiap pemeriksaan "ada berapa record" dan tetap
+  //  tidak menjawab satu pun pertanyaan yang membuat modul ini dibuat:
+  //  rencana mana yang belum terpenuhi, dan pelatihan mana yang berjalan di
+  //  luar rencana.
+  // --------------------------------------------------------------------------
+  console.log("\n--- program & realisasi pelatihan ---");
+  const program = await call("/training-programs?page=1&limit=100", { token });
+  const barisProgram = program.payload?.data ?? [];
+  report((program.payload?.meta?.total ?? 0) > 0, "program pelatihan tersedia", `${program.payload?.meta?.total} program`);
+  report(
+    barisProgram.some((baris) => baris.isMandatory === true && baris.regulatoryBasis),
+    "pelatihan wajib menyebut dasar peraturannya",
+  );
+  // Ketiga keadaan ini yang membuat tingkat pencapaian punya arti. Kalau
+  // seluruh program berstatus sama, angkanya tidak pernah bergerak.
+  const statusProgram = new Set(barisProgram.map((baris) => baris.status));
+  report(statusProgram.size >= 3, "status program beragam", [...statusProgram].join(", "));
+
+  const realisasi = await call("/training-realizations?page=1&limit=100", { token });
+  const barisRealisasi = realisasi.payload?.data ?? [];
+  report((realisasi.payload?.meta?.total ?? 0) > 0, "realisasi pelatihan tersedia", `${realisasi.payload?.meta?.total} sesi`);
+  report(
+    barisRealisasi.some((baris) => baris.trainingProgramId === null),
+    "ada pelatihan yang terjadi tanpa program — kolomnya memang boleh kosong",
+  );
+  report(
+    barisRealisasi.some((baris) => baris.trainingProgramIdLabel),
+    "realisasi menunjuk nomor programnya, bukan UUID",
+  );
+  // Sesi yang belum berlangsung TIDAK boleh sudah punya angka kehadiran.
+  const kehadiranMasaDepan = barisRealisasi.filter(
+    (baris) => baris.status === "SCHEDULED" && Number(baris.actualParticipants) > 0,
+  );
+  report(kehadiranMasaDepan.length === 0, "sesi terjadwal belum punya kehadiran", `${kehadiranMasaDepan.length} pelanggaran`);
+  // Peserta lulus tidak boleh melebihi peserta hadir — pertentangan yang
+  // paling mudah lolos karena kedua kolomnya diisi terpisah.
+  const lulusBerlebih = barisRealisasi.filter((baris) => Number(baris.passedParticipants) > Number(baris.actualParticipants));
+  report(lulusBerlebih.length === 0, "peserta lulus tidak melebihi peserta hadir", `${lulusBerlebih.length} pelanggaran`);
+
+  const induk = barisRealisasi.find((baris) => baris.trainingProgramId);
+  if (induk) {
+    const anak = await call(`/training-programs/${induk.trainingProgramId}/realizations`, { token });
+    report((anak.payload?.data?.length ?? 0) > 0, "detail program memuat realisasinya", `${anak.payload?.data?.length} sesi`);
+  }
+
+  const bersertifikat = barisRealisasi.find((baris) => baris.certificateIssued === true);
+  if (bersertifikat) {
+    const peserta = await call(`/training-realizations/${bersertifikat.trainingRealizationId}/participants`, { token });
+    const daftar = peserta.payload?.data ?? [];
+    report(daftar.length > 0, "sesi bersertifikat memuat daftar peserta", `${daftar.length} peserta`);
+    // Sertifikat pada peserta yang tidak lulus adalah cacat data yang paling
+    // memalukan saat auditor membuka satu baris secara acak.
+    const salahSertifikat = daftar.filter((baris) => baris.result !== "LULUS" && baris.certificateNumber);
+    report(salahSertifikat.length === 0, "hanya peserta lulus yang bernomor sertifikat", `${salahSertifikat.length} pelanggaran`);
+    report(
+      daftar.some((baris) => baris.userId === null),
+      "peserta kontraktor tanpa akun tetap bisa dicatat",
+    );
+  }
+
+  const pencapaian = await call("/analytics/training-realization-rate", { token });
+  const nilaiPencapaian = pencapaian.payload?.data?.value;
+  report(
+    typeof nilaiPencapaian === "number" && nilaiPencapaian > 0 && nilaiPencapaian < 100,
+    "pencapaian program pelatihan terhitung dan belum 100%",
+    `${nilaiPencapaian?.toFixed?.(1)}%`,
+  );
+  const jamOrang = await call("/analytics/training-participant-hours?from=2025-09-01&to=2026-08-31", { token });
+  report((jamOrang.payload?.data?.value ?? 0) > 0, "jam-orang pelatihan terealisasi", `${jamOrang.payload?.data?.value} jam-orang`);
+  const wajibBelum = await call("/analytics/training-mandatory-not-done", { token });
+  report(typeof wajibBelum.payload?.data?.value === "number", "pelatihan wajib belum terlaksana terhitung", `${wajibBelum.payload?.data?.value} program`);
+
+  // Modul baru yang hanya bisa DIBACA adalah modul setengah jadi, dan itu
+  // tidak terlihat dari pemeriksaan mana pun di atas. Yang paling mungkin
+  // rusak pada modul baru justru penomorannya: penghitung dimulai dari nol
+  // sementara tabelnya sudah memuat 18 baris hasil penyemaian, dan gejalanya
+  // adalah nomor duplikat yang baru ketahuan saat UNIQUE-nya menolak.
+  const skemaProgram = await call("/training-programs/schema", { token });
+  const fieldProgram = skemaProgram.payload?.data?.fields ?? [];
+  report(skemaProgram.status === 200 && fieldProgram.length > 0, "GET /training-programs/schema", `${fieldProgram.length} field`);
+  report(!fieldProgram.some((f) => f.column === "program_number"), "nomor program tidak diisi lewat formulir");
+
+  const totalProgramSebelum = program.payload?.meta?.total ?? -1;
+  const programBaru = await call("/training-programs", {
+    method: "POST",
+    token,
+    body: {
+      title: "Pemeriksaan otomatis pascapemasangan",
+      trainingType: "AWARENESS",
+      fiscalYear: new Date().getFullYear(),
+      plannedParticipants: 1,
+      plannedHoursPerParticipant: 1,
+      plannedSessions: 1,
+      deliveryMethod: "IN_HOUSE",
+    },
+  });
+  const nomorBaru = programBaru.payload?.data?.programNumber;
+  report(programBaru.status === 201 || programBaru.status === 200, "POST /training-programs", nomorBaru || `HTTP ${programBaru.status}`);
+  // Nomor yang bertabrakan dengan hasil penyemaian berarti penghitungnya
+  // tidak diselaraskan — bukan sekadar nomor jelek.
+  report(
+    Boolean(nomorBaru) && !barisProgram.some((baris) => baris.programNumber === nomorBaru),
+    "nomor program baru tidak menabrak nomor yang sudah ada",
+    nomorBaru,
+  );
+
+  const idProgramBaru = programBaru.payload?.data?.trainingProgramId;
+  if (idProgramBaru) {
+    // DRAFT -> COMPLETED tidak ada di state machine; kalau ia lolos, berarti
+    // daftar transisinya tidak dibaca sama sekali.
+    const lompat = await call(`/training-programs/${idProgramBaru}/transition`, { method: "POST", token, body: { status: "COMPLETED" } });
+    report(lompat.status === 409, "DRAFT -> COMPLETED ditolak state machine", `HTTP ${lompat.status}`);
+
+    const sah = await call(`/training-programs/${idProgramBaru}/transition`, { method: "POST", token, body: { status: "APPROVED" } });
+    report(sah.status === 200, "DRAFT -> APPROVED diterima", `HTTP ${sah.status}`);
+
+    const dihapus = await call(`/training-programs/${idProgramBaru}`, { method: "DELETE", token });
+    report(dihapus.status === 200, "baris uji dihapus lunak kembali", `HTTP ${dihapus.status}`);
+    const totalProgramSesudah = (await call("/training-programs?page=1&limit=1", { token })).payload?.meta?.total ?? -1;
+    report(
+      totalProgramSesudah === totalProgramSebelum,
+      "jumlah program kembali seperti semula",
+      `${totalProgramSebelum} -> ${totalProgramSesudah}`,
+    );
+  }
+
   console.log("\n--- pencarian & bantuan AI ---");
   const statusAi = await call("/ai/status", { token });
   const aiAktif = statusAi.payload?.data?.enabled === true;

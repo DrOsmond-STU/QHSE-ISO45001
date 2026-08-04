@@ -104,6 +104,13 @@ export const MODULE_GROUPS = [
   "Inspeksi & Audit",
   "Mutu & Lingkungan",
   "Kesehatan & Darurat",
+  // Kelompok sendiri, bukan disisipkan ke "Kesehatan & Darurat" atau
+  // "Inspeksi & Audit": pelatihan adalah satu-satunya kelompok yang isinya
+  // sepasang — RENCANA dan PELAKSANAAN — dan keduanya harus terlihat
+  // berdampingan di sidebar. Menaruh salah satunya di kelompok lain membuat
+  // orang mencari "realisasi" di tempat ia tidak ada, lalu menyimpulkan
+  // aplikasinya hanya menyimpan rencana.
+  "Kompetensi & Pelatihan",
   "Aset & Mitra Kerja",
   // Kelompok TERAKHIR dan sengaja terpisah dari enam kelompok QHSE di atasnya:
   // isinya bukan pekerjaan QHSE harian, melainkan angka yang MENENTUKAN
@@ -986,6 +993,185 @@ export const MODULES: ModuleDefinition[] = [
           { key: "calibrationResult", header: "Hasil", type: "status" },
           { key: "asFoundCondition", header: "Kondisi saat diterima" },
           { key: "measurementUncertainty", header: "Ketidakpastian" },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "training-programs",
+    endpoint: "/training-programs",
+    title: "Program Pelatihan",
+    moduleNumber: "Modul 19",
+    group: "Kompetensi & Pelatihan",
+    labelField: "programNumber",
+    subtitleField: "title",
+    columns: [
+      { key: "programNumber", header: "Nomor" },
+      { key: "title", header: "Program" },
+      { key: "trainingType", header: "Jenis", type: "enum" },
+      { key: "isMandatory", header: "Wajib", type: "bool" },
+      { key: "plannedParticipants", header: "Rencana peserta", type: "number" },
+      { key: "plannedSessions", header: "Sesi", type: "number" },
+      { key: "status", header: "Status", type: "status" },
+    ],
+    detailSections: [
+      {
+        title: "Identitas program",
+        fields: [
+          { key: "programNumber", label: "Nomor program" },
+          { key: "title", label: "Judul program" },
+          { key: "trainingType", label: "Jenis pelatihan", type: "enum" },
+          // TANPA type: "number". Tahun adalah penanda, bukan besaran, dan
+          // pemformat angka Indonesia mencetaknya "2.026" — pemisah ribuan
+          // pada tahun terbaca sebagai salah ketik.
+          { key: "fiscalYear", label: "Tahun anggaran" },
+          { key: "status", label: "Status", type: "status" },
+          { key: "picUserId", label: "Penanggung jawab" },
+          { key: "departmentId", label: "Departemen" },
+        ],
+      },
+      {
+        title: "Sasaran dan dasar",
+        fields: [
+          { key: "objective", label: "Tujuan pelatihan", type: "longtext", wide: true },
+          { key: "targetAudience", label: "Sasaran peserta" },
+          { key: "isMandatory", label: "Diwajibkan peraturan", type: "bool" },
+          // Kolom yang membedakan program pelatihan dari daftar keinginan.
+          // Ini yang ditunjuk saat auditor bertanya "atas dasar apa".
+          { key: "regulatoryBasis", label: "Dasar peraturan", wide: true },
+        ],
+      },
+      {
+        title: "Rencana",
+        fields: [
+          { key: "plannedParticipants", label: "Jumlah peserta direncanakan", type: "number" },
+          { key: "plannedHoursPerParticipant", label: "Jam per peserta", type: "number" },
+          { key: "plannedSessions", label: "Jumlah sesi", type: "number" },
+          { key: "plannedBudget", label: "Anggaran", type: "currency" },
+          { key: "deliveryMethod", label: "Metode", type: "enum" },
+          { key: "providerName", label: "Penyelenggara" },
+          { key: "plannedStartDate", label: "Rencana mulai", type: "date" },
+          { key: "plannedEndDate", label: "Rencana selesai", type: "date" },
+        ],
+      },
+      {
+        title: "Sertifikasi",
+        fields: [
+          { key: "certificationRequired", label: "Menghasilkan sertifikat", type: "bool" },
+          { key: "certificateValidityMonths", label: "Masa berlaku sertifikat (bulan)", type: "number" },
+        ],
+      },
+      { title: "Catatan", fields: [{ key: "notes", label: "Catatan", type: "longtext", wide: true }] },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/realizations",
+        title: "Realisasi pelatihan",
+        // Kalimatnya menyebut SEBABNYA, bukan sekadar "belum ada data":
+        // program yang belum berjalan dan program yang gagal berjalan
+        // terlihat sama pada daftar kosong, padahal keduanya menuntut
+        // tindakan yang berbeda.
+        emptyMessage: "Program ini belum pernah dilaksanakan — belum ada sesi yang tercatat.",
+        columns: [
+          { key: "realizationNumber", header: "Nomor" },
+          { key: "title", header: "Sesi" },
+          { key: "sessionDate", header: "Tanggal", type: "date" },
+          { key: "actualParticipants", header: "Hadir", type: "number" },
+          { key: "durationHours", header: "Jam", type: "number" },
+          { key: "effectiveness", header: "Keefektifan", type: "enum" },
+          { key: "status", header: "Status", type: "status" },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "training-realizations",
+    endpoint: "/training-realizations",
+    title: "Realisasi Pelatihan",
+    moduleNumber: "Modul 19",
+    group: "Kompetensi & Pelatihan",
+    labelField: "realizationNumber",
+    subtitleField: "title",
+    columns: [
+      { key: "realizationNumber", header: "Nomor" },
+      { key: "title", header: "Pelatihan" },
+      { key: "sessionDate", header: "Tanggal", type: "date" },
+      { key: "actualParticipants", header: "Hadir", type: "number" },
+      { key: "durationHours", header: "Jam", type: "number" },
+      { key: "effectiveness", header: "Keefektifan", type: "enum" },
+      { key: "status", header: "Status", type: "status" },
+    ],
+    detailSections: [
+      {
+        title: "Pelaksanaan",
+        fields: [
+          { key: "realizationNumber", label: "Nomor realisasi" },
+          { key: "title", label: "Judul sesi" },
+          { key: "trainingType", label: "Jenis pelatihan", type: "enum" },
+          // Kosong berarti pelatihan ini TIDAK berasal dari program tahunan —
+          // keadaan yang sengaja bisa terjadi, mis. pelatihan dadakan setelah
+          // insiden.
+          { key: "trainingProgramId", label: "Program yang dilaksanakan" },
+          { key: "sessionDate", label: "Tanggal pelaksanaan", type: "date" },
+          { key: "sessionEndDate", label: "Tanggal selesai", type: "date" },
+          { key: "durationHours", label: "Durasi (jam)", type: "number" },
+          { key: "status", label: "Status", type: "status" },
+        ],
+      },
+      {
+        title: "Penyelenggaraan",
+        fields: [
+          { key: "deliveryMethod", label: "Metode", type: "enum" },
+          { key: "providerName", label: "Penyelenggara" },
+          { key: "trainerName", label: "Instruktur" },
+          { key: "location", label: "Tempat" },
+          { key: "siteId", label: "Lokasi kerja" },
+          { key: "departmentId", label: "Departemen" },
+        ],
+      },
+      {
+        title: "Kehadiran dan biaya",
+        fields: [
+          { key: "plannedParticipants", label: "Peserta direncanakan", type: "number" },
+          { key: "actualParticipants", label: "Peserta hadir", type: "number" },
+          { key: "passedParticipants", label: "Peserta lulus", type: "number" },
+          { key: "actualCost", label: "Biaya realisasi", type: "currency" },
+        ],
+      },
+      {
+        title: "Evaluasi keefektifan",
+        fields: [
+          { key: "averagePreTestScore", label: "Rata-rata nilai pra-uji", type: "number" },
+          { key: "averagePostTestScore", label: "Rata-rata nilai pasca-uji", type: "number" },
+          { key: "effectiveness", label: "Penilaian keefektifan", type: "enum" },
+          { key: "evaluationMethod", label: "Cara evaluasi", wide: true },
+          { key: "evaluationNotes", label: "Catatan evaluasi", type: "longtext", wide: true },
+          { key: "evaluatedBy", label: "Dievaluasi oleh" },
+          { key: "evaluatedDate", label: "Tanggal evaluasi", type: "date" },
+          { key: "certificateIssued", label: "Sertifikat diterbitkan", type: "bool" },
+        ],
+      },
+      { title: "Catatan", fields: [{ key: "notes", label: "Catatan", type: "longtext", wide: true }] },
+      REKAMAN,
+    ],
+    children: [
+      {
+        pathSuffix: "/participants",
+        title: "Daftar peserta",
+        // Pelatihan tanpa sertifikat memang tidak didaftar namanya satu per
+        // satu, dan kalimat ini mengatakannya — supaya daftar kosong tidak
+        // terbaca sebagai kehadiran yang lupa dicatat.
+        emptyMessage: "Sesi ini tidak mendaftar peserta per nama — kehadirannya dicatat sebagai jumlah.",
+        columns: [
+          { key: "participantName", header: "Nama" },
+          { key: "participantCompany", header: "Perusahaan" },
+          { key: "participantPosition", header: "Jabatan" },
+          { key: "attendance", header: "Kehadiran", type: "enum" },
+          { key: "postTestScore", header: "Nilai pasca-uji", type: "number" },
+          { key: "result", header: "Hasil", type: "status" },
+          { key: "certificateNumber", header: "No. sertifikat" },
+          { key: "certificateExpiryDate", header: "Berlaku sampai", type: "date" },
         ],
       },
     ],

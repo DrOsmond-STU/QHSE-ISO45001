@@ -84,6 +84,11 @@ const BY_COLUMN = {
   calibration_item_id: ["calibration_items", "calibration_item_id", "equipment_tag_no"],
   contractor_id: ["contractors", "contractor_id", "contractor_name"],
   ncr_id: ["ncr_records", "ncr_id", "ncr_number"],
+  // Realisasi pelatihan menunjuk program yang direncanakannya. Tanpa baris
+  // ini, halaman realisasi menampilkan UUID di tempat yang justru menjawab
+  // pertanyaan terpentingnya: pelatihan ini melaksanakan rencana yang mana.
+  training_program_id: ["training_programs", "training_program_id", "program_number"],
+  training_realization_id: ["training_realizations", "training_realization_id", "realization_number"],
 };
 
 // tenant_id sengaja TIDAK ada di peta: ia sama untuk seluruh baris yang

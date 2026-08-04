@@ -589,6 +589,95 @@ const MODULES = [
     children: [],
   },
   {
+    slug: "training-programs",
+    write: {
+      numberColumn: "program_number",
+      numberModuleCode: "TRAINING_PROGRAM",
+      // Tanpa segmen {SEG}: segmen diambil dari tabel referensi berkode
+      // (kategori dokumen, jenis izin), dan program pelatihan tidak punya
+      // satu pun. Menyertakannya berarti setiap nomor memakai isian
+      // cadangan "GEN" — segmen yang sama untuk seluruh baris tidak
+      // membedakan apa pun, ia hanya memperpanjang nomornya.
+      numberPattern: "{PREFIX}/{YYYY}/{SEQ:3}",
+      numberPrefix: "TRN",
+      numberSeqWidth: 3,
+      statusColumn: "status",
+      // DEFERRED bukan sinonim CANCELLED, dan pemisahannya bukan kerapian
+      // istilah: program yang DITUNDA tetap ikut dihitung sebagai rencana
+      // yang belum terpenuhi pada tahun berjalan, sedangkan yang DIBATALKAN
+      // keluar dari pembagi. Menggabungkan keduanya membuat tingkat
+      // pencapaian pelatihan naik hanya dengan membatalkan rencana.
+      lifecycle: {
+        DRAFT: ["APPROVED", "CANCELLED"],
+        APPROVED: ["IN_PROGRESS", "DEFERRED", "CANCELLED"],
+        IN_PROGRESS: ["COMPLETED", "DEFERRED", "CANCELLED"],
+        DEFERRED: ["APPROVED", "CANCELLED"],
+        COMPLETED: [],
+        CANCELLED: [],
+      },
+      // TIDAK ada `approval`, dan bukan karena program pelatihan tahunan
+      // memang disetujui begitu saja. Definisi workflow di seed/workflows.js
+      // seluruhnya DISALIN dari berkas *-workflow-bootstrap.service.ts milik
+      // apps/api; modul pelatihan belum punya berkas itu (lihat catatan
+      // "Modul 19 BELUM ADA" pada AuditorCompetencyRecord). Mengarang alur
+      // persetujuannya di sini berarti menaruh alur yang tidak ada di produk
+      // sebenarnya ke dalam layar yang dipakai orang menilai produknya.
+      // Transisi DRAFT -> APPROVED tetap dijaga state machine, dilakukan
+      // langsung oleh yang berwenang.
+    },
+    endpoint: "/training-programs",
+    table: "training_programs",
+    pk: "training_program_id",
+    orderBy: "fiscal_year DESC, program_number ASC",
+    children: [
+      // Realisasi dari sebuah program adalah isi sesungguhnya halaman
+      // detailnya: rencana pelatihan tanpa daftar pelaksanaannya hanya
+      // memberitahu apa yang DIINGINKAN, bukan apa yang terjadi.
+      {
+        pathSuffix: "/realizations",
+        table: "training_realizations",
+        pk: "training_realization_id",
+        foreignKey: "training_program_id",
+        orderBy: "session_date DESC",
+      },
+    ],
+  },
+  {
+    slug: "training-realizations",
+    write: {
+      numberColumn: "realization_number",
+      // Penghitung TERPISAH dari program (moduleCode berbeda): nomor realisasi
+      // dan nomor program berjalan sendiri-sendiri, karena satu program
+      // menghasilkan banyak realisasi dan penghitung bersama akan membuat
+      // keduanya melompat-lompat tanpa pola.
+      numberModuleCode: "TRAINING_REALIZATION",
+      numberPattern: "{PREFIX}/{YYYY}/{SEQ:3}",
+      numberPrefix: "REAL",
+      numberSeqWidth: 3,
+      statusColumn: "status",
+      lifecycle: {
+        SCHEDULED: ["IN_PROGRESS", "POSTPONED", "CANCELLED"],
+        IN_PROGRESS: ["COMPLETED", "POSTPONED", "CANCELLED"],
+        POSTPONED: ["SCHEDULED", "CANCELLED"],
+        COMPLETED: [],
+        CANCELLED: [],
+      },
+    },
+    endpoint: "/training-realizations",
+    table: "training_realizations",
+    pk: "training_realization_id",
+    orderBy: "session_date DESC",
+    children: [
+      {
+        pathSuffix: "/participants",
+        table: "training_participants",
+        pk: "training_participant_id",
+        foreignKey: "training_realization_id",
+        orderBy: "participant_name ASC",
+      },
+    ],
+  },
+  {
     slug: "hse-period-statistics",
     // Tanpa statusColumn sama sekali: statistik bulanan tidak punya siklus
     // hidup — ia terisi, lalu dikoreksi kalau salah. Memberinya status berarti

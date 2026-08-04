@@ -39,6 +39,8 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   VERIFIED: "good",
   LEVEL_1_LOCAL: "good",
   OFI: "good",
+  LULUS: "good",
+  EFEKTIF: "good",
 
   // --- sedang berjalan / menunggu tindakan ---
   DRAFT: "warning",
@@ -71,6 +73,9 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   STANDBY: "warning",
   MEDIUM: "warning",
   SEDANG: "warning",
+  BELUM_DINILAI: "warning",
+  BELUM_DIEVALUASI: "warning",
+  SEBAGIAN_EFEKTIF: "warning",
   FAIR: "warning",
   NA: "warning",
   REWORK: "warning",
@@ -96,6 +101,12 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   POOR: "serious",
   RETURN_TO_SUPPLIER: "serious",
   LEVEL_2_SITE_WIDE: "serious",
+  // Rencana pelatihan yang DITUNDA/DIURUNGKAN tanggalnya, bukan dibatalkan.
+  // Diberi tone serius dan bukan netral dengan sengaja: rencana yang terus
+  // bergeser adalah kegagalan program pelatihan yang paling sering luput,
+  // justru karena tidak pernah tampak sebagai kegagalan.
+  DEFERRED: "serious",
+  POSTPONED: "serious",
 
   // --- gagal / dihentikan ---
   REJECTED: "critical",
@@ -108,6 +119,8 @@ const TONE_BY_VALUE: Record<string, StatusTone> = {
   OUT_OF_SERVICE: "critical",
   SCRAP: "critical",
   MAJOR_NC: "critical",
+  TIDAK_LULUS: "critical",
+  TIDAK_EFEKTIF: "critical",
   LEVEL_3_COMPANY_WIDE_EXTERNAL_AGENCY: "critical",
 };
 
