@@ -206,17 +206,23 @@ fi
 # --- 1. Diminta memasang? ---------------------------------------------------
 if [ -f "$REQUEST" ]; then
   {
-    echo "=== $(date) PEMASANGAN dimulai ==="
+    echo "=== $(date) PEMASANGAN dimulai (cabang $SRC_BRANCH) ==="
     rm -f "$REQUEST"
 
     TMP=$HOME_DIR/.qhse-fetch
     rm -rf "$TMP"; mkdir -p "$TMP"
 
     if ! curl -fsSL -m 600 "$SRC_TARBALL" -o "$TMP/src.tar.gz"; then
-      echo "GAGAL mengunduh — repositori private, atau jaringan bermasalah."
+      echo "GAGAL mengunduh — repositori private, cabang tidak ada, atau jaringan bermasalah."
+      echo "URL: $SRC_TARBALL"
       rm -rf "$TMP"; exit 0
     fi
     echo "unduhan: $(stat -c%s "$TMP/src.tar.gz") byte"
+
+    # Sidik jari isi arsip, diambil SEBELUM arsipnya dihapus. Dipakai di
+    # ~/qhse-version supaya dua pemasangan dari cabang yang sama tapi isi
+    # berbeda bisa dibedakan — nama cabang saja tidak pernah cukup untuk itu.
+    SIDIK=$(sha256sum "$TMP/src.tar.gz" 2>/dev/null | cut -c1-12)
 
     if ! tar -xzf "$TMP/src.tar.gz" -C "$TMP" --strip-components=1; then
       echo "GAGAL mengekstrak tarball"; rm -rf "$TMP"; exit 0
@@ -303,6 +309,24 @@ NPMRC
       pnpm --filter "@qhse/web^..." run build || exit 0
 
     build_web || exit 0
+
+    # -------------------------------------------------------------------------
+    #  Catat APA yang barusan terpasang.
+    #
+    #  ~/qhse-branch sudah ada, tapi ia menyatakan cabang yang akan diambil
+    #  pemasangan BERIKUTNYA — bukan yang sedang berjalan sekarang. Keduanya
+    #  berbeda setiap kali isinya diganti tanpa memasang ulang, dan selama ini
+    #  bedanya tidak terlihat dari mana pun: tidak dari log, tidak dari
+    #  pemeriksaan live, tidak dari aplikasinya sendiri.
+    #
+    #  Itu bukan soal kerapian. Menyetel ~/qhse-branch kembali ke master
+    #  sebelum cabang fiturnya digabung akan MEMUNDURKAN seluruh aplikasi pada
+    #  pemasangan berikutnya, tanpa satu pun galat — semua langkah sukses,
+    #  situsnya tetap hidup, hanya isinya yang mundur berminggu-minggu. Berkas
+    #  ini membuat kemunduran seperti itu terbaca dalam satu baris.
+    # -------------------------------------------------------------------------
+    printf 'cabang   : %s\nsidik    : %s\ndipasang : %s\n' \
+      "$SRC_BRANCH" "${SIDIK:-tidak diketahui}" "$(date)" > "$HOME_DIR/qhse-version"
 
     echo "=== PEMASANGAN selesai $(date) ==="
   } >> "$INSTALL_LOG" 2>&1

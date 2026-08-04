@@ -62,6 +62,14 @@ header_dump() {
 
 {
   echo "=== $(date) memeriksa $SITE ==="
+  # Dua baris yang menjawab dua pertanyaan berbeda, dan sering keliru dianggap
+  # satu: apa yang SEDANG berjalan, dan apa yang akan diambil pemasangan
+  # berikutnya. Selama keduanya belum sama, memasang ulang berarti berpindah
+  # versi — kadang maju, kadang mundur berminggu-minggu tanpa satu pun galat.
+  sed 's/^/terpasang: /' "$HOME_DIR/qhse-version" 2>/dev/null \
+    || echo "terpasang: (belum tercatat — akan terisi pada pemasangan berikutnya)"
+  echo "cabang berikutnya: $(cat "$HOME_DIR/qhse-branch" 2>/dev/null || echo master)"
+  echo
   echo "halaman depan : $(kode "$SITE/")"
   echo "halaman masuk : $(kode "$SITE/login")"
   echo "dashboard     : $(kode "$SITE/dashboard")"
