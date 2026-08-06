@@ -1,0 +1,654 @@
+/* Formulir, bilah aksi, jejak persetujuan, dan kotak persetujuan.
+   Semua warna dan jarak dari token @qhse/ui-components. */
+
+/* --- Formulir --- */
+
+.qhse-form {
+  background: var(--qhse-surface-1);
+  border: 1px solid color-mix(in srgb, var(--qhse-brand) 22%, transparent);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
+  padding: var(--qhse-space-5);
+  margin-bottom: var(--qhse-space-5);
+}
+
+.qhse-form__head {
+  padding-bottom: var(--qhse-space-4);
+  margin-bottom: var(--qhse-space-4);
+  border-bottom: 1px solid var(--qhse-gridline);
+}
+
+.qhse-form__title {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-h2-size);
+  line-height: var(--qhse-text-h2-lh);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+.qhse-form__hint {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-text-secondary);
+  margin: var(--qhse-space-2) 0 0;
+  max-width: 78ch;
+}
+
+.qhse-form__error {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-status-critical-ink);
+  background: var(--qhse-status-critical-wash);
+  border: 1px solid color-mix(in srgb, var(--qhse-status-critical) 24%, transparent);
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  margin: 0 0 var(--qhse-space-4);
+}
+
+.qhse-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0 var(--qhse-space-5);
+}
+
+/* Field teks panjang mengambil seluruh lebar: uraian insiden dan pernyataan
+   masalah CAPA ditulis dalam kalimat, dan kotak selebar seperempat layar
+   membuat orang menulis lebih pendek daripada yang seharusnya. */
+.qhse-form__cell--wide {
+  grid-column: 1 / -1;
+}
+
+.qhse-form__actions {
+  display: flex;
+  gap: var(--qhse-space-3);
+  padding-top: var(--qhse-space-4);
+  border-top: 1px solid var(--qhse-gridline);
+}
+
+/* --- Bilah aksi --- */
+
+.qhse-actions {
+  margin-bottom: var(--qhse-space-5);
+}
+
+.qhse-actions__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qhse-space-3);
+  padding: var(--qhse-space-4);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-card-ring);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
+}
+
+.qhse-actions__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qhse-space-2);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-secondary);
+}
+
+.qhse-actions__spacer {
+  flex: 1 1 auto;
+}
+
+.qhse-actions__ok,
+.qhse-actions__bad,
+.qhse-actions__note {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  margin: var(--qhse-space-3) 0 0;
+}
+
+.qhse-actions__ok {
+  color: var(--qhse-status-good-ink);
+  background: var(--qhse-status-good-wash);
+  font-weight: 600;
+}
+
+.qhse-actions__bad {
+  color: var(--qhse-status-critical-ink);
+  background: var(--qhse-status-critical-wash);
+  font-weight: 600;
+}
+
+.qhse-actions__note {
+  color: var(--qhse-text-secondary);
+  background: var(--qhse-surface-2);
+}
+
+/* --- Jejak persetujuan --- */
+
+.qhse-approval {
+  margin-top: var(--qhse-space-4);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-card-ring);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
+  padding: var(--qhse-space-5);
+}
+
+.qhse-approval__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--qhse-space-4);
+  padding-bottom: var(--qhse-space-4);
+  margin-bottom: var(--qhse-space-4);
+  border-bottom: 1px solid var(--qhse-gridline);
+}
+
+.qhse-approval__title {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-body-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+.qhse-approval__caption {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: 1.45;
+  color: var(--qhse-text-muted);
+  margin: var(--qhse-space-1) 0 0;
+  max-width: 70ch;
+}
+
+.qhse-approval__head .qhse-status-badge {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.qhse-approval__stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-approval__stage {
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  background: var(--qhse-surface-2);
+  border: 1px solid var(--qhse-border-hairline);
+  border-left: 3px solid var(--qhse-gridline);
+  border-radius: var(--qhse-radius-sm);
+}
+
+.qhse-approval__stage--done {
+  border-left-color: var(--qhse-status-good-ink);
+}
+
+/* Tahap yang sedang berjalan diberi warna merek, bukan warna status: ia bukan
+   "baik" maupun "buruk", ia sekadar tempat berkasnya berada sekarang. */
+.qhse-approval__stage--current {
+  border-left-color: var(--qhse-brand);
+  background: var(--qhse-brand-wash);
+}
+
+.qhse-approval__stagehead {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  font-family: var(--qhse-font-ui);
+}
+
+.qhse-approval__seq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: var(--qhse-radius-full);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  color: var(--qhse-text-secondary);
+}
+
+.qhse-approval__stagename {
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+}
+
+.qhse-approval__sla {
+  margin-left: auto;
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+  white-space: nowrap;
+}
+
+.qhse-approval__pending {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+  margin: var(--qhse-space-2) 0 0 34px;
+}
+
+.qhse-approval__tasks {
+  list-style: none;
+  margin: var(--qhse-space-2) 0 0 34px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-2);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+}
+
+.qhse-approval__tasks li {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  flex-wrap: wrap;
+}
+
+.qhse-approval__who {
+  font-weight: 600;
+  color: var(--qhse-text-primary);
+}
+
+.qhse-approval__waiting {
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+}
+
+.qhse-approval__when {
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+}
+
+.qhse-approval__comment {
+  flex: 1 1 100%;
+  font-style: italic;
+  color: var(--qhse-text-secondary);
+}
+
+.qhse-approval__act {
+  margin-top: var(--qhse-space-4);
+  padding-top: var(--qhse-space-4);
+  border-top: 1px solid var(--qhse-gridline);
+}
+
+.qhse-approval__act label {
+  display: block;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-text-secondary);
+  margin-bottom: var(--qhse-space-2);
+}
+
+.qhse-approval__act textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-2);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+  resize: vertical;
+}
+
+.qhse-approval__act textarea:focus {
+  outline: none;
+  border-color: var(--qhse-brand);
+  box-shadow: 0 0 0 3px var(--qhse-brand-wash);
+}
+
+.qhse-approval__buttons {
+  display: flex;
+  gap: var(--qhse-space-3);
+  margin-top: var(--qhse-space-3);
+}
+
+/* --- Kotak persetujuan --- */
+
+.qhse-inbox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-inbox__item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qhse-space-4);
+  padding: var(--qhse-space-4) var(--qhse-space-5);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-card-ring);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
+}
+
+.qhse-inbox__main {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.qhse-inbox__module {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: var(--qhse-brand);
+  margin: 0;
+}
+
+.qhse-inbox__stage {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-body-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: var(--qhse-space-1) 0 0;
+}
+
+.qhse-inbox__flow {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: 1.45;
+  color: var(--qhse-text-muted);
+  margin: var(--qhse-space-1) 0 0;
+}
+
+.qhse-inbox__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-4);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.qhse-inbox__since {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  color: var(--qhse-text-muted);
+}
+
+.qhse-inbox__open {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 700;
+  color: var(--qhse-brand);
+  white-space: nowrap;
+}
+
+/* --- Unggah berkas --- */
+
+.qhse-upload {
+  margin-top: var(--qhse-space-6);
+  padding: var(--qhse-space-4) var(--qhse-space-5);
+  background: var(--qhse-surface-1);
+  border: 1px solid color-mix(in srgb, var(--qhse-brand) 22%, transparent);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
+}
+
+.qhse-upload__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qhse-space-4);
+}
+
+.qhse-upload__intro {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.qhse-upload__title {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-body-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+.qhse-upload__hint {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-text-secondary);
+  margin: var(--qhse-space-1) 0 0;
+  max-width: 78ch;
+}
+
+.qhse-upload__summary {
+  flex: 1 1 240px;
+  min-height: var(--qhse-tap-target-min);
+  padding: var(--qhse-space-2) var(--qhse-space-4);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-2);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+}
+
+.qhse-upload__summary:focus {
+  outline: none;
+  border-color: var(--qhse-brand);
+  box-shadow: 0 0 0 3px var(--qhse-brand-wash);
+}
+
+/* Input berkas bawaan disembunyikan dan dipicu lewat tombol: tombol bawaan
+   peramban tidak bisa digayakan dan tampil berbeda di setiap sistem operasi,
+   yang pada satu halaman berisi tombol bergaya seragam terbaca seperti
+   kelalaian. Elemennya tetap ada di DOM (bukan display:none pada wadahnya)
+   supaya tetap bisa dijangkau alat bantu. */
+.qhse-upload__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Penampil dokumen --- */
+
+.qhse-viewer__header {
+  align-items: flex-start;
+}
+
+.qhse-viewer__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  flex-wrap: wrap;
+}
+
+.qhse-viewer__disclaimer {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: var(--qhse-text-body-sm-lh);
+  color: var(--qhse-status-serious-ink);
+  background: var(--qhse-status-serious-wash);
+  border: 1px solid color-mix(in srgb, var(--qhse-status-serious) 24%, transparent);
+  border-radius: var(--qhse-radius-sm);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  margin: 0 0 var(--qhse-space-4);
+  max-width: 100%;
+}
+
+.qhse-viewer__frame {
+  position: relative;
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-card-ring);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
+  overflow: hidden;
+}
+
+.qhse-viewer__pdf {
+  display: block;
+  width: 100%;
+  height: 78vh;
+  min-height: 460px;
+  border: 0;
+}
+
+.qhse-viewer__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 78vh;
+  object-fit: contain;
+  background: var(--qhse-surface-2);
+}
+
+.qhse-viewer__unsupported {
+  padding: var(--qhse-space-7) var(--qhse-space-5);
+  text-align: center;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  line-height: var(--qhse-text-body-lh);
+  color: var(--qhse-text-secondary);
+}
+
+/* --- Watermark --- */
+
+/* Lapisan di ATAS berkasnya. pointer-events:none supaya PDF di bawahnya tetap
+   bisa digulir dan diperbesar — watermark yang menghalangi interaksi membuat
+   orang mencari cara membukanya di luar aplikasi, yang justru menghasilkan
+   salinan tanpa watermark. */
+.qhse-watermark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-content: space-around;
+  justify-items: center;
+  overflow: hidden;
+  transform: rotate(-28deg) scale(1.35);
+  transform-origin: center;
+}
+
+.qhse-watermark span {
+  font-family: var(--qhse-font-display);
+  font-size: clamp(18px, 2.6vw, 34px);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  /* Cukup terbaca untuk menandai, cukup tipis untuk tidak menghalangi
+     pembacaan dokumennya. Warna merek, bukan merah: ini penanda kendali
+     dokumen, bukan peringatan bahaya. */
+  color: color-mix(in srgb, var(--qhse-brand) 17%, transparent);
+  user-select: none;
+}
+
+/* --- Stempel salinan terkendali --- */
+
+.qhse-stamp {
+  margin-top: var(--qhse-space-4);
+  padding: var(--qhse-space-4) var(--qhse-space-5);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border-hairline);
+  border-left: 3px solid var(--qhse-brand);
+  border-radius: var(--qhse-radius-md);
+}
+
+.qhse-stamp__badge {
+  display: inline-block;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  color: var(--qhse-brand);
+  background: var(--qhse-brand-wash);
+  border-radius: var(--qhse-radius-full);
+  padding: var(--qhse-space-1) var(--qhse-space-3);
+  margin-bottom: var(--qhse-space-3);
+}
+
+.qhse-stamp__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--qhse-space-3) var(--qhse-space-5);
+  margin: 0;
+}
+
+.qhse-stamp__grid dt {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+}
+
+.qhse-stamp__grid dd {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-text-primary);
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* --- Cetak ---
+   Yang dicetak hanyalah berkasnya, watermark, dan stempelnya. Navigasi dan
+   tombol dibuang: halaman cetak yang memuat sidebar bukan salinan dokumen,
+   melainkan tangkapan layar aplikasi. */
+@media print {
+  .qhse-shell__topbar,
+  .qhse-shell__sidebar,
+  .qhse-viewer__actions,
+  .qhse-viewer__disclaimer {
+    display: none !important;
+  }
+
+  .qhse-shell__main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  .qhse-viewer__frame {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .qhse-viewer__pdf {
+    height: 92vh;
+  }
+
+  /* Warna watermark dan stempel HARUS ikut tercetak. Tanpa ini, peramban
+     membuang latar dan warna demi menghemat tinta, dan yang keluar dari
+     printer adalah dokumen tanpa satu pun tanda kendali — persis kebalikan
+     dari maksudnya. */
+  .qhse-watermark span,
+  .qhse-stamp,
+  .qhse-stamp__badge {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .qhse-watermark span {
+    color: color-mix(in srgb, var(--qhse-brand) 26%, transparent);
+  }
+}

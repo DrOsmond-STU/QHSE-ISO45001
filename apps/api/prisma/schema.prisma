@@ -431,12 +431,16 @@ model User {
   supplierQualityRecordsEvaluated      SupplierQualityRecord[]       @relation("SupplierQualityRecordEvaluatedBy")
   supplierQualityRecordsCreated        SupplierQualityRecord[]       @relation("SupplierQualityRecordCreatedBy")
   supplierQualityRecordsUpdated        SupplierQualityRecord[]       @relation("SupplierQualityRecordUpdatedBy")
+  trainingProgramsPic                  TrainingProgram[]             @relation("TrainingProgramPic")
+  trainingRealizationsEvaluated        TrainingRealization[]         @relation("TrainingRealizationEvaluatedBy")
+  trainingParticipations               TrainingParticipant[]         @relation("TrainingParticipantUser")
   qualityObjectivesOwned               QualityObjective[]            @relation("QualityObjectiveOwner")
   qualityObjectivesCreated             QualityObjective[]            @relation("QualityObjectiveCreatedBy")
   qualityObjectivesUpdated             QualityObjective[]            @relation("QualityObjectiveUpdatedBy")
   qualityObjectiveProgressLogsRecorded QualityObjectiveProgressLog[] @relation("QualityObjectiveProgressLogRecordedBy")
   qualityObjectiveProgressLogsCreated  QualityObjectiveProgressLog[] @relation("QualityObjectiveProgressLogCreatedBy")
   qualityObjectiveProgressLogsUpdated  QualityObjectiveProgressLog[] @relation("QualityObjectiveProgressLogUpdatedBy")
+  dashboardLayouts                     DashboardLayout[]
 
   // Task 5.2 — Environmental Management
   environmentalAspectsImpactsReviewed       EnvironmentalAspectImpact[]         @relation("EnvironmentalAspectImpactReviewedBy")
@@ -1429,6 +1433,306 @@ model NotificationPreference {
   @@map("notification_preferences")
 }
 
+/// Susunan widget dashboard milik SETIAP PENGGUNA (analitik, scorecard).
+///
+/// `layout` sengaja Json dan bukan tabel widget tersendiri: katalog widget
+/// hidup di dalam kode dan berubah setiap kali metrik baru ditambahkan.
+/// Menormalkannya berarti setiap penambahan widget menuntut migrasi basis
+/// data, padahal isinya semata preferensi tampilan.
+///
+/// TIDAK dilekati audit_log_trigger — lihat alasannya di banner migrasi
+/// 20260803120000.
+model DashboardLayout {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @map("dashboard_layout_id") @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// 'analytics' | 'scorecard'. VARCHAR, bukan enum: menambah jenis dashboard
+  /// baru tidak boleh menuntut migrasi.
+  dashboardKey String @map("dashboard_key") @db.VarChar(50)
+  layout       Json   @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([userId, dashboardKey])
+  @@index([tenantId])
+  @@map("dashboard_layouts")
+}
+
+/// Statistik HSE per bulan — jam kerja, tenaga kerja, dan leading indicator.
+///
+/// Ada karena dua besaran yang menopang seluruh dashboard eksekutif HSE tidak
+/// dihasilkan proses QHSE mana pun: JAM KERJA dan JUMLAH TENAGA KERJA.
+/// Keduanya datang dari absensi dan penggajian. Tanpa keduanya, LTIFR dan TRIR
+/// tidak bisa dihitung — dan jumlah kecelakaan tanpa pembagi jam kerja tidak
+/// bisa dibandingkan antar periode maupun antar lokasi.
+///
+/// Leading indicator (induksi, toolbox talk, rapat HSE, jam pelatihan) ikut di
+/// sini karena wataknya sama: DIHITUNG per periode, bukan direkam satu per satu
+/// sebagai kasus.
+model HsePeriodStatistic {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @map("hse_period_statistic_id") @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  /// NULL = seluruh perusahaan. Pola scope longgar yang sama dipakai Document.
+  siteId String? @map("site_id") @db.Uuid
+  site   Site?   @relation(fields: [siteId], references: [id])
+
+  /// Tanggal 1 bulan yang bersangkutan.
+  periodMonth DateTime @map("period_month") @db.Date
+
+  manpower Int    @default(0)
+  /// BigInt: jam kerja kumulatif proyek besar melewati batas Int dalam
+  /// hitungan tahun, dan luapannya tidak bersuara.
+  manhours BigInt @default(0)
+
+  safetyInductions       Int @default(0) @map("safety_inductions")
+  toolboxTalks           Int @default(0) @map("toolbox_talks")
+  hseMeetings            Int @default(0) @map("hse_meetings")
+  trainingHours          Int @default(0) @map("training_hours")
+  managementWalkthroughs Int @default(0) @map("management_walkthroughs")
+  safetyObservations     Int @default(0) @map("safety_observations")
+  unsafeActs             Int @default(0) @map("unsafe_acts")
+  unsafeConditions       Int @default(0) @map("unsafe_conditions")
+
+  notes String? @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  @@index([tenantId, periodMonth])
+  @@map("hse_period_statistics")
+}
+
+// ============================================================================
+//  Pelatihan — PROGRAM (rencana) dan REALISASI (pelaksanaan)
+//
+//  Dua model, bukan satu model berkolom rencana/aktual. Satu program berjalan
+//  berkali-kali (induksi pekerja baru tiap bulan), sebagian realisasi tidak
+//  pernah direncanakan (pelatihan dadakan setelah insiden), dan sebagian
+//  rencana tidak pernah terlaksana — yang terakhir justru angka yang dicari
+//  auditor ISO 45001 klausul 7.2. Ketiganya tidak punya tempat pada satu baris.
+// ============================================================================
+
+enum TrainingType {
+  INDUCTION
+  MANDATORY_CERTIFICATION
+  TECHNICAL_COMPETENCY
+  REFRESHER
+  AWARENESS
+  EMERGENCY_DRILL
+  EXTERNAL_SEMINAR
+}
+
+enum TrainingDeliveryMethod {
+  IN_HOUSE
+  PUBLIC_CLASS
+  ONLINE
+  ON_THE_JOB
+  BLENDED
+}
+
+enum TrainingProgramStatus {
+  DRAFT
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  DEFERRED
+  CANCELLED
+}
+
+enum TrainingRealizationStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  POSTPONED
+  CANCELLED
+}
+
+enum TrainingEffectiveness {
+  NOT_EVALUATED
+  EFFECTIVE
+  PARTIALLY_EFFECTIVE
+  NOT_EFFECTIVE
+}
+
+enum TrainingAttendance {
+  ATTENDED
+  PARTIAL
+  ABSENT
+}
+
+enum TrainingParticipantResult {
+  PASSED
+  FAILED
+  NOT_ASSESSED
+}
+
+model TrainingProgram {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @map("training_program_id") @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  siteId       String?     @map("site_id") @db.Uuid
+  site         Site?       @relation(fields: [siteId], references: [id])
+  departmentId String?     @map("department_id") @db.Uuid
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  programNumber String       @map("program_number") @db.VarChar(50)
+  title         String       @db.VarChar(200)
+  trainingType  TrainingType @map("training_type")
+  objective     String?      @db.Text
+  targetAudience String?     @map("target_audience") @db.VarChar(200)
+
+  /// Wajib menurut peraturan, dan peraturan mana. Boolean-nya untuk menyaring,
+  /// teksnya untuk menjawab auditor "atas dasar apa".
+  isMandatory     Boolean @default(false) @map("is_mandatory")
+  regulatoryBasis String? @map("regulatory_basis") @db.VarChar(200)
+
+  plannedParticipants        Int      @default(0) @map("planned_participants")
+  /// Decimal, bukan Int: pelatihan setengah hari (3,5 jam) lazim.
+  plannedHoursPerParticipant Decimal  @default(0) @map("planned_hours_per_participant") @db.Decimal(6, 2)
+  plannedSessions            Int      @default(1) @map("planned_sessions")
+  plannedBudget              Decimal? @map("planned_budget") @db.Decimal(14, 2)
+
+  deliveryMethod TrainingDeliveryMethod @default(IN_HOUSE) @map("delivery_method")
+  providerName   String?                @map("provider_name") @db.VarChar(150)
+
+  plannedStartDate DateTime? @map("planned_start_date") @db.Date
+  plannedEndDate   DateTime? @map("planned_end_date") @db.Date
+  fiscalYear       Int       @map("fiscal_year")
+
+  certificationRequired     Boolean @default(false) @map("certification_required")
+  certificateValidityMonths Int?    @map("certificate_validity_months")
+
+  picUserId String? @map("pic_user_id") @db.Uuid
+  picUser   User?   @relation("TrainingProgramPic", fields: [picUserId], references: [id])
+
+  status TrainingProgramStatus @default(DRAFT)
+  notes  String?               @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  realizations TrainingRealization[]
+
+  @@unique([tenantId, programNumber])
+  @@index([tenantId, fiscalYear])
+  @@index([tenantId, status])
+  @@map("training_programs")
+}
+
+model TrainingRealization {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @map("training_realization_id") @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  /// NULL = pelatihan yang terjadi tanpa pernah direncanakan.
+  trainingProgramId String?          @map("training_program_id") @db.Uuid
+  trainingProgram   TrainingProgram? @relation(fields: [trainingProgramId], references: [id])
+
+  siteId       String?     @map("site_id") @db.Uuid
+  site         Site?       @relation(fields: [siteId], references: [id])
+  departmentId String?     @map("department_id") @db.Uuid
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  realizationNumber String       @map("realization_number") @db.VarChar(50)
+  title             String       @db.VarChar(200)
+  trainingType      TrainingType @map("training_type")
+
+  sessionDate    DateTime  @map("session_date") @db.Date
+  sessionEndDate DateTime? @map("session_end_date") @db.Date
+  durationHours  Decimal   @default(0) @map("duration_hours") @db.Decimal(6, 2)
+
+  deliveryMethod TrainingDeliveryMethod @default(IN_HOUSE) @map("delivery_method")
+  providerName   String?                @map("provider_name") @db.VarChar(150)
+  trainerName    String?                @map("trainer_name") @db.VarChar(150)
+  location       String?                @db.VarChar(200)
+
+  /// Cacah peserta disimpan meskipun daftar namanya ada di anak: riwayat
+  /// pelatihan yang diimpor dari arsip kertas punya angka hadir tanpa nama.
+  plannedParticipants Int @default(0) @map("planned_participants")
+  actualParticipants  Int @default(0) @map("actual_participants")
+  passedParticipants  Int @default(0) @map("passed_participants")
+
+  actualCost Decimal? @map("actual_cost") @db.Decimal(14, 2)
+
+  averagePreTestScore  Decimal?              @map("average_pre_test_score") @db.Decimal(5, 2)
+  averagePostTestScore Decimal?              @map("average_post_test_score") @db.Decimal(5, 2)
+  effectiveness        TrainingEffectiveness @default(NOT_EVALUATED)
+  evaluationMethod     String?               @map("evaluation_method") @db.VarChar(150)
+  evaluationNotes      String?               @map("evaluation_notes") @db.Text
+  evaluatedBy          String?               @map("evaluated_by") @db.Uuid
+  evaluatedByUser      User?                 @relation("TrainingRealizationEvaluatedBy", fields: [evaluatedBy], references: [id])
+  evaluatedDate        DateTime?             @map("evaluated_date") @db.Date
+
+  certificateIssued Boolean @default(false) @map("certificate_issued")
+
+  status TrainingRealizationStatus @default(SCHEDULED)
+  notes  String?                   @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  participants TrainingParticipant[]
+
+  @@unique([tenantId, realizationNumber])
+  @@index([tenantId, sessionDate])
+  @@index([trainingProgramId])
+  @@map("training_realizations")
+}
+
+model TrainingParticipant {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @map("training_participant_id") @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  trainingRealizationId String              @map("training_realization_id") @db.Uuid
+  trainingRealization   TrainingRealization @relation(fields: [trainingRealizationId], references: [id], onDelete: Cascade)
+
+  /// NULLABLE, dan participantName tetap wajib: peserta pelatihan K3 sering
+  /// pekerja kontraktor yang tidak punya akun di aplikasi ini.
+  userId              String? @map("user_id") @db.Uuid
+  user                User?   @relation("TrainingParticipantUser", fields: [userId], references: [id])
+  participantName     String  @map("participant_name") @db.VarChar(150)
+  participantCompany  String? @map("participant_company") @db.VarChar(150)
+  participantPosition String? @map("participant_position") @db.VarChar(100)
+
+  attendance    TrainingAttendance        @default(ATTENDED)
+  preTestScore  Decimal?                  @map("pre_test_score") @db.Decimal(5, 2)
+  postTestScore Decimal?                  @map("post_test_score") @db.Decimal(5, 2)
+  result        TrainingParticipantResult @default(NOT_ASSESSED)
+
+  certificateNumber      String?   @map("certificate_number") @db.VarChar(100)
+  certificateIssuedDate  DateTime? @map("certificate_issued_date") @db.Date
+  certificateExpiryDate  DateTime? @map("certificate_expiry_date") @db.Date
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  @@index([trainingRealizationId])
+  @@index([tenantId, userId])
+  @@index([tenantId, certificateExpiryDate])
+  @@map("training_participants")
+}
+
 model NotificationLog {
   id                String                  @id @default(dbgenerated("gen_random_uuid()")) @map("notification_log_id") @db.Uuid
   // BEYOND PRD literal (lihat banner comment poin 1 di atas).
@@ -1788,6 +2092,17 @@ model Tenant {
   qualityObjectives            QualityObjective[]
   qualityObjectiveProgressLogs QualityObjectiveProgressLog[]
 
+  // Task 0.14 — susunan widget dashboard per pengguna
+  dashboardLayouts             DashboardLayout[]
+
+  // Statistik HSE per bulan — jam kerja, tenaga kerja, leading indicator.
+  hsePeriodStatistics          HsePeriodStatistic[]
+
+  // Pelatihan — rencana, pelaksanaan, dan pesertanya.
+  trainingPrograms             TrainingProgram[]
+  trainingRealizations         TrainingRealization[]
+  trainingParticipants         TrainingParticipant[]
+
   // Task 5.2 — Environmental Management
   environmentalAspectsImpacts        EnvironmentalAspectImpact[]
   environmentalMonitoringRecords     EnvironmentalMonitoringRecord[]
@@ -2022,6 +2337,9 @@ model Site {
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz
 
   departments                           Department[]
+  hsePeriodStatistics                   HsePeriodStatistic[]
+  trainingPrograms                      TrainingProgram[]
+  trainingRealizations                  TrainingRealization[]
   // Kalender yang SECARA KHUSUS dibuat untuk site ini (HolidayCalendar.appliesToSiteId)
   // — beda dari holidayCalendar di atas (kalender yang site ini PAKAI).
   scopedHolidayCalendars                HolidayCalendar[]                      @relation("HolidayCalendarAppliesToSite")
@@ -2160,6 +2478,8 @@ model Department {
   qualityObjectives           QualityObjective[]
   environmentalAspectsImpacts EnvironmentalAspectImpact[]
   wasteGenerationLogs         WasteGenerationLog[]
+  trainingPrograms            TrainingProgram[]
+  trainingRealizations        TrainingRealization[]
 
   // Task 5.3 — Occupational Health Management
   mcuSchedules               McuSchedule[]
@@ -7018,6 +7338,16 @@ enum QualityObjectiveStatus {
   DISCONTINUED
 }
 
+/// Empat perspektif Balanced Scorecard. Dipakai untuk MENGELOMPOKKAN sasaran
+/// mutu ISO 9001 klausul 6.2 yang sudah ada, bukan sebagai jenis data baru —
+/// lihat banner migrasi 20260803120000.
+enum BalancedScorecardPerspective {
+  FINANCIAL
+  CUSTOMER
+  INTERNAL_PROCESS
+  LEARNING_GROWTH
+}
+
 model NcrRecord {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @map("ncr_id") @db.Uuid
   tenantId String @map("tenant_id") @db.Uuid
@@ -7366,6 +7696,14 @@ model QualityObjective {
   atRiskThresholdPercentage Decimal                              @default(10) @map("at_risk_threshold_percentage") @db.Decimal(5, 2)
   measurementFrequency      QualityObjectiveMeasurementFrequency @map("measurement_frequency")
 
+  /// Perspektif Balanced Scorecard. NULLABLE dengan sengaja: sasaran yang
+  /// belum dipetakan ditampilkan terpisah, bukan diam-diam dimasukkan ke
+  /// salah satu kuadran.
+  bscPerspective BalancedScorecardPerspective? @map("bsc_perspective")
+  /// Bobot KPI ini DI DALAM perspektifnya (persen). Tanpa bobot, skor
+  /// perspektif hanya rata-rata polos dan setiap KPI menimbang sama berat.
+  bscWeightPercentage Decimal? @map("bsc_weight_percentage") @db.Decimal(5, 2)
+
   ownerUserId String? @map("owner_user_id") @db.Uuid
   ownerUser   User?   @relation("QualityObjectiveOwner", fields: [ownerUserId], references: [id])
 
@@ -7387,6 +7725,9 @@ model QualityObjective {
 
   @@unique([tenantId, objectiveCode])
   @@index([tenantId, status])
+  /// Halaman scorecard membaca seluruh sasaran satu tenant lalu
+  /// mengelompokkannya per perspektif.
+  @@index([tenantId, bscPerspective])
   @@map("quality_objectives")
 }
 

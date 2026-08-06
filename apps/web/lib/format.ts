@@ -1,4 +1,5 @@
 import type { ColumnType } from "./modules";
+import type { Locale } from "./locale";
 import { humanizeEnum } from "./status-tone";
 
 // Field @db.Date di Prisma diserialisasi jadi ISO tengah malam UTC
@@ -9,11 +10,43 @@ import { humanizeEnum } from "./status-tone";
 // menandai satu titik waktu nyata) tetap dirender di zona waktu pembaca.
 const DATE_ONLY = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "UTC" });
 const DATE_TIME = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" });
-const NUMBER = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
+// Pemisah ribuan ikut bahasa. Titik dan koma bertukar arti antara Indonesia
+// dan Inggris, jadi "961.833" yang benar di satu bahasa salah seribu kali
+// lipat di bahasa lain — bukan sekadar terlihat asing.
+const ANGKA = new Map<string, { number: Intl.NumberFormat; currency: Intl.NumberFormat }>();
+
+function pemformat(locale: Locale) {
+  const tag = locale === "en" ? "en-GB" : "id-ID";
+  let found = ANGKA.get(tag);
+  if (!found) {
+    found = {
+      number: new Intl.NumberFormat(tag, { maximumFractionDigits: 2 }),
+      currency: new Intl.NumberFormat(tag, { style: "currency", currency: "IDR", maximumFractionDigits: 0 }),
+    };
+    ANGKA.set(tag, found);
+  }
+  return found;
+}
 
 export const EMPTY_PLACEHOLDER = "—";
 
-export function formatCell(value: unknown, type: ColumnType = "text"): string {
+/** Boolean di tabel dan kartu detail. Diterjemahkan karena ia teks
+ *  antarmuka, bukan data: nilainya di basis data adalah true/false. */
+function yaTidak(value: boolean, locale: Locale): string {
+  if (locale === "en") return value ? "Yes" : "No";
+  return value ? "Ya" : "Tidak";
+}
+
+export function formatCell(value: unknown, type: ColumnType = "text", locale: Locale = "id"): string {
+  const { number: NUMBER, currency: CURRENCY } = pemformat(locale);
+  if (type === "filesize") {
+    const bytes = Number(value);
+    if (!Number.isFinite(bytes)) return EMPTY_PLACEHOLDER;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1).replace(".", ",")} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+  }
+
   if (value === null || value === undefined || value === "") return EMPTY_PLACEHOLDER;
 
   switch (type) {
@@ -27,13 +60,19 @@ export function formatCell(value: unknown, type: ColumnType = "text"): string {
       const parsed = Number(value);
       return Number.isNaN(parsed) ? String(value) : NUMBER.format(parsed);
     }
+    case "currency": {
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? String(value) : CURRENCY.format(parsed);
+    }
+    case "longtext":
+      return String(value);
     case "bool":
-      return value ? "Ya" : "Tidak";
+      return yaTidak(Boolean(value), locale);
     case "enum":
     case "status":
       return typeof value === "string" ? humanizeEnum(value) : String(value);
     default:
-      if (typeof value === "boolean") return value ? "Ya" : "Tidak";
+      if (typeof value === "boolean") return yaTidak(value, locale);
       if (typeof value === "object") return JSON.stringify(value);
       return String(value);
   }
@@ -58,6 +97,44 @@ export function inferType(key: string, value: unknown): ColumnType {
   }
   return "text";
 }
+
+/**
+ * Nilai yang SIAP DITAMPILKAN untuk satu field.
+ *
+ * API menempelkan `<field>Label` pada setiap kolom kunci asing (lihat
+ * apps/demo-api/src/labels.js), jadi `siteId` datang berpasangan dengan
+ * `siteIdLabel` berisi "Lapangan Produksi Cepu". Fungsi ini memilih label
+ * itu bila ada, dan jatuh kembali ke nilai aslinya bila tidak — sehingga
+ * satu pemanggil yang sama bekerja untuk kolom biasa maupun kunci asing.
+ *
+ * Kalau labelnya TIDAK ada dan nilainya ternyata UUID, yang ditampilkan
+ * adalah tanda pisah, bukan UUID-nya: pengenal internal di layar tidak
+ * memberi tahu pembaca apa pun, dan kehadirannya justru membuat halaman
+ * terbaca seperti dump basis data.
+ */
+export function displayValue(
+  row: Record<string, unknown>,
+  key: string,
+  type: ColumnType = "text",
+  locale: Locale = "id",
+): string {
+  // Satu-satunya tipe yang membaca lebih dari satu kolom. Ditangani di sini
+  // dan bukan di formatCell() karena formatCell hanya menerima nilainya, bukan
+  // barisnya — dan nomor revisi memang butuh keduanya.
+  if (type === "revision") {
+    const major = row.majorVersion;
+    const minor = row.minorVersion;
+    if (major === null || major === undefined) return EMPTY_PLACEHOLDER;
+    return `${major}.${minor ?? 0}`;
+  }
+  const label = row[`${key}Label`];
+  if (typeof label === "string" && label.length > 0) return label;
+  const value = row[key];
+  if (typeof value === "string" && UUID_PATTERN.test(value)) return EMPTY_PLACEHOLDER;
+  return formatCell(value, type, locale);
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `plannedStartDatetime` -> `Planned start datetime` — label manusiawi untuk field tak terdaftar. */
 export function humanizeFieldName(key: string): string {

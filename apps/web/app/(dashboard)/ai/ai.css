@@ -1,0 +1,394 @@
+/* Halaman pencarian & bantuan dokumen.
+ *
+ * Tiga blok hasil punya derajat kepastian yang berbeda, dan gayanya
+ * mengikuti perbedaan itu — bukan sekadar variasi warna:
+ *   - hasil dari basis data tampil sebagai daftar biasa dengan tautan;
+ *   - hasil dari internet membawa URL-nya terlihat, karena yang perlu
+ *     dilakukan pembaca adalah membukanya, bukan memercayainya;
+ *   - usulan susunan dibingkai tersendiri agar tidak tertukar dengan data.
+ */
+
+.qhse-ai {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-6);
+}
+
+.qhse-ai__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-ai__title {
+  margin: 0;
+  font-size: var(--qhse-text-h1-size);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--qhse-text-primary);
+}
+
+.qhse-ai__lead {
+  margin: var(--qhse-space-2) 0 0;
+  max-width: 62ch;
+  color: var(--qhse-text-muted);
+}
+
+.qhse-ai__lampu {
+  padding: 6px 12px;
+  border-radius: var(--qhse-radius-pill, 999px);
+  border: 1px solid var(--qhse-border);
+  background: var(--qhse-surface-2);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-muted);
+  white-space: nowrap;
+}
+
+.qhse-ai__lampu--nyala {
+  border-color: color-mix(in srgb, var(--qhse-brand) 40%, transparent);
+  background: var(--qhse-brand-wash);
+  color: var(--qhse-brand-ink);
+}
+
+/* --- kotak pencarian ------------------------------------------------- */
+
+.qhse-ai__kotak {
+  display: flex;
+  gap: var(--qhse-space-2);
+  align-items: stretch;
+}
+
+.qhse-ai__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 1.0625rem;
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-md);
+}
+
+.qhse-ai__input:focus-visible {
+  outline: none;
+  border-color: var(--qhse-brand);
+  box-shadow: 0 0 0 3px var(--qhse-brand-wash);
+}
+
+/* --- blok hasil ------------------------------------------------------ */
+
+.qhse-ai__bagian {
+  padding: var(--qhse-space-5);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-lg);
+  box-shadow: var(--qhse-shadow-sm);
+}
+
+.qhse-ai__judulBaris {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-ai__judul {
+  margin: 0;
+  font-size: var(--qhse-text-h2-size);
+  font-weight: 650;
+  color: var(--qhse-text-primary);
+}
+
+.qhse-ai__aksi {
+  display: flex;
+  gap: var(--qhse-space-2);
+  align-items: center;
+}
+
+.qhse-ai__pilih {
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--qhse-text-primary);
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+}
+
+.qhse-ai__sub {
+  margin: var(--qhse-space-4) 0 var(--qhse-space-2);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+}
+
+.qhse-ai__kosong,
+.qhse-ai__catatan {
+  margin: var(--qhse-space-2) 0 0;
+  color: var(--qhse-text-muted);
+  font-size: var(--qhse-text-body-sm-size);
+}
+
+.qhse-ai__bad {
+  margin: var(--qhse-space-2) 0 0;
+  color: var(--qhse-status-critical-ink);
+}
+
+/* Peringatan yang HARUS terbaca sebelum hasilnya, bukan sesudah — karena
+ * yang diperingatkan adalah cara membaca hasil di bawahnya. */
+.qhse-ai__peringatan {
+  margin: var(--qhse-space-2) 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--qhse-accent);
+  background: color-mix(in srgb, var(--qhse-accent) 8%, transparent);
+  border-radius: 0 var(--qhse-radius-sm) var(--qhse-radius-sm) 0;
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-primary);
+}
+
+/* --- daftar temuan --------------------------------------------------- */
+
+.qhse-ai__daftar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-ai__baris {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px var(--qhse-space-3);
+  padding: var(--qhse-space-3);
+  border: 1px solid var(--qhse-border-hairline, var(--qhse-border));
+  border-radius: var(--qhse-radius-md);
+  background: var(--qhse-surface-2);
+}
+
+.qhse-ai__tautan {
+  font-weight: 600;
+  color: var(--qhse-brand-ink);
+  text-decoration: none;
+}
+
+.qhse-ai__tautan:hover {
+  text-decoration: underline;
+}
+
+.qhse-ai__meta,
+.qhse-ai__sumber {
+  grid-column: 1 / -1;
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-muted);
+}
+
+.qhse-ai__sumber {
+  /* URL ditampilkan utuh, dan sengaja boleh patah di tengah: tautan sumber
+   * yang terpotong "…" tidak bisa diperiksa dengan mata. */
+  word-break: break-all;
+  font-family: var(--qhse-font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+}
+
+.qhse-ai__cuplikan {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--qhse-text-muted);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: 1.55;
+}
+
+.qhse-ai__cuplikan mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--qhse-accent) 30%, transparent);
+  color: inherit;
+  font-weight: 600;
+}
+
+/* --- perluasan kata kunci -------------------------------------------- */
+
+.qhse-ai__perluasan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: var(--qhse-space-2) 0 0;
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-muted);
+}
+
+.qhse-ai__cip {
+  padding: 3px 10px;
+  border-radius: var(--qhse-radius-pill, 999px);
+  background: var(--qhse-brand-wash);
+  color: var(--qhse-brand-ink);
+  font-weight: 600;
+}
+
+.qhse-ai__tafsir {
+  flex-basis: 100%;
+  font-style: italic;
+}
+
+/* --- usulan susunan --------------------------------------------------- */
+
+.qhse-ai__susunan {
+  margin-top: var(--qhse-space-4);
+  padding: var(--qhse-space-4);
+  border: 1px dashed var(--qhse-border);
+  border-radius: var(--qhse-radius-md);
+  background: var(--qhse-surface-2);
+}
+
+.qhse-ai__susunanJudul {
+  margin: 0;
+  font-size: var(--qhse-text-h2-size);
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+}
+
+.qhse-ai__bagianDaftar {
+  list-style: none;
+  margin: var(--qhse-space-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-3);
+}
+
+.qhse-ai__bagianDaftar li {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 2px var(--qhse-space-3);
+}
+
+.qhse-ai__bagianNomor {
+  font-weight: 700;
+  color: var(--qhse-brand-ink);
+}
+
+.qhse-ai__bagianJudul {
+  font-weight: 650;
+  color: var(--qhse-text-primary);
+}
+
+.qhse-ai__bagianIsi {
+  grid-column: 2;
+  color: var(--qhse-text-muted);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: 1.55;
+}
+
+/* --- alir langkah ----------------------------------------------------- */
+
+.qhse-ai__alir {
+  list-style: none;
+  counter-reset: langkah;
+  margin: var(--qhse-space-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-2);
+}
+
+.qhse-ai__alir li {
+  counter-increment: langkah;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 2px var(--qhse-space-3);
+  padding: 10px 14px 10px 3rem;
+  background: var(--qhse-surface-1);
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+}
+
+.qhse-ai__alir li::before {
+  content: counter(langkah);
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--qhse-brand-wash);
+  color: var(--qhse-brand-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Percabangan diberi tanda BENTUK, bukan hanya warna: bagan alir dibaca
+ * juga oleh orang yang tidak bisa membedakan warna, dan percabangan adalah
+ * satu-satunya hal di bagan itu yang wajib terlihat berbeda. */
+.qhse-ai__alirKeputusan {
+  border-left: 4px solid var(--qhse-accent);
+}
+
+.qhse-ai__pelaku {
+  font-weight: 650;
+  color: var(--qhse-text-primary);
+  white-space: nowrap;
+}
+
+.qhse-ai__tindakan {
+  color: var(--qhse-text-primary);
+}
+
+.qhse-ai__keputusan {
+  grid-column: 2;
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-accent);
+  font-weight: 600;
+}
+
+/* --- tabel kolom formulir --------------------------------------------- */
+
+.qhse-ai__tabel {
+  width: 100%;
+  margin-top: var(--qhse-space-4);
+  border-collapse: collapse;
+  font-size: var(--qhse-text-body-sm-size);
+}
+
+.qhse-ai__tabel th,
+.qhse-ai__tabel td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--qhse-border);
+}
+
+.qhse-ai__tabel th {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
+}
+
+.qhse-ai__daftarRingkas {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--qhse-text-muted);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .qhse-ai__kotak {
+    flex-direction: column;
+  }
+
+  .qhse-ai__baris {
+    grid-template-columns: 1fr;
+  }
+}

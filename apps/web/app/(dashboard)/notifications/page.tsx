@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { t } from "@qhse/i18n";
+import { useLocale } from "../../../lib/locale";
 import { Button, DataTable, StatusBadge, StatusTone } from "@qhse/ui-components";
 import { apiFetch, apiFetchWithMeta, ApiError } from "../../../lib/api-client";
 import { useHasAccessToken } from "../../../lib/use-auth-token";
@@ -39,6 +40,7 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", ti
 // mengikuti template "List/Table Page" DESIGN.md §8: filter/CTA bar ->
 // tabel -> pagination.
 export default function NotificationsInboxPage() {
+  const { locale } = useLocale();
   const hasToken = useHasAccessToken();
   const [notifications, setNotifications] = useState<NotificationDto[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -59,7 +61,7 @@ export default function NotificationsInboxPage() {
       setUnreadCount(countResult.count);
     } catch (err) {
       setNotifications(null);
-      setError(err instanceof ApiError ? err.message : t("notifications.inbox.error"));
+      setError(err instanceof ApiError ? err.message : t("notifications.inbox.error", locale));
     }
   }, [page]);
 
@@ -72,7 +74,7 @@ export default function NotificationsInboxPage() {
       await apiFetch(`/notifications/${id}/read`, { method: "POST" });
       await load();
     } catch {
-      setError(t("notifications.inbox.error"));
+      setError(t("notifications.inbox.error", locale));
     }
   }
 
@@ -82,7 +84,7 @@ export default function NotificationsInboxPage() {
       await apiFetch("/notifications/read-all", { method: "POST" });
       await load();
     } catch {
-      setError(t("notifications.inbox.error"));
+      setError(t("notifications.inbox.error", locale));
     } finally {
       setMarkingAllRead(false);
     }
@@ -93,7 +95,7 @@ export default function NotificationsInboxPage() {
   }
 
   if (hasToken === false) {
-    return <p>{t("notifications.inbox.unauthenticated")}</p>;
+    return <p>{t("notifications.inbox.unauthenticated", locale)}</p>;
   }
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -102,19 +104,19 @@ export default function NotificationsInboxPage() {
     <section>
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--qhse-space-4)", flexWrap: "wrap", gap: "var(--qhse-space-3)" }}>
         <div>
-          <h1 style={{ fontFamily: "var(--qhse-font-ui)", fontSize: "var(--qhse-text-h1-size)", margin: 0 }}>{t("notifications.inbox.title")}</h1>
+          <h1 style={{ fontFamily: "var(--qhse-font-ui)", fontSize: "var(--qhse-text-h1-size)", margin: 0 }}>{t("notifications.inbox.title", locale)}</h1>
           {unreadCount !== null && unreadCount > 0 && (
             <p style={{ fontFamily: "var(--qhse-font-ui)", color: "var(--qhse-text-secondary)", margin: "var(--qhse-space-1) 0 0" }}>
-              {t("notifications.inbox.unreadCount", "id", { count: unreadCount })}
+              {t("notifications.inbox.unreadCount", locale, { count: unreadCount })}
             </p>
           )}
         </div>
         <div style={{ display: "flex", gap: "var(--qhse-space-2)" }}>
           <Link href="/notifications/preferences">
-            <Button variant="default">{t("notifications.inbox.viewPreferences")}</Button>
+            <Button variant="default">{t("notifications.inbox.viewPreferences", locale)}</Button>
           </Link>
           <Button variant="default" onClick={handleMarkAllAsRead} disabled={markingAllRead || !unreadCount}>
-            {t("notifications.inbox.markAllRead")}
+            {t("notifications.inbox.markAllRead", locale)}
           </Button>
         </div>
       </header>
@@ -126,14 +128,14 @@ export default function NotificationsInboxPage() {
       )}
 
       {notifications === null && !error && (
-        <p style={{ fontFamily: "var(--qhse-font-ui)", color: "var(--qhse-text-secondary)" }}>{t("notifications.inbox.loading")}</p>
+        <p style={{ fontFamily: "var(--qhse-font-ui)", color: "var(--qhse-text-secondary)" }}>{t("notifications.inbox.loading", locale)}</p>
       )}
 
       {notifications !== null && (
         <>
           <DataTable
             getRowId={(row) => row.id}
-            emptyMessage={t("notifications.inbox.empty.title")}
+            emptyMessage={t("notifications.inbox.empty.title", locale)}
             rows={notifications}
             columns={[
               {
@@ -143,7 +145,7 @@ export default function NotificationsInboxPage() {
               },
               {
                 key: "title",
-                header: t("notifications.preferences.column.category"),
+                header: t("notifications.preferences.column.category", locale),
                 render: (row) => (
                   <div>
                     <strong style={{ fontWeight: row.isRead ? 400 : 700 }}>{row.title}</strong>
@@ -166,7 +168,7 @@ export default function NotificationsInboxPage() {
                 render: (row) =>
                   row.isRead ? null : (
                     <Button variant="default" onClick={() => handleMarkAsRead(row.id)}>
-                      {t("notifications.inbox.markRead")}
+                      {t("notifications.inbox.markRead", locale)}
                     </Button>
                   ),
               },
@@ -175,20 +177,20 @@ export default function NotificationsInboxPage() {
 
           {notifications.length === 0 && (
             <p style={{ fontFamily: "var(--qhse-font-ui)", color: "var(--qhse-text-secondary)", marginTop: "var(--qhse-space-2)" }}>
-              {t("notifications.inbox.empty.description")}
+              {t("notifications.inbox.empty.description", locale)}
             </p>
           )}
 
           {total > PAGE_SIZE && (
             <nav style={{ display: "flex", alignItems: "center", gap: "var(--qhse-space-3)", marginTop: "var(--qhse-space-4)" }}>
               <Button variant="default" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                {t("notifications.inbox.pagination.prev")}
+                {t("notifications.inbox.pagination.prev", locale)}
               </Button>
               <span style={{ fontFamily: "var(--qhse-font-ui)", fontSize: "var(--qhse-text-body-sm-size)", color: "var(--qhse-text-secondary)" }}>
-                {t("notifications.inbox.pagination.summary", "id", { page, totalPages })}
+                {t("notifications.inbox.pagination.summary", locale, { page, totalPages })}
               </span>
               <Button variant="default" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                {t("notifications.inbox.pagination.next")}
+                {t("notifications.inbox.pagination.next", locale)}
               </Button>
             </nav>
           )}

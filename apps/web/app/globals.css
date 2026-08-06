@@ -1,7 +1,118 @@
+/* Dasar dokumen. Semua nilai diambil dari token @qhse/ui-components supaya
+   halaman, sidebar, dan komponen tidak pernah memakai keluarga huruf atau
+   warna latar yang berbeda satu sama lain. */
 html,
 body {
   margin: 0;
   padding: 0;
-  font-family:
-    -apple-system, "Segoe UI", "SF Pro Text", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--qhse-font-ui);
+  background: var(--qhse-page-plane);
+  color: var(--qhse-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Ligatur dan kerning kontekstual dinyalakan eksplisit. Peramban memang
+     menyalakannya secara bawaan untuk teks biasa, tetapi mematikannya pada
+     elemen yang diberi `font-variant-numeric` — dan aplikasi ini memberi
+     tabular-nums pada hampir setiap angka. Tanpa baris ini, judul kartu KPI
+     dan angkanya dirender dengan kerning yang berbeda. */
+  font-kerning: normal;
+  font-variant-ligatures: common-ligatures contextual;
+  text-rendering: optimizeLegibility;
+  letter-spacing: var(--qhse-tracking-loose);
+}
+
+/* Judul memakai tracking rapat, badan teks memakai tracking longgar. Aturan
+   ini ada di satu tempat supaya tidak perlu diulang pada tiap komponen —
+   dan supaya judul yang lupa diberi kelas tetap terlihat benar. */
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: var(--qhse-tracking-tight);
+  font-family: var(--qhse-font-display);
+}
+
+/* Angka SELALU rata lebar di seluruh aplikasi. Sebelumnya diberikan
+   satu-satu per komponen, dan setiap tabel baru mengulang keputusan yang
+   sama — sampai ada yang lupa, dan kolomnya bergoyang saat data berubah. */
+td,
+dd,
+.qhse-widget__number,
+.qhse-total__value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Warna sorotan seleksi ikut warna merek — detail kecil, tapi seleksi biru
+   bawaan peramban adalah salah satu hal yang paling cepat membuat antarmuka
+   terasa tidak dirancang. */
+::selection {
+  background: var(--qhse-brand-wash);
+  color: var(--qhse-brand-ink);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--qhse-brand-bright);
+  outline-offset: 2px;
+}
+
+/* Menghormati preferensi "kurangi gerak" pada SELURUH aplikasi.
+ *
+ * Sebelumnya hanya drawer sidebar yang menghormatinya, sementara ada 60-an
+ * transisi lain di seluruh lembar gaya — kartu, tombol, baris tabel, tautan
+ * menu. Menutup satu dan membiarkan enam puluh lainnya bukan setengah
+ * pemenuhan, melainkan tidak memenuhi sama sekali: orang yang menyalakan
+ * setelan ini melakukannya karena gerak memicu pusing atau mual, dan enam
+ * puluh gerak yang tersisa tetap memicunya.
+ *
+ * Durasi 0.01ms, bukan 0: animasi berdurasi nol pada sebagian peramban tidak
+ * pernah memicu `animationend`, dan komponen yang menunggu peristiwa itu
+ * menggantung selamanya. Nilai yang sangat kecil tetap menghasilkan
+ * peristiwanya seketika.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Setiap elemen yang bisa ditekan HARUS memakai kursor penunjuk.
+ *
+ * <button> mendapat `cursor: default` dari gaya bawaan peramban — bukan
+ * pointer — dan itu satu-satunya perbedaan yang membuat tombol ikon terasa
+ * mati padahal berfungsi. Ditetapkan sekali di sini alih-alih diingat di
+ * setiap komponen baru.
+ *
+ * Yang dinonaktifkan dikecualikan: kursor penunjuk pada tombol yang tidak
+ * bisa ditekan menjanjikan sesuatu yang tidak terjadi.
+ */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+label,
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Kartu KPI dashboard dibungkus tautan; tautannya sendiri tidak punya gaya,
+   jadi tanda "bisa diklik" harus datang dari kartunya. */
+a:has(> .qhse-kpi-card) {
+  display: block;
+  text-decoration: none;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+a:has(> .qhse-kpi-card):hover .qhse-kpi-card {
+  border-color: var(--qhse-brand-light);
+  box-shadow: var(--qhse-shadow-md);
 }

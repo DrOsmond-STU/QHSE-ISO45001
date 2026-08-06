@@ -5,41 +5,55 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DataTable, StatusBadge } from "@qhse/ui-components";
 import { ApiError, apiFetch } from "../../../../../lib/api-client";
-import { formatCell, humanizeFieldName, inferType } from "../../../../../lib/format";
-import { findModule, type ModuleColumn, type ModuleDefinition } from "../../../../../lib/modules";
+import { displayValue, EMPTY_PLACEHOLDER, formatCell } from "../../../../../lib/format";
+import { findModule, type DetailField, type ModuleChild, type ModuleColumn, type ModuleDefinition } from "../../../../../lib/modules";
+import { useLocale } from "../../../../../lib/locale";
 import { statusTone } from "../../../../../lib/status-tone";
+import { RecordActions } from "./RecordActions";
+import { FileUpload } from "./FileUpload";
+import { UPLOADABLE, viewerHref } from "../../../../../lib/files";
+import { RecordForm } from "../RecordForm";
+import "../../../records.css";
 
 // Halaman detail generik — pasangan dari modules/[slug]/page.tsx.
 //
-// Sengaja menampilkan SELURUH field yang dikembalikan API, bukan hanya kolom
-// yang terdaftar di registri: endpoint read-only ini mengembalikan model
-// Prisma apa adanya, dan menyembunyikan sebagian field akan membuat halaman
-// ini berbohong tentang isi record. Kolom registri hanya menentukan URUTAN
-// (yang penting duluan) dan label yang lebih rapi; sisanya menyusul dengan
-// label hasil humanizeFieldName().
+// Yang ditampilkan adalah field yang DIPILIH registri modul, dikelompokkan
+// per bagian, bukan seluruh kolom yang dikembalikan API. Versi sebelumnya
+// menampilkan semuanya dengan alasan kejujuran, dan hasilnya justru halaman
+// berisi UUID mentah dan belasan tanda pisah yang oleh penggunanya dibaca
+// sebagai "modulnya kosong". Alasan lengkapnya ada di banner lib/modules.ts.
+//
+// Bagian yang SELURUH fieldnya kosong tidak dirender sama sekali. Bagian
+// kosong berjudul "Notulen dan kesimpulan" pada audit yang belum
+// dilaksanakan tidak memberi informasi apa pun yang tidak sudah disampaikan
+// oleh statusnya, dan hanya menambah ruang kosong yang harus dilewati mata.
 
 type Record_ = Record<string, unknown>;
 
-function describeError(error: unknown): string {
+type T = (id: string, en: string) => string;
+
+function describeError(error: unknown, t: T): string {
   if (error instanceof ApiError) {
-    if (error.status === 401) return "Sesi Anda sudah berakhir. Silakan keluar lalu masuk kembali.";
-    if (error.status === 403) return "Anda tidak punya izin untuk melihat data ini.";
-    if (error.status === 404) return "Data tidak ditemukan.";
+    if (error.status === 401)
+      return t("Sesi Anda sudah berakhir. Silakan keluar lalu masuk kembali.", "Your session has ended. Please sign out and sign in again.");
+    if (error.status === 403) return t("Anda tidak punya izin untuk melihat data ini.", "You do not have permission to view this record.");
+    if (error.status === 404) return t("Data tidak ditemukan.", "Record not found.");
     return error.message;
   }
-  return "Tidak bisa menghubungi server API.";
+  return t("Tidak bisa menghubungi server API.", "Cannot reach the API server.");
 }
 
 export default function ModuleDetailPage() {
   const params = useParams<{ slug: string; id: string }>();
-  const module = findModule(params.slug);
+  const { locale, t } = useLocale();
+  const module = findModule(params.slug, locale);
 
   if (!module) {
     return (
       <section>
-        <h1 className="qhse-page__title">Modul tidak dikenal</h1>
+        <h1 className="qhse-page__title">{t("Modul tidak dikenal", "Unknown module")}</h1>
         <p className="qhse-page__message">
-          Tidak ada modul dengan alamat <code>{params.slug}</code>.
+          {t("Tidak ada modul dengan alamat", "There is no module at")} <code>{params.slug}</code>.
         </p>
       </section>
     );
@@ -49,33 +63,41 @@ export default function ModuleDetailPage() {
 }
 
 function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) {
+  const { locale, t } = useLocale();
   const [record, setRecord] = useState<Record_ | null>(null);
-  const [children, setChildren] = useState<Record_[] | null>(null);
+  const [childRows, setChildRows] = useState<Record<string, Record_[]>>({});
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
+    let loaded: Record_;
     try {
-      setRecord(await apiFetch<Record_>(`${module.endpoint}/${id}`));
+      loaded = await apiFetch<Record_>(`${module.endpoint}/${id}`);
+      setRecord(loaded);
     } catch (err) {
       setRecord(null);
-      setError(describeError(err));
+      setError(describeError(err, t));
       return;
     }
 
-    // Daftar anak (mis. temuan audit) bersifat pelengkap — kalau gagal,
-    // detail utamanya TETAP ditampilkan; kegagalannya cukup dicatat sebagai
-    // "tidak ada data", bukan menjatuhkan seluruh halaman.
-    if (module.children) {
+    // Daftar anak bersifat pelengkap — kalau salah satu gagal, detail
+    // utamanya TETAP tampil dan yang gagal cukup ditampilkan kosong.
+    // Menjatuhkan seluruh halaman karena satu tabel pendukung bermasalah
+    // menghilangkan informasi yang sudah berhasil diambil.
+    for (const child of module.children ?? []) {
       try {
-        setChildren(await apiFetch<Record_[]>(`${module.endpoint}/${id}${module.children.pathSuffix}`));
+        const rows = await apiFetch<Record_[]>(`${module.endpoint}/${id}${child.pathSuffix}`);
+        setChildRows((previous) => ({ ...previous, [child.pathSuffix]: rows }));
       } catch {
-        setChildren([]);
+        setChildRows((previous) => ({ ...previous, [child.pathSuffix]: [] }));
       }
     }
-  }, [module, id]);
+  }, [module, id, t]);
 
   useEffect(() => {
+    setRecord(null);
+    setChildRows({});
     void load();
   }, [load]);
 
@@ -85,21 +107,14 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
         <p role="alert" className="qhse-page__error">
           {error}
         </p>
-        <Link href={`/modules/${module.slug}`}>← Kembali ke {module.title}</Link>
+        <Link href={`/modules/${module.slug}`}>← {t("Kembali ke", "Back to")} {module.title}</Link>
       </section>
     );
   }
 
-  if (!record) {
-    return <p className="qhse-page__message">Memuat…</p>;
-  }
+  if (!record) return <p className="qhse-page__message">{t("Memuat…", "Loading…")}</p>;
 
-  const labelledKeys = module.columns.map((column) => column.key);
-  const columnByKey = new Map(module.columns.map((column) => [column.key, column]));
-  const orderedKeys = [
-    ...labelledKeys.filter((key) => key in record),
-    ...Object.keys(record).filter((key) => !labelledKeys.includes(key)),
-  ];
+  const subtitle = module.subtitleField ? formatCell(record[module.subtitleField], "text", locale) : null;
 
   return (
     <section>
@@ -108,54 +123,150 @@ function ModuleDetail({ module, id }: { module: ModuleDefinition; id: string }) 
           <p className="qhse-page__eyebrow">
             {module.moduleNumber} · <Link href={`/modules/${module.slug}`}>{module.title}</Link>
           </p>
-          <h1 className="qhse-page__title">{formatCell(record[module.labelField])}</h1>
-          <p className="qhse-page__subtitle">ID: {String(record.id ?? id)}</p>
+          <h1 className="qhse-page__title">{displayValue(record, module.labelField, "text", locale)}</h1>
+          {subtitle && subtitle !== EMPTY_PLACEHOLDER && <p className="qhse-page__subtitle">{subtitle}</p>}
         </div>
       </header>
 
-      <div className="qhse-detail-card">
+      <RecordActions
+        slug={module.slug}
+        title={module.title}
+        id={id}
+        record={record}
+        onChanged={() => void load()}
+        onEdit={() => setEditing((value) => !value)}
+      />
+
+      {editing && (
+        <RecordForm
+          slug={module.slug}
+          title={module.title}
+          recordId={id}
+          initialRow={record}
+          onSaved={() => {
+            setEditing(false);
+            void load();
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      )}
+
+      {module.detailSections.map((section) => (
+        <DetailCard key={section.title} title={section.title} fields={section.fields} record={record} />
+      ))}
+
+      {UPLOADABLE[module.slug] && <FileUpload slug={module.slug} id={id} onUploaded={() => void load()} />}
+
+      {(module.children ?? []).map((child) => (
+        <ChildTable
+          key={child.pathSuffix}
+          child={child}
+          rows={childRows[child.pathSuffix]}
+          // Tabel anak yang berisi BERKAS mendapat kolom tambahan "Lihat"
+          // yang membuka penampil ber-watermark. Hanya untuk anak yang
+          // memang berkas — daftar temuan audit tidak punya berkas untuk
+          // dilihat, dan kolom kosong di sana hanya menambah bingung.
+          viewerKind={UPLOADABLE[module.slug]?.childPath === child.pathSuffix ? UPLOADABLE[module.slug].kind : null}
+          backTo={`/modules/${module.slug}/${id}`}
+        />
+      ))}
+    </section>
+  );
+}
+
+function DetailCard({ title, fields, record }: { title: string; fields: DetailField[]; record: Record_ }) {
+  const { locale } = useLocale();
+  const rendered = fields.map((field) => ({ field, text: displayValue(record, field.key, field.type, locale) }));
+  if (rendered.every((entry) => entry.text === EMPTY_PLACEHOLDER)) return null;
+
+  const narrow = rendered.filter((entry) => !entry.field.wide);
+  const wide = rendered.filter((entry) => entry.field.wide && entry.text !== EMPTY_PLACEHOLDER);
+
+  return (
+    <div className="qhse-detail-card" style={{ marginBottom: "var(--qhse-space-5)" }}>
+      <h2 className="qhse-detail-card__title">{title}</h2>
+
+      {narrow.length > 0 && (
         <dl className="qhse-detail-grid">
-          {orderedKeys.map((key) => {
-            const column = columnByKey.get(key);
-            const type = column?.type ?? inferType(key, record[key]);
-            const text = formatCell(record[key], type);
-            const tone = type === "status" ? statusTone(record[key]) : null;
+          {narrow.map(({ field, text }) => {
+            const tone = field.type === "status" ? statusTone(record[field.key]) : null;
             return (
-              <div key={key} style={{ display: "contents" }}>
-                <dt>{column?.header ?? humanizeFieldName(key)}</dt>
+              <div key={field.key} style={{ display: "contents" }}>
+                <dt>{field.label}</dt>
                 <dd>{tone ? <StatusBadge tone={tone} label={text} /> : text}</dd>
               </div>
             );
           })}
         </dl>
-      </div>
-
-      {module.children && children !== null && (
-        <section style={{ marginTop: "var(--qhse-space-6)" }}>
-          <h2 className="qhse-page__title">{module.children.title}</h2>
-          <p className="qhse-page__subtitle" style={{ marginBottom: "var(--qhse-space-4)" }}>
-            {children.length} data
-          </p>
-          <DataTable
-            rows={children}
-            getRowId={(row) => String(row.id)}
-            emptyMessage="Belum ada data terkait."
-            columns={module.children.columns.map((column: ModuleColumn) => ({
-              key: column.key,
-              header: column.header,
-              numeric: column.type === "number",
-              render: (row: Record_) => {
-                const text = formatCell(row[column.key], column.type);
-                if (column.type === "status") {
-                  const tone = statusTone(row[column.key]);
-                  return tone ? <StatusBadge tone={tone} label={text} /> : <span>{text}</span>;
-                }
-                return <span>{text}</span>;
-              },
-            }))}
-          />
-        </section>
       )}
+
+      {wide.map(({ field, text }) => (
+        <div key={field.key} className="qhse-detail-prose">
+          {narrow.length > 0 || wide.length > 1 ? <h3>{field.label}</h3> : null}
+          {/* Teks panjang disemai dengan pemisah baris ganda (lihat isiDokumen()
+              di penyemai), jadi dipecah jadi paragraf agar terbaca sebagai
+              dokumen, bukan sebagai satu blok padat. */}
+          {String(text)
+            .split(/\n\n+/)
+            .map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChildTable({
+  child,
+  rows,
+  viewerKind,
+  backTo,
+}: {
+  child: ModuleChild;
+  rows: Record_[] | undefined;
+  viewerKind?: "version" | "attachment" | null;
+  backTo?: string;
+}) {
+  const { locale, t } = useLocale();
+  const columns = child.columns.map((column: ModuleColumn) => column);
+  return (
+    <section style={{ marginTop: "var(--qhse-space-6)" }}>
+      <h2 className="qhse-page__section-title">{child.title}</h2>
+      <p className="qhse-page__subtitle" style={{ marginBottom: "var(--qhse-space-4)" }}>
+        {rows === undefined ? t("Memuat…", "Loading…") : t(`${rows.length} data`, `${rows.length} records`)}
+      </p>
+      <DataTable
+        rows={rows ?? []}
+        getRowId={(row) => String(row.id)}
+        emptyMessage={rows === undefined ? t("Memuat…", "Loading…") : child.emptyMessage}
+        columns={[
+          ...(viewerKind
+            ? [
+                {
+                  key: "__lihat",
+                  header: t("Berkas", "File"),
+                  render: (row: Record_) => (
+                    <Link href={viewerHref(viewerKind, String(row.id), backTo ?? "/dashboard")}>{t("Lihat", "View")}</Link>
+                  ),
+                },
+              ]
+            : []),
+          ...columns.map((column: ModuleColumn) => ({
+          key: column.key,
+          header: column.header,
+          numeric: column.type === "number" || column.type === "currency",
+          render: (row: Record_) => {
+            const text = displayValue(row, column.key, column.type, locale);
+            if (column.type === "status") {
+              const tone = statusTone(row[column.key]);
+              return tone ? <StatusBadge tone={tone} label={text} /> : <span>{text}</span>;
+            }
+            return <span>{text}</span>;
+          },
+          })),
+        ]}
+      />
     </section>
   );
 }

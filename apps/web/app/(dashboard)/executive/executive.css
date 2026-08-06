@@ -1,0 +1,237 @@
+/* Dashboard Eksekutif — kisi kartu berkotak.
+ *
+ * KELASNYA BERDIRI SENDIRI, TIDAK MENUMPANG dashboards.css.
+ *
+ * Sebelumnya halaman ini memakai nama kelas `qhse-dash__card*` yang dikira
+ * sudah ada di dashboards.css. Nama itu tidak pernah ada di sana — halaman
+ * analitik memakai `qhse-widget`. Akibatnya kartunya tidak punya latar,
+ * bingkai, maupun jarak, dan seluruh halaman terbaca sebagai satu bidang teks
+ * yang menyambung, bukan kotak-kotak yang terpisah.
+ *
+ * Menyatukan keduanya juga bukan jalan keluarnya: setiap perubahan tampilan
+ * dashboard eksekutif akan ikut mengubah halaman analitik, dan keduanya punya
+ * pembaca yang berbeda.
+ *
+ * Semua warna, jarak, dan ukuran huruf memakai token dari @qhse/ui-components
+ * (tokens.css). Nama token yang tidak ada di sana membuat `var()` gagal
+ * diam-diam: propertinya batal, tidak ada peringatan, dan hasilnya persis
+ * seperti kalau aturannya tidak pernah ditulis.
+ */
+
+.qhse-exec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qhse-space-5);
+}
+
+/* --- kepala halaman --------------------------------------------------- */
+
+.qhse-exec__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--qhse-space-3);
+  padding-bottom: var(--qhse-space-3);
+  border-bottom: 2px solid var(--qhse-brand);
+}
+
+.qhse-exec__title {
+  margin: 0;
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-h1-size);
+  line-height: var(--qhse-text-h1-lh);
+  font-weight: 800;
+  letter-spacing: var(--qhse-tracking-tight);
+  color: var(--qhse-text-primary);
+}
+
+.qhse-exec__periode {
+  margin: var(--qhse-space-1) 0 0;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.qhse-exec__atur {
+  padding: var(--qhse-space-2) var(--qhse-space-4);
+  border-radius: var(--qhse-radius-sm);
+  border: 1px solid var(--qhse-border);
+  background: var(--qhse-surface-1);
+  color: var(--qhse-text-primary);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.qhse-exec__atur:hover {
+  border-color: var(--qhse-brand);
+  color: var(--qhse-brand-ink);
+  background: var(--qhse-brand-wash);
+}
+
+/* --- kisi ------------------------------------------------------------- */
+
+/* Kolom minimum 240px, bukan 300px seperti di halaman analitik: sebagian
+   besar kartu di sini berisi satu angka. Kolom yang terlalu lebar membuat
+   selusin angka besar berjajar dengan ruang kosong di kanannya
+   masing-masing. */
+.qhse-exec__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--qhse-space-4);
+  align-items: stretch;
+}
+
+.qhse-exec__card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--qhse-surface-1);
+  /* Cincin kartu, bukan --qhse-border: tepi luar kartu yang mengambang sudah
+     ditandai bayangannya. Garis penuh di atas bayangan lebar membuat kartunya
+     terlihat digambar dua kali. Pita kepala di bawah TETAP memakai
+     --qhse-border — itu sekat di DALAM kartu, dan sekat memang harus terlihat. */
+  border: 1px solid var(--qhse-card-ring);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
+  /* Pita kepala berlatar harus ikut lengkung sudut kartunya; tanpa ini
+     sudutnya tampak persegi di atas dan bulat di bawah. */
+  overflow: hidden;
+  /* Tinggi minimum menyamakan baris kisi supaya kartu angka (pendek) dan
+     kartu grafik (tinggi) tidak meninggalkan lubang di antaranya. */
+  min-height: 208px;
+  transition:
+    box-shadow 140ms ease,
+    border-color 140ms ease;
+}
+
+.qhse-exec__card:hover {
+  border-color: var(--qhse-brand-light);
+  box-shadow: var(--qhse-shadow-md);
+}
+
+/* Widget selebar dua kolom. `span 2` pada kisi yang sedang menampilkan satu
+   kolom akan membuat kartunya melebihi kisinya — karena itu hanya berlaku di
+   lebar layar yang memang punya dua kolom atau lebih. */
+@media (min-width: 720px) {
+  .qhse-exec__card--w2 {
+    grid-column: span 2;
+  }
+}
+
+/* Pita kepala berlatar: inilah yang membuat kartunya terbaca sebagai kotak,
+   bukan sebagai tumpukan teks di dalam bingkai. */
+.qhse-exec__cardHead {
+  padding: var(--qhse-space-3) var(--qhse-space-4);
+  background: var(--qhse-surface-2);
+  border-bottom: 1px solid var(--qhse-border);
+}
+
+.qhse-exec__cardTitle {
+  margin: 0;
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--qhse-text-primary);
+}
+
+/* Keterangan dibatasi dua baris. Panjang keterangan metrik sangat
+   berbeda-beda, dan tanpa batas ini tinggi pita kepala ikut berbeda-beda —
+   judul antar kartu jadi tidak sebaris. */
+.qhse-exec__cardCaption {
+  margin: 2px 0 0;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: 1.45;
+  color: var(--qhse-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.qhse-exec__badan {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: var(--qhse-space-4);
+}
+
+/* --- isi kartu -------------------------------------------------------- */
+
+.qhse-exec__angka {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--qhse-space-1);
+}
+
+.qhse-exec__nilai {
+  font-family: var(--qhse-font-display);
+  font-size: clamp(2rem, 4.5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: var(--qhse-tracking-tight);
+  /* BUKAN --qhse-brand-navy. Token itu bernilai sama di mode terang dan
+     gelap (#0b2740), jadi angka utama kartu ini nyaris tak terlihat di atas
+     bidang gelap yang warnanya hampir sama. Angka inilah isi kartunya —
+     satu-satunya warna yang aman untuknya adalah warna teks yang ikut
+     berganti bersama temanya. */
+  color: var(--qhse-text-primary);
+  /* Angka rata lebar: tanpa ini, kartu yang nilainya berubah tiap muat
+     bergeser-geser sendiri di layar rapat. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nilai yang belum bisa dihitung TIDAK diberi warna merek — supaya tidak
+   terbaca sebagai capaian. Ia sedang mengatakan "datanya belum ada". */
+.qhse-exec__nilai--kosong {
+  color: var(--qhse-text-muted);
+  font-weight: 600;
+}
+
+.qhse-exec__satuan {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-text-muted);
+}
+
+/* --- keadaan ---------------------------------------------------------- */
+
+.qhse-exec__kosong {
+  margin: 0;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  color: var(--qhse-text-muted);
+  text-align: center;
+}
+
+.qhse-exec__bad {
+  margin: 0;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-status-critical-ink);
+  text-align: center;
+}
+
+/* Catatan dipisahkan dari angkanya dengan garis. Tanpa garis itu, kalimat
+   "tidak mengikuti penyaring periode" terbaca sebagai keterangan satuan dan
+   justru diabaikan — padahal ia sedang membantah asumsi pembacanya. */
+.qhse-exec__catatan {
+  margin: var(--qhse-space-3) 0 0;
+  padding-top: var(--qhse-space-2);
+  border-top: 1px solid var(--qhse-gridline);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  line-height: var(--qhse-text-micro-lh);
+  color: var(--qhse-text-muted);
+}

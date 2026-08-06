@@ -1,32 +1,47 @@
+/* WARNA TEKS lencana memakai token *-ink, bukan warna statusnya sendiri.
+   Warna status dipakai sebagai BIDANG (garis tepi di sini, dan titik/batang
+   pada grafik); sebagai teks di atas wash-nya sendiri tiga dari empat gagal
+   ambang 4.5:1 — kuning bahkan hanya 2,05:1. Diukur, bukan dikira.
+   Lihat blok "TINTA LENCANA" di tokens.css. */
+/* Lencana status. Latarnya memakai token *-wash yang sudah disetel terpisah
+   untuk mode terang dan gelap, BUKAN color-mix dengan transparan: warna yang
+   dicampur transparan mengambil warna bidang di belakangnya, sehingga lencana
+   yang sama tampak berbeda tergantung kartu mana yang menampungnya. */
 .qhse-status-badge {
   display: inline-flex;
   align-items: center;
   gap: var(--qhse-space-1);
-  padding: var(--qhse-space-1) var(--qhse-space-2);
+  padding: 4px 10px;
   border-radius: var(--qhse-radius-full);
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-micro-size);
   line-height: var(--qhse-text-micro-lh);
-  font-weight: 650;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
 .qhse-status-badge--good {
-  color: var(--qhse-status-good);
-  background: color-mix(in srgb, var(--qhse-status-good) 14%, transparent);
+  color: var(--qhse-status-good-ink);
+  background: var(--qhse-status-good-wash);
+  border-color: color-mix(in srgb, var(--qhse-status-good) 22%, transparent);
 }
 
 .qhse-status-badge--warning {
-  color: var(--qhse-status-warning);
-  background: color-mix(in srgb, var(--qhse-status-warning) 16%, transparent);
+  color: var(--qhse-status-warning-ink);
+  background: var(--qhse-status-warning-wash);
+  border-color: color-mix(in srgb, var(--qhse-status-warning) 24%, transparent);
 }
 
 .qhse-status-badge--serious {
-  color: var(--qhse-status-serious);
-  background: color-mix(in srgb, var(--qhse-status-serious) 16%, transparent);
+  color: var(--qhse-status-serious-ink);
+  background: var(--qhse-status-serious-wash);
+  border-color: color-mix(in srgb, var(--qhse-status-serious) 24%, transparent);
 }
 
 .qhse-status-badge--critical {
-  color: var(--qhse-status-critical);
-  background: color-mix(in srgb, var(--qhse-status-critical) 14%, transparent);
+  color: var(--qhse-status-critical-ink);
+  background: var(--qhse-status-critical-wash);
+  border-color: color-mix(in srgb, var(--qhse-status-critical) 22%, transparent);
 }

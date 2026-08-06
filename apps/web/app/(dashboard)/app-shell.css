@@ -31,20 +31,83 @@
   display: flex;
   align-items: center;
   gap: var(--qhse-space-3);
-  padding: var(--qhse-space-2) var(--qhse-space-4);
-  min-height: var(--qhse-tap-target-min);
+  padding: var(--qhse-space-3) var(--qhse-space-5);
+  min-height: 64px;
+  /* Bilah atas TIDAK berbidang penuh dan tidak bergaris bawah: ia setengah
+     tembus dan mengaburkan apa pun yang lewat di belakangnya. Ini bagian dari
+     gaya Soft UI (`backdrop-filter: blur(30px)` di berkas aslinya), dan
+     tujuannya bukan hiasan — bilah yang berbidang penuh memotong halaman
+     menjadi dua kotak bertumpuk, sementara bilah yang mengaburkan membuat
+     halaman terbaca sebagai satu bidang yang menerus ke bawahnya.
+
+     Deklarasi bidang ditulis DUA KALI dengan sengaja: baris pertama bidang
+     penuh sebagai cadangan, baris kedua color-mix yang menggantikannya di
+     peramban yang mengerti. Peramban yang tidak mengerti color-mix akan
+     mengabaikan baris kedua dan tetap mendapat bilah yang terbaca — bukan
+     bilah tembus pandang tanpa blur, yang isinya akan bertabrakan dengan
+     teks halaman di belakangnya. */
   background: var(--qhse-surface-1);
-  border-bottom: 1px solid var(--qhse-border);
+  background: color-mix(in srgb, var(--qhse-surface-1) 82%, transparent);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  backdrop-filter: blur(30px) saturate(140%);
+}
+
+/* Garis merek setebal 3px di sisi paling atas jendela. Satu-satunya tempat
+   gradien merek muncul secara permanen — cukup untuk menandai produk tanpa
+   ikut bersaing dengan isi halaman. */
+.qhse-shell__topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--qhse-brand-gradient);
 }
 
 .qhse-shell__brand {
-  font-family: var(--qhse-font-ui);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  font-family: var(--qhse-font-display);
   font-size: var(--qhse-text-h2-size);
-  line-height: var(--qhse-text-h2-lh);
-  font-weight: 700;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: var(--qhse-tracking-tight);
   color: var(--qhse-text-primary);
   text-decoration: none;
   white-space: nowrap;
+}
+
+/* Kotak inisial sebagai pengganti logo. Ada karena ruang kiri atas yang
+   hanya berisi teks terbaca sebagai halaman yang belum selesai dikerjakan,
+   sementara memakai logo sungguhan berarti menaruh berkas gambar yang tidak
+   kita punya izinnya di dalam repositori. */
+.qhse-shell__brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--qhse-brand-gradient-ink);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: var(--qhse-shadow-brand);
+}
+
+.qhse-shell__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.qhse-shell__brand-sub {
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 600;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: var(--qhse-text-muted);
 }
 
 .qhse-shell__spacer {
@@ -73,6 +136,89 @@
   color: var(--qhse-text-muted);
 }
 
+/* --- Tombol ikon (tema) ---
+ *
+ * Persegi, bukan tombol berlabel. Ukurannya 38px dan bukan 44px seperti
+ * --qhse-tap-target-min: ini tombol pada bilah atas desktop yang tingginya
+ * 64px, dan tombol setinggi 44px di sana membuat bilahnya terasa penuh.
+ * Pada layar sentuh, aturan @media di bawah mengembalikannya ke 44px. */
+.qhse-shell__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+  background: var(--qhse-surface-1);
+  color: var(--qhse-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.qhse-shell__icon-button:hover {
+  background: var(--qhse-brand-wash);
+  border-color: var(--qhse-brand-light);
+  color: var(--qhse-brand-ink);
+}
+
+/* --- Pemilih bahasa --- */
+
+.qhse-shell__lang {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border: 1px solid var(--qhse-border);
+  border-radius: var(--qhse-radius-sm);
+  overflow: hidden;
+  background: var(--qhse-surface-1);
+}
+
+.qhse-shell__lang-option {
+  min-width: 36px;
+  height: 38px;
+  padding: 0 var(--qhse-space-2);
+  border: none;
+  background: transparent;
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  color: var(--qhse-text-muted);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.qhse-shell__lang-option:hover {
+  color: var(--qhse-text-primary);
+}
+
+/* Yang aktif diberi BIDANG berwarna, bukan sekadar huruf tebal. Dua kode dua
+   huruf yang bersebelahan terlalu mirip untuk dibedakan hanya oleh ketebalan
+   huruf, dan pemilih yang tidak jelas mana yang aktif justru menimbulkan
+   pertanyaan yang seharusnya ia jawab. */
+.qhse-shell__lang-option--on {
+  background: var(--qhse-brand);
+  color: var(--qhse-text-on-accent);
+}
+
+@media (pointer: coarse) {
+  .qhse-shell__icon-button,
+  .qhse-shell__lang-option {
+    height: var(--qhse-tap-target-min);
+  }
+
+  .qhse-shell__icon-button {
+    width: var(--qhse-tap-target-min);
+  }
+}
+
 /* --- Body: sidebar + konten --- */
 
 .qhse-shell__body {
@@ -82,18 +228,37 @@
   min-height: 0;
 }
 
+/* Sidebar berupa KARTU YANG MENGAMBANG, bukan kolom yang menempel di tepi
+   jendela dan dipisahkan garis. Ini unsur paling khas Soft UI dan sekaligus
+   yang paling terasa: kolom bergaris membuat menu terbaca sebagai bagian dari
+   bingkai jendela, sedangkan kartu mengambang membuatnya terbaca sebagai satu
+   benda di atas halaman — setara dengan kartu isi di sebelahnya.
+
+   `align-self` sengaja TIDAK diisi (mewarisi flex-start dari .qhse-shell__body)
+   supaya tinggi kartunya mengikuti isinya. Nilai `stretch` sebelumnya
+   memanjangkannya sampai dasar halaman, dan kartu yang ujung bawahnya tidak
+   pernah terlihat tidak terbaca sebagai kartu. */
 .qhse-shell__sidebar {
-  flex: 0 0 240px;
-  width: 240px;
-  align-self: stretch;
+  flex: 0 0 268px;
+  width: 268px;
+  margin: var(--qhse-space-5) 0 var(--qhse-space-5) var(--qhse-space-5);
   padding: var(--qhse-space-4) var(--qhse-space-3);
   background: var(--qhse-surface-1);
-  border-right: 1px solid var(--qhse-border);
+  border: 1px solid var(--qhse-card-ring);
+  border-radius: var(--qhse-radius-md);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
   box-sizing: border-box;
   position: sticky;
-  top: calc(var(--qhse-tap-target-min) + var(--qhse-space-1));
-  max-height: calc(100vh - var(--qhse-tap-target-min));
+  /* 64px tinggi bilah atas + jarak yang sama dengan margin atasnya, supaya
+     saat digulir kartunya berhenti pada jarak yang sama dari bilah atas
+     seperti saat halaman berada di puncak. */
+  top: calc(64px + var(--qhse-space-5));
+  max-height: calc(100vh - 64px - var(--qhse-space-5) * 2);
   overflow-y: auto;
+  /* Bilah gulir tipis: sidebar ini memuat 17 menu dan hampir selalu bisa
+     digulir, jadi bilah gulir bawaan yang tebal akan selalu terlihat. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--qhse-border) transparent;
 }
 
 .qhse-shell__nav-group + .qhse-shell__nav-group {
@@ -104,11 +269,12 @@
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-micro-size);
   line-height: var(--qhse-text-micro-lh);
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
   text-transform: uppercase;
   color: var(--qhse-text-muted);
   margin: 0 0 var(--qhse-space-2);
-  padding: 0 var(--qhse-space-2);
+  padding: 0 var(--qhse-space-3);
 }
 
 .qhse-shell__nav-list {
@@ -119,33 +285,54 @@
 
 .qhse-shell__nav-link {
   display: block;
-  padding: var(--qhse-space-2);
-  border-radius: var(--qhse-radius-sm);
+  padding: 9px var(--qhse-space-3);
+  margin-bottom: 2px;
+  border-radius: 10px;
   font-family: var(--qhse-font-ui);
-  font-size: var(--qhse-text-body-size);
-  line-height: var(--qhse-text-body-lh);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: 1.4;
+  font-weight: 500;
   color: var(--qhse-text-secondary);
   text-decoration: none;
+  transition:
+    background-color 130ms ease,
+    color 130ms ease;
 }
 
 .qhse-shell__nav-link:hover,
 .qhse-shell__nav-link:focus-visible {
-  background: var(--qhse-page-plane);
+  background: var(--qhse-surface-2);
   color: var(--qhse-text-primary);
 }
 
+/* Menu aktif ditandai bidang berwarna merek, bukan garis tipis di sisi kiri.
+   Bidangnya terbaca dari sudut mata; garis 3px tidak. */
+/* Menu aktif TETAP memakai bidang berwarna merek, bukan sekadar kartu putih
+   berbayang seperti di Soft UI. Di sana sidebar-nya putih dan butir aktifnya
+   juga putih — yang membedakan hanya bayangan, dan bayangan saja tidak cukup
+   bagi mata yang menyapu 19 butir menu untuk menemukan mana yang sedang
+   dibuka. Bayangannya diambil, warnanya dipertahankan: butirnya terangkat
+   DAN berwarna. */
 .qhse-shell__nav-link[aria-current="page"] {
-  background: var(--qhse-page-plane);
-  color: var(--qhse-text-primary);
+  background: var(--qhse-brand-wash);
+  color: var(--qhse-brand-ink);
   font-weight: 700;
-  box-shadow: inset 3px 0 0 0 var(--qhse-trend-improving);
+  box-shadow: var(--qhse-shadow-xs);
 }
 
 .qhse-shell__main {
   flex: 1;
   min-width: 0;
-  padding: var(--qhse-space-5);
+  /* Jarak atas disamakan dengan margin atas kartu sidebar (space-5), bukan
+     space-6 seperti sebelumnya: keduanya kini benda yang sejajar di atas
+     halaman yang sama, dan tepi atas yang berselisih 8px terlihat seperti
+     salah satunya melorot. */
+  padding: var(--qhse-space-5) var(--qhse-space-6) var(--qhse-space-8);
   box-sizing: border-box;
+  /* Baris teks yang melebar tanpa batas pada layar lebar sulit dibaca, tapi
+     tabel butuh lebar. Batasnya longgar: membatasi kolom bacaan, bukan
+     memaksa tata letak jadi sempit. */
+  max-width: 1400px;
 }
 
 /* --- Drawer mobile --- */
@@ -171,12 +358,21 @@
      kalau `transform` gagal diterapkan karena alasan apa pun, menu tidak
      berakhir menutupi konten. Transisi `visibility` ditunda selama durasi
      geseran supaya menu tidak lenyap seketika saat sedang menutup. */
+  /* Di layar sempit sidebar berhenti menjadi kartu mengambang dan kembali
+     menjadi laci yang menempel penuh ke tepi kiri: margin, sudut, dan cincin
+     kartunya dibatalkan. Laci setinggi layar yang masih punya margin akan
+     memperlihatkan sepotong halaman di atas dan di bawahnya — celah yang
+     terbaca sebagai kesalahan render, bukan sebagai rancangan. */
   .qhse-shell__sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
     z-index: 30;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: var(--qhse-shadow-lg);
     max-height: none;
     transform: translateX(-100%);
     visibility: hidden;
@@ -198,7 +394,8 @@
     position: fixed;
     inset: 0;
     z-index: 25;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(11, 39, 64, 0.45);
+    backdrop-filter: blur(2px);
     border: 0;
     padding: 0;
   }
@@ -233,16 +430,28 @@
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-micro-size);
   line-height: var(--qhse-text-micro-lh);
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
   text-transform: uppercase;
-  color: var(--qhse-text-muted);
+  color: var(--qhse-brand-ink);
   margin: 0;
 }
 
+.qhse-page__eyebrow a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.qhse-page__eyebrow a:hover {
+  text-decoration: underline;
+}
+
 .qhse-page__title {
-  font-family: var(--qhse-font-ui);
+  font-family: var(--qhse-font-display);
   font-size: var(--qhse-text-h1-size);
   line-height: var(--qhse-text-h1-lh);
+  font-weight: 800;
+  letter-spacing: var(--qhse-tracking-tight);
   color: var(--qhse-text-primary);
   margin: var(--qhse-space-1) 0 0;
 }
@@ -267,10 +476,12 @@
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-sm-size);
   line-height: var(--qhse-text-body-sm-lh);
-  color: var(--qhse-status-critical);
-  border: 1px solid var(--qhse-status-critical);
+  font-weight: 600;
+  color: var(--qhse-status-critical-ink);
+  background: var(--qhse-status-critical-wash);
+  border: 1px solid color-mix(in srgb, var(--qhse-status-critical) 24%, transparent);
   border-radius: var(--qhse-radius-sm);
-  padding: var(--qhse-space-3);
+  padding: var(--qhse-space-3) var(--qhse-space-4);
   margin: 0 0 var(--qhse-space-4);
 }
 
@@ -278,15 +489,16 @@
   display: flex;
   align-items: center;
   gap: var(--qhse-space-3);
-  margin-top: var(--qhse-space-4);
+  margin-top: var(--qhse-space-5);
   font-family: var(--qhse-font-ui);
   font-size: var(--qhse-text-body-sm-size);
+  font-weight: 500;
   color: var(--qhse-text-secondary);
 }
 
 .qhse-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
   gap: var(--qhse-space-4);
 }
 
@@ -303,29 +515,116 @@
 
 .qhse-detail-grid {
   display: grid;
-  grid-template-columns: minmax(180px, 240px) 1fr;
-  gap: var(--qhse-space-2) var(--qhse-space-4);
+  grid-template-columns: minmax(180px, 260px) 1fr;
+  /* Jarak antar kolom nol, dan jaraknya dibuat lewat padding pada dt.
+     Dengan column-gap, garis pemisah bawah dt dan dd terputus di celah
+     antara keduanya — terlihat seperti garis rusak, bukan satu baris. */
+  gap: 0;
   margin: 0;
   font-family: var(--qhse-font-ui);
-  font-size: var(--qhse-text-body-size);
-  line-height: var(--qhse-text-body-lh);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: 1.5;
+}
+
+.qhse-detail-grid dt,
+.qhse-detail-grid dd {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--qhse-gridline);
+}
+
+.qhse-detail-grid > div:last-child dt,
+.qhse-detail-grid > div:last-child dd {
+  border-bottom: 0;
 }
 
 .qhse-detail-grid dt {
-  color: var(--qhse-text-secondary);
+  color: var(--qhse-text-muted);
+  font-weight: 500;
+  padding-right: var(--qhse-space-5);
 }
 
 .qhse-detail-grid dd {
   margin: 0;
   color: var(--qhse-text-primary);
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .qhse-detail-card {
   background: var(--qhse-surface-1);
-  border: 1px solid var(--qhse-border);
+  border: 1px solid var(--qhse-card-ring);
   border-radius: var(--qhse-radius-md);
-  padding: var(--qhse-space-5);
+  padding: var(--qhse-space-5) var(--qhse-space-6);
+  box-shadow: var(--qhse-shadow-sm), var(--qhse-shadow-inset);
+}
+
+/* Judul bagian di dalam kartu detail. Halaman detail dipecah menjadi
+   beberapa kartu bertema (identitas, isi, tanggal, pencatatan) alih-alih
+   satu daftar panjang, karena satu daftar berisi dua puluh baris tanpa
+   pengelompokan memaksa pembaca memindai seluruhnya untuk menemukan satu
+   hal. */
+.qhse-detail-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--qhse-space-3);
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: var(--qhse-brand-ink);
+  margin: 0 0 var(--qhse-space-3);
+}
+
+/* Garis tipis yang memanjang setelah judul bagian — menutup sisa lebar
+   kartu sehingga tiap bagian terbaca sebagai satu blok, tanpa perlu
+   menambah kotak di dalam kotak. */
+.qhse-detail-card__title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--qhse-gridline);
+}
+
+.qhse-page__section-title {
+  font-family: var(--qhse-font-display);
+  font-size: var(--qhse-text-h2-size);
+  line-height: var(--qhse-text-h2-lh);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-tight);
+  color: var(--qhse-text-primary);
+  margin: 0;
+}
+
+/* Teks panjang (isi dokumen, kronologi insiden, notulen audit) dirender
+   sebagai paragraf selebar kartu, bukan dijejalkan ke kolom nilai selebar
+   sepertiga layar. Lebar barisnya dibatasi supaya tetap nyaman dibaca pada
+   layar lebar. */
+.qhse-detail-prose {
+  font-family: var(--qhse-font-ui);
+  font-size: var(--qhse-text-body-size);
+  line-height: var(--qhse-text-body-lh);
+  color: var(--qhse-text-primary);
+  max-width: 78ch;
+}
+
+.qhse-detail-prose:not(:first-child) {
+  margin-top: var(--qhse-space-4);
+}
+
+.qhse-detail-prose h3 {
+  font-size: var(--qhse-text-body-sm-size);
+  font-weight: 600;
+  color: var(--qhse-text-secondary);
+  margin: 0 0 var(--qhse-space-2);
+}
+
+.qhse-detail-prose p {
+  margin: 0 0 var(--qhse-space-3);
+}
+
+.qhse-detail-prose p:last-child {
+  margin-bottom: 0;
 }
 
 @media (max-width: 640px) {

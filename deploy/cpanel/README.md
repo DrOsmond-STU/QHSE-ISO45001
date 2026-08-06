@@ -143,6 +143,44 @@ dikerjakan:
 | `qhse-probe.request` | catat fakta lingkungan, tanpa efek samping |
 | `qhse-install.request` | pasang penuh: unduh, salin artefak, build web |
 | `qhse-web.request` | bangun ULANG web saja, tanpa unduh/install |
-| `qhse-seed.request` | semai data demo (sekali saja) |
+| `qhse-seed.request` | semai data demo lewat service NestJS (butuh apps/api hidup) |
+| `qhse-demo-seed.request` | semai data dummy lewat `apps/demo-api` — jalur yang muat di akun ini |
 | `qhse-restart.request` | matikan kedua proses; cron menyalakan lagi |
 | `qhse-rss.request` | diagnostik memori (`qhse-apitest.sh`) |
+| `qhse-live.request` | periksa situs lewat URL publiknya (`qhse-live-check.sh`) |
+
+Dua berkas lain di `~` BUKAN penanda sekali pakai — keduanya bertahan dan
+mengubah perilaku runner selama masih ada:
+
+| Berkas | Guna |
+|---|---|
+| `qhse-branch` | cabang git yang diunduh (bawaan `master` bila tidak ada) |
+| `qhse-demo-mode` | jika ada, `/api` dilayani `apps/demo-api`, bukan NestJS |
+
+## Kenapa ada mode demo
+
+`apps/api` **tidak muat** di akun ini, dan itu terukur (`~/qhse-apitest.log`):
+RSS puncaknya 814 MB saat boot melawan batas keras `lve_pmem` 1024 MB, lalu
+SIGKILL setelah 7-8 detik. Sekitar 620 MB dari angka itu adalah memori native
+engine Prisma yang memuat skema 162 model — bukan heap JavaScript, jadi
+menurunkan `--max-old-space-size` tidak menolong (dicoba: 420 MB dan 192 MB,
+keduanya mati).
+
+`apps/demo-api` memakai `pg` langsung tanpa Prisma dan tanpa NestJS, dan
+terukur 65 MB RSS saat melayani seluruh rute. Ia hanya melayani `GET` baca-saja
+plus alur masuk — cukup untuk presentasi, jauh dari cukup untuk produksi.
+Batasannya ditulis lengkap di `apps/demo-api/README.md`; baca sebelum
+menganggapnya pengganti.
+
+Urutan menyalakan mode demo:
+
+```bash
+touch ~/qhse-demo-mode          # pilih demo-api sebagai pelayan /api
+touch ~/qhse-demo-seed.request  # isi basis data dengan data dummy
+touch ~/qhse-web.request        # bangun ulang web agar Tenant ID ikut terbakar
+touch ~/qhse-restart.request    # tukar proses yang sedang berjalan
+```
+
+Menghapus `~/qhse-demo-mode` lalu `touch ~/qhse-restart.request` mengembalikan
+NestJS — data dummy-nya tetap di basis data dan tetap terbaca oleh apps/api,
+karena keduanya menulis ke tabel yang sama.
