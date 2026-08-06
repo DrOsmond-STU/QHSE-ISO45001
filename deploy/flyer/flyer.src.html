@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>QHSE Platform — flyer satu halaman</title>
+<!--
+  Flyer satu halaman A4 potret.
+
+  DUA HAL YANG DISENGAJA, dan keduanya penting kalau berkas ini disunting lagi:
+
+  1. Huruf dan gambar DITANAM sebagai data URI oleh scripts/bangun-flyer.mjs,
+     bukan ditautkan. Flyer dikirim sebagai berkas — lewat surel, WhatsApp,
+     atau dicetak — dan berkas yang menautkan sumber luar akan tampil dengan
+     huruf cadangan serta kotak gambar kosong di komputer penerimanya.
+     Berkas ini adalah CETAKANNYA: yang disunting manusia adalah
+     flyer.src.html, lalu dibangun ulang.
+
+  2. Warnanya mengambil token yang sama persis dengan aplikasinya
+     (packages/ui-components/src/tokens.css). Flyer produk yang warnanya
+     tidak sama dengan produknya membuat tangkapan layar di tengah halaman
+     terlihat seperti tempelan dari aplikasi lain.
+-->
+<style>
+/*FONT*/
+
+* { box-sizing: border-box; }
+
+:root {
+  --brand: #1189c1;
+  --brand-ink: #0b6d9b;
+  --navy: #0b2740;
+  --teks: #0f2233;
+  --teks-2: #51697f;
+  --redup: #5e6c81;
+  --bidang: #f1f5f9;
+  --halaman: #f7fafd;
+  --cincin: rgba(11, 39, 64, 0.08);
+  --garis: #e3ebf3;
+}
+
+html, body { margin: 0; padding: 0; background: #55636f; }
+
+body {
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  color: var(--teks);
+  -webkit-font-smoothing: antialiased;
+  font-kerning: normal;
+}
+
+/* Ukuran A4 ditulis eksplisit, bukan diserahkan ke pengaturan cetak
+   peramban: berkas ini dirender ke PDF oleh Chromium headless, dan tanpa
+   @page ukuran bawaannya Letter — 18mm lebih pendek, cukup untuk memotong
+   baris terakhir. */
+@page { size: A4 portrait; margin: 0; }
+
+.lembar {
+  width: 210mm;
+  height: 297mm;
+  padding: 10mm 12mm 8mm;
+  margin: 0 auto;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- kepala ------------------------------------------------------------ */
+
+.kepala {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 9px;
+  border-bottom: 2px solid var(--brand);
+}
+
+.tanda {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 11px;
+  /* Gradien berhenti di #1189c1, bukan di #4bcbfb: huruf putih di atas
+     #4bcbfb hanya 1,87:1. Sama seperti --qhse-brand-gradient-ink di aplikasi. */
+  background: linear-gradient(135deg, #0b6d9b 0%, #1189c1 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.02em;
+}
+
+.nama { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+
+.sub {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--redup);
+  margin-top: 2px;
+}
+
+.kepala__kanan { margin-left: auto; text-align: right; }
+
+.standar {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--brand-ink);
+  text-transform: uppercase;
+}
+
+.tautan { font-size: 10.5px; font-weight: 600; color: var(--teks-2); margin-top: 3px; }
+
+/* --- kalimat pembuka --------------------------------------------------- */
+
+.pembuka {
+  margin: 9px 0 0;
+  font-size: 12px;
+  line-height: 1.48;
+  color: var(--teks-2);
+  max-width: 165mm;
+}
+
+.pembuka strong { color: var(--teks); font-weight: 700; }
+
+/* --- tangkapan layar ---------------------------------------------------- */
+
+.gambar {
+  margin: 8px 0 0;
+  /* flex-shrink: 0 WAJIB. .lembar adalah flex column dengan tinggi tetap satu
+     halaman, dan flex item MENYUSUT secara bawaan begitu isinya melebihi
+     halaman. Digabung dengan overflow:hidden di bawah, akibatnya bukan
+     halaman kedua melainkan tangkapan layar yang DIPOTONG diam-diam di
+     bagian bawah — dan pemeriksa "muat satu halaman" di bangun-flyer.mjs
+     tetap melaporkan aman, karena isinya memang jadi muat. Ditemukan
+     empiris: kartu "CAPA per status" kehilangan dua baris terakhirnya. */
+  flex: 0 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--cincin);
+  /* Bayangan lebar-pucat, bentuk yang sama dengan kartu di aplikasinya. */
+  box-shadow: 0 14px 22px 0 rgba(11, 39, 64, 0.10);
+  line-height: 0;
+}
+
+.gambar img { width: 100%; display: block; }
+
+.keterangan {
+  margin: 5px 0 0;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: var(--redup);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.keterangan b { color: var(--teks-2); font-weight: 700; }
+
+/* --- fitur -------------------------------------------------------------- */
+
+.judul-bagian {
+  margin: 9px 0 5px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.judul-bagian::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--garis);
+}
+
+.fitur {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.kartu {
+  padding: 7px 9px 8px;
+  background: var(--halaman);
+  border: 1px solid var(--cincin);
+  border-radius: 9px;
+}
+
+.kartu h3 {
+  margin: 0 0 3px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--teks);
+}
+
+.kartu p { margin: 0; font-size: 8.5px; line-height: 1.4; color: var(--redup); }
+
+/* --- daftar modul -------------------------------------------------------- */
+
+.modul {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px 12px;
+}
+
+.grup { break-inside: avoid; }
+
+.grup h4 {
+  margin: 0 0 2px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--brand-ink);
+}
+
+.grup ul { margin: 0 0 6px; padding: 0; list-style: none; }
+
+.grup li {
+  font-size: 8.6px;
+  line-height: 1.42;
+  color: var(--teks-2);
+  padding-left: 8px;
+  position: relative;
+}
+
+.grup li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+/* --- angka --------------------------------------------------------------- */
+
+.angka {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--garis);
+}
+
+.angka div { text-align: center; }
+
+.angka b {
+  display: block;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--brand-ink);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.angka span {
+  display: block;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--redup);
+  margin-top: 2px;
+}
+
+/* --- kaki ---------------------------------------------------------------- */
+
+.kaki {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--garis);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 8.8px;
+  line-height: 1.45;
+  color: var(--redup);
+}
+
+.kaki strong { display: block; font-size: 11px; color: var(--teks); font-weight: 800; margin-bottom: 1px; }
+
+/* Kotak kontak sengaja BERGARIS PUTUS-PUTUS dan bertuliskan kurung siku.
+   Flyer ini dibangun tanpa nama badan usaha, nomor telepon, atau surel —
+   menuliskan yang karangan pada berkas yang akan disebarkan ke calon
+   pelanggan jauh lebih buruk daripada meninggalkan tempatnya kosong dan
+   terlihat jelas harus diisi. */
+.kaki__kontak {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px dashed var(--brand);
+  border-radius: 8px;
+  color: var(--brand-ink);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-align: center;
+  background: #f2f9fd;
+}
+
+.catatan-kaki {
+  margin: 7px 0 0;
+  font-size: 7.4px;
+  line-height: 1.5;
+  color: var(--redup);
+}
+
+.catatan-kaki sup { font-size: 8px; }
+
+@media screen {
+  body { padding: 18px 0; }
+  .lembar { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35); }
+}
+</style>
+</head>
+<body>
+<div class="lembar">
+
+  <header class="kepala">
+    <div class="tanda">QH</div>
+    <div>
+      <div class="nama">QHSE Platform</div>
+      <div class="sub">Mutu · K3 · Lingkungan</div>
+    </div>
+    <div class="kepala__kanan">
+      <div class="standar">ISO 9001 · ISO 45001 · ISO 14001 · PP 50/2012</div>
+      <div class="tautan">qhse.semestateknologiutama.com</div>
+    </div>
+  </header>
+
+  <p class="pembuka">
+    Satu aplikasi untuk seluruh catatan mutu, K3, dan lingkungan — dari <strong>izin kerja dan
+    laporan insiden</strong> sampai <strong>audit, CAPA, dan program pelatihan</strong>. Angkanya dihitung
+    langsung dari data yang Anda catat, sehingga laporan direksi dan bukti untuk auditor
+    berasal dari sumber yang sama.
+  </p>
+
+  <figure class="gambar" style="margin-bottom:0">
+    <img src="/*GAMBAR*/" alt="Dashboard Analitik: tren insiden per bulan, insiden per klasifikasi, CAPA per status, CAPA lewat tenggat, dan tingkat penutupan CAPA" />
+  </figure>
+  <p class="keterangan">
+    <span><b>Dashboard Analitik</b> — 54 metrik siap pakai; pilih widget yang Anda perlukan dan susun sendiri urutannya.</span>
+    <span>Tangkapan layar dari data demo</span>
+  </p>
+
+  <div class="judul-bagian">Yang membedakan</div>
+  <section class="fitur">
+    <div class="kartu">
+      <h3>Persetujuan berjenjang</h3>
+      <p>Alur per modul dengan tahap bersyarat — izin kerja berisiko tinggi otomatis menambah tahap HSE. Transisi yang tidak sah ditolak, klik ganda tidak menyetujui dua kali.</p>
+    </div>
+    <div class="kartu">
+      <h3>Dokumen terkendali</h3>
+      <p>Riwayat versi, unduhan bertanda tangan yang kedaluwarsa, dan stempel SALINAN TERKENDALI pada penampilnya — bukan sekadar folder berisi PDF.</p>
+    </div>
+    <div class="kartu">
+      <h3>Dashboard yang Anda susun</h3>
+      <p>Dashboard eksekutif dan analitik disusun sendiri per pengguna dan tersimpan di server, jadi ikut berpindah saat Anda membukanya dari perangkat lain.</p>
+    </div>
+    <div class="kartu">
+      <h3>Balanced Scorecard</h3>
+      <p>Empat perspektif dengan sasaran yang bisa Anda ubah sendiri. Skor terhitung dari data modul, bukan diketik ulang tiap bulan.</p>
+    </div>
+    <div class="kartu">
+      <h3>Pencarian &amp; bantuan AI</h3>
+      <p>Pencarian menyeluruh atas dokumen dan register peraturan. Tersedia pula usulan peraturan yang relevan dan rancangan susunan SOP, IK, formulir, serta flowchart.<sup>*</sup></p>
+    </div>
+    <div class="kartu">
+      <h3>Siap untuk banyak entitas</h3>
+      <p>Pemisahan data antar-tenant dipaksakan di lapisan basis data, bukan hanya oleh kode aplikasi. Masuk memakai OAuth2 Authorization Code + PKCE.</p>
+    </div>
+  </section>
+
+  <div class="judul-bagian">19 modul operasional</div>
+  <section class="modul">
+    <div class="grup">
+      <h4>Dokumen &amp; Kepatuhan</h4>
+      <ul><li>Dokumen Terkendali</li><li>Register Peraturan</li></ul>
+      <h4>Risiko &amp; Operasi</h4>
+      <ul><li>Penilaian HIRA</li><li>Izin Kerja (PTW)</li></ul>
+    </div>
+    <div class="grup">
+      <h4>Kejadian &amp; Perbaikan</h4>
+      <ul><li>Laporan Insiden</li><li>Register CAPA</li></ul>
+      <h4>Inspeksi &amp; Audit</h4>
+      <ul><li>Catatan Inspeksi</li><li>Audit</li></ul>
+      <h4>Mutu &amp; Lingkungan</h4>
+      <ul><li>NCR Mutu</li><li>Aspek &amp; Dampak Lingkungan</li></ul>
+    </div>
+    <div class="grup">
+      <h4>Kesehatan &amp; Darurat</h4>
+      <ul><li>Penugasan Kerja Terbatas</li><li>Rencana Tanggap Darurat</li></ul>
+      <h4>Aset &amp; Mitra Kerja</h4>
+      <ul><li>Aset &amp; Peralatan</li><li>Item Kalibrasi</li><li>Kontraktor</li></ul>
+    </div>
+    <div class="grup">
+      <h4>Kompetensi &amp; Pelatihan</h4>
+      <ul><li>Program Pelatihan</li><li>Realisasi Pelatihan</li></ul>
+      <h4>Kinerja</h4>
+      <ul><li>Indikator Balanced Scorecard</li><li>Statistik HSE Bulanan</li></ul>
+    </div>
+  </section>
+
+  <div class="angka">
+    <div><b>19</b><span>Modul operasional</span></div>
+    <div><b>54</b><span>Metrik analitik</span></div>
+    <div><b>14 × 4</b><span>Kategori × kanal notifikasi</span></div>
+    <div><b>ID / EN</b><span>Dwibahasa, terang &amp; gelap</span></div>
+  </div>
+
+  <footer class="kaki">
+    <div>
+      <strong>Coba langsung — qhse.semestateknologiutama.com</strong>
+      Lingkungan demo berisi data contoh satu perusahaan migas: 453 record di 19 modul,
+      lengkap dengan alur persetujuan dan berkas terlampir. Hubungi kami untuk akun peninjauan.
+    </div>
+    <div class="kaki__kontak">[ nama perusahaan · telepon · surel ]</div>
+  </footer>
+
+  <p class="catatan-kaki">
+    <sup>*</sup> Fitur AI generatif memerlukan kunci model yang disediakan pelanggan; pencarian
+    dokumen dan peraturan berjalan tanpa itu. &nbsp;·&nbsp; Seluruh teks antarmuka diukur memenuhi
+    kontras WCAG AA 4,5:1. &nbsp;·&nbsp; Tangkapan layar diambil dari aplikasi yang berjalan,
+    6 Agustus 2026 — bukan mock-up.
+  </p>
+
+</div>
+</body>
+</html>
