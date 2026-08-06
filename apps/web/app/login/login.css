@@ -11,12 +11,9 @@
   position: relative;
   min-height: 100vh;
   display: flex;
-  /* KOLOM, bukan baris. Sebelumnya baris, dan pemilih bahasa yang ditaruh
-     sebelum kartu ikut berjajar di SAMPING kartu alih-alih di atasnya. */
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--qhse-space-5);
+  padding: var(--qhse-space-7) var(--qhse-space-5) var(--qhse-space-6);
   background: var(--qhse-brand-navy);
   box-sizing: border-box;
   overflow: hidden;
@@ -24,16 +21,158 @@
 
 /* Dua sorotan radial. Dipasang sebagai lapisan terpisah, bukan sebagai
    background-image berlapis pada elemennya sendiri, supaya kartu di atasnya
-   tetap punya konteks penumpukan yang sederhana. */
+   tetap punya konteks penumpukan yang sederhana.
+ *
+ * ALFANYA DITURUNKAN dari 0,35/0,22 menjadi 0,24/0,20 ketika panel penjelasan
+ * ditambahkan di sebelah kiri. Alasannya terukur, bukan selera: sorotan
+ * pertama berpusat di 12% 8% — tepat di belakang judul dan daftar fitur yang
+ * baru. Pada 0,35 titik paling terangnya menjadi #1d6995, dan di atas warna
+ * itu teks putih 82% hanya mencapai 4,09:1. Selama halaman ini cuma berisi
+ * kartu putih, tidak ada teks yang berdiri langsung di atas sorotan itu dan
+ * masalahnya tidak pernah muncul. */
 .qhse-login::before {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(60% 60% at 12% 8%, rgba(41, 171, 226, 0.35) 0%, transparent 60%),
-    radial-gradient(55% 55% at 88% 92%, rgba(75, 203, 251, 0.22) 0%, transparent 60%),
+    radial-gradient(60% 60% at 12% 8%, rgba(41, 171, 226, 0.24) 0%, transparent 60%),
+    radial-gradient(55% 55% at 88% 92%, rgba(75, 203, 251, 0.2) 0%, transparent 60%),
     linear-gradient(160deg, #0b2740 0%, #16456b 100%);
   background-color: var(--qhse-brand-navy);
+}
+
+/* --- Dua kolom: penjelasan di kiri, formulir di kanan -------------------- */
+
+.qhse-login__panel {
+  position: relative;
+  width: 100%;
+  max-width: 1140px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px;
+  align-items: center;
+  gap: var(--qhse-space-8);
+}
+
+@media (max-width: 980px) {
+  /* Di layar sempit FORMULIR YANG DULUAN, penjelasan menyusul di bawahnya.
+     Halaman ini dipakai dua jenis orang dengan kepentingan berlawanan:
+     pengunjung baru yang perlu diyakinkan, dan pengguna harian yang sudah
+     tahu dan hanya ingin masuk. Di layar lebar keduanya terlayani sekaligus
+     karena bersebelahan; di layar sempit hanya satu yang bisa didahulukan,
+     dan memaksa pengguna harian menggulir melewati iklan setiap pagi adalah
+     ongkos yang ditanggung berulang-ulang, sedangkan pengunjung baru hanya
+     sekali. */
+  /* Jarak atas dinaikkan karena pemilih bahasa berposisi absolut di sudut
+     kanan atas: pada satu kolom, tepi atas kartu naik sampai ke bawahnya dan
+     keduanya bertindih beberapa piksel. */
+  .qhse-login {
+    padding-top: var(--qhse-space-8);
+  }
+
+  .qhse-login__panel {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    max-width: 440px;
+    gap: var(--qhse-space-6);
+  }
+
+  .qhse-login__card { order: 1; }
+  .qhse-login__intro { order: 2; }
+}
+
+/* --- Panel penjelasan ----------------------------------------------------
+ *
+ * Warna teksnya TIDAK memakai token --qhse-text-*: token itu dihitung untuk
+ * bidang terang atau bidang gelap netral, sedangkan panel ini berdiri di atas
+ * navy bersorot biru yang titik paling terangnya #1b5d88. Nilai di bawah
+ * diukur terhadap titik itu — bukan terhadap navy dasarnya, yang jauh lebih
+ * mudah dilewati dan akan memberi rasa aman yang keliru:
+ *   putih                 7,08:1
+ *   putih 86% (isi)       5,09:1
+ *   #a5e4ff (aksen)       5,10:1
+ *   putih 82% (baris kaki) 4,79:1
+ */
+.qhse-login__intro {
+  position: relative;
+  max-width: 34rem;
+  color: rgba(234, 242, 248, 0.86);
+  font-family: var(--qhse-font-ui);
+}
+
+.qhse-login__eyebrow {
+  margin: 0 0 var(--qhse-space-3);
+  font-size: var(--qhse-text-micro-size);
+  font-weight: 700;
+  letter-spacing: var(--qhse-tracking-wide);
+  text-transform: uppercase;
+  color: #a5e4ff;
+}
+
+.qhse-login__headline {
+  margin: 0;
+  font-family: var(--qhse-font-display);
+  /* clamp, bukan ukuran tetap: judul ini yang paling dulu bertabrakan dengan
+     kolom formulir selebar 440px saat jendela dipersempit. */
+  font-size: clamp(26px, 3.2vw, 38px);
+  line-height: 1.16;
+  font-weight: 800;
+  letter-spacing: var(--qhse-tracking-tight);
+  color: #ffffff;
+}
+
+.qhse-login__lead {
+  margin: var(--qhse-space-4) 0 0;
+  font-size: var(--qhse-text-body-size);
+  line-height: 1.6;
+}
+
+.qhse-login__fitur {
+  list-style: none;
+  margin: var(--qhse-space-6) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--qhse-space-4) var(--qhse-space-5);
+}
+
+@media (max-width: 560px) {
+  .qhse-login__fitur { grid-template-columns: minmax(0, 1fr); }
+}
+
+.qhse-login__fitur li {
+  display: flex;
+  gap: var(--qhse-space-3);
+  font-size: var(--qhse-text-body-sm-size);
+  line-height: 1.45;
+}
+
+.qhse-login__tick {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 7px;
+  background: rgba(75, 203, 251, 0.18);
+  color: #a5e4ff;
+}
+
+.qhse-login__fitur b {
+  display: block;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.qhse-login__standar {
+  margin: var(--qhse-space-6) 0 0;
+  padding-top: var(--qhse-space-4);
+  border-top: 1px solid rgba(234, 242, 248, 0.16);
+  font-size: var(--qhse-text-micro-size);
+  line-height: 1.6;
+  letter-spacing: 0.03em;
+  color: rgba(234, 242, 248, 0.82);
 }
 
 .qhse-login__card {
@@ -162,14 +301,19 @@
  * orang mengira bahasa termasuk hal yang harus dipilih untuk bisa masuk. */
 .qhse-login__lang {
   display: inline-flex;
-  align-self: center;
-  /* position: relative WAJIB. `.qhse-login::before` adalah lapisan sorotan
-     radial berposisi absolut tanpa z-index; elemen setelahnya yang TIDAK
-     berposisi akan dilukis di BAWAHnya, jadi pemilih bahasa ada di DOM
-     tetapi tertutup sepenuhnya. Kartu masuk lolos dari nasib yang sama
-     hanya karena ia kebetulan sudah punya position: relative. */
-  position: relative;
-  margin-bottom: var(--qhse-space-4);
+  /* Dipindahkan ke sudut kanan atas jendela ketika halaman ini menjadi dua
+     kolom. Sebelumnya ia melayang di atas kartu; dengan panel penjelasan di
+     sebelah kiri, posisi itu menaruh sebuah kontrol tepat di tengah halaman
+     tanpa punya hubungan dengan apa pun di sekitarnya. */
+  position: absolute;
+  top: var(--qhse-space-4);
+  right: var(--qhse-space-5);
+  /* z-index WAJIB. `.qhse-login::before` adalah lapisan sorotan radial
+     berposisi absolut; tanpa z-index di sini, pemilih bahasa ada di DOM
+     tetapi tertutup sepenuhnya oleh lapisan itu — pernah terjadi. Kartu masuk
+     lolos dari nasib yang sama hanya karena ia kebetulan sudah punya
+     position: relative. */
+  z-index: 2;
   border: 1px solid var(--qhse-border);
   border-radius: var(--qhse-radius-sm);
   overflow: hidden;

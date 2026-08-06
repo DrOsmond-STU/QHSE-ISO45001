@@ -24,9 +24,16 @@ periksa() {
   fi
 }
 
-# 1. Pemilih bahasa pada halaman masuk. Dirender server, jadi ada di HTML
-#    mentah tanpa perlu menjalankan JavaScript.
+# 1. Pemilih bahasa dan panel penjelasan pada halaman masuk. Keduanya dirender
+#    server, jadi ada di HTML mentah tanpa perlu menjalankan JavaScript.
+#
+#    Judul panelnya dicari sebagai KALIMAT, bukan sebagai nama kelas: kelas
+#    bisa saja ada di lembar gaya sementara elemennya tidak pernah dirender,
+#    dan halaman masuk adalah satu-satunya halaman yang bisa dilihat orang
+#    yang belum punya akun — kalau isinya hilang, tidak ada pengguna yang
+#    akan melaporkannya karena mereka semua sudah bisa masuk.
 periksa "pemilih bahasa ada di halaman masuk" "$SITE/login" "qhse-login__lang"
+periksa "panel penjelasan ada di halaman masuk" "$SITE/login" "Bukti K3 Anda"
 
 # 2. Lembar gaya: kelas kartu eksekutif DAN kelas pemilih bahasa di bilah atas.
 #    Keduanya dicari di seluruh berkas CSS yang ditautkan halaman eksekutif.
